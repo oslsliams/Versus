@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./upgrade.css";
 import "./fantasy.css";
+import "./coins.css";
 
 export const metadata: Metadata = {
   title: "VERSUS — Compare. Debate. Predict.",

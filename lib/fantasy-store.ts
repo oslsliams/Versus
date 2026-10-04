@@ -1,3 +1,4 @@
+import {settleCoinPicks} from './arena-coins';
 import seeds from './fantasy-events.json';
 import {parseOfficialCard,type FantasyEvent} from './fantasy';
 export async function fantasyCards(db:D1Database,refresh=true):Promise<(FantasyEvent&{syncError:string})[]>{
@@ -17,5 +18,5 @@ export async function fantasyCards(db:D1Database,refresh=true):Promise<(FantasyE
       const next={...old,bouts,startsAt:parsed.startsAt,checkedAt:now};await db.prepare("UPDATE fantasy_cards SET data=?,checked=?,error='' WHERE id=?").bind(JSON.stringify(next),now,old.id).run();
     }catch{await db.prepare('UPDATE fantasy_cards SET error=? WHERE id=?').bind('Official update unavailable. Showing the last verified card; pending results earn no points.',old.id).run();}
   }));
-  if(refresh)stored=await load();return stored.map(r=>({...JSON.parse(r.data),checkedAt:r.checked,syncError:r.error}));
+  if(refresh)stored=await load();const cards=stored.map(r=>({...JSON.parse(r.data),checkedAt:r.checked,syncError:r.error})) as (FantasyEvent&{syncError:string})[];await settleCoinPicks(db,cards);return cards;
 }
