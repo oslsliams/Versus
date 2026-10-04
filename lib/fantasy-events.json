@@ -1,0 +1,764 @@
+[
+  {
+    "id": "allen-duncan",
+    "name": "UFC Fight Night: Allen vs Duncan",
+    "kind": "Fight Night",
+    "location": "Las Vegas, NV",
+    "source": "https://www.ufc.com/event/ufc-fight-night-october-10-2026",
+    "replay": false,
+    "startsAt": 1791666000000,
+    "checkedAt": 1791081041752,
+    "bouts": [
+      {
+        "id": "13116",
+        "red": {
+          "id": "brendan-allen",
+          "name": "Brendan Allen",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-06/ALLEN_BRENDAN_L_06-06.png?itok=cjSneQ6n",
+          "source": "https://www.ufc.com/athlete/brendan-allen",
+          "cost": 15
+        },
+        "blue": {
+          "id": "christian-leroy-duncan",
+          "name": "Christian Leroy Duncan",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-07/DUNCAN_CHRISTIAN_LEROY_R_07-18.png?itok=-Qt73IKv",
+          "source": "https://www.ufc.com/athlete/christian-leroy-duncan",
+          "cost": 13
+        },
+        "division": "Middleweight Bout",
+        "winner": null,
+        "method": "",
+        "round": null,
+        "outcome": "pending"
+      },
+      {
+        "id": "13160",
+        "red": {
+          "id": "matheus-camilo",
+          "name": "Matheus Camilo",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2025-05/CAMILO_MATHEUS_R.png?itok=2DfH0HEr",
+          "source": "https://www.ufc.com/athlete/matheus-camilo",
+          "cost": 10
+        },
+        "blue": {
+          "id": "jai-herbert",
+          "name": "Jai Herbert",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-04/HERBERT_JAI_R_04-18.png?itok=_2rjWA4-",
+          "source": "https://www.ufc.com/athlete/jai-herbert",
+          "cost": 10
+        },
+        "division": "Lightweight Bout",
+        "winner": null,
+        "method": "",
+        "round": null,
+        "outcome": "pending"
+      },
+      {
+        "id": "13161",
+        "red": {
+          "id": "loopy-godinez",
+          "name": "Loopy Godinez",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2025-03/GODINEZ_LOOPY_L_03-29.png?itok=oWRCjGaO",
+          "source": "https://www.ufc.com/athlete/loopy-godinez",
+          "cost": 13
+        },
+        "blue": {
+          "id": "ketlen-souza",
+          "name": "Ketlen Souza",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-02/SOUZA_KETLEN_R_02-07.png?itok=FjVgpmuV",
+          "source": "https://www.ufc.com/athlete/ketlen-souza",
+          "cost": 10
+        },
+        "division": "Women's Strawweight Bout",
+        "winner": null,
+        "method": "",
+        "round": null,
+        "outcome": "pending"
+      },
+      {
+        "id": "13162",
+        "red": {
+          "id": "andre-fili",
+          "name": "Andre Fili",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-03/FILI_ANDRE_L_03-14.png?itok=EI8OaSkp",
+          "source": "https://www.ufc.com/athlete/andre-fili",
+          "cost": 10
+        },
+        "blue": {
+          "id": "kai-kamaka-iii",
+          "name": "Kai Kamaka III",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-07/KAMAKA_KAI_R_07-11.png?itok=YvgMgAXn",
+          "source": "https://www.ufc.com/athlete/kai-kamaka-iii",
+          "cost": 10
+        },
+        "division": "Featherweight Bout",
+        "winner": null,
+        "method": "",
+        "round": null,
+        "outcome": "pending"
+      },
+      {
+        "id": "13163",
+        "red": {
+          "id": "julius-walker",
+          "name": "Julius Walker",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2025-08/WALKER_JULIUS_L_08-09.png?itok=qDUL7Dmb",
+          "source": "https://www.ufc.com/athlete/julius-walker",
+          "cost": 10
+        },
+        "blue": {
+          "id": "gerald-meerschaert",
+          "name": "Gerald Meerschaert",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-04/MEERSCHAERT_GERALD_R_05-02.png?itok=FAxnnhKv",
+          "source": "https://www.ufc.com/athlete/gerald-meerschaert",
+          "cost": 10
+        },
+        "division": "Light Heavyweight Bout",
+        "winner": null,
+        "method": "",
+        "round": null,
+        "outcome": "pending"
+      },
+      {
+        "id": "13164",
+        "red": {
+          "id": "malcolm-wellmaker",
+          "name": "Malcolm Wellmaker",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-05/WELLMAKER_MALCOM_L_05-16.png?itok=dEafqrQy",
+          "source": "https://www.ufc.com/athlete/malcolm-wellmaker",
+          "cost": 10
+        },
+        "blue": {
+          "id": "otari-tanzilovi",
+          "name": "Otari Tanzilovi",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-06/TANZILOVI_OTARI_R_06-20.png?itok=ZniOIwvD",
+          "source": "https://www.ufc.com/athlete/otari-tanzilovi",
+          "cost": 10
+        },
+        "division": "Bantamweight Bout",
+        "winner": null,
+        "method": "",
+        "round": null,
+        "outcome": "pending"
+      },
+      {
+        "id": "13166",
+        "red": {
+          "id": "francisco-prado",
+          "name": "Francisco Prado",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2025-07/PRADO_FRANCISCO_L_07-19.png?itok=C0_X1OYl",
+          "source": "https://www.ufc.com/athlete/francisco-prado",
+          "cost": 10
+        },
+        "blue": {
+          "id": "ismael-bonfim",
+          "name": "Ismael Bonfim",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2025-11/BONFIM_ISMAEL_R_11-08.png?itok=paipEYll",
+          "source": "https://www.ufc.com/athlete/ismael-bonfim",
+          "cost": 10
+        },
+        "division": "Lightweight Bout",
+        "winner": null,
+        "method": "",
+        "round": null,
+        "outcome": "pending"
+      },
+      {
+        "id": "13167",
+        "red": {
+          "id": "niko-price",
+          "name": "Niko Price",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2025-06/PRICE_NIKO_L_06-28.png?itok=0HLKEtKC",
+          "source": "https://www.ufc.com/athlete/niko-price",
+          "cost": 10
+        },
+        "blue": {
+          "id": "leon-shahbazyan",
+          "name": "Leon Shahbazyan",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-06/SHAHBAZYAN_LEON_L_06-20.png?itok=0BDlzTa8",
+          "source": "https://www.ufc.com/athlete/leon-shahbazyan",
+          "cost": 10
+        },
+        "division": "Welterweight Bout",
+        "winner": null,
+        "method": "",
+        "round": null,
+        "outcome": "pending"
+      },
+      {
+        "id": "13168",
+        "red": {
+          "id": "felipe-franco",
+          "name": "Felipe Franco",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-03/FRANCO_FELIPE_R_03-21.png?itok=Pb4xswY2",
+          "source": "https://www.ufc.com/athlete/felipe-franco",
+          "cost": 10
+        },
+        "blue": {
+          "id": "brendson-ribeiro",
+          "name": "Brendson Ribeiro",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-07/RIBEIRO_BRENDSON_R_07-25.png?itok=c31-UgFp",
+          "source": "https://www.ufc.com/athlete/brendson-ribeiro",
+          "cost": 10
+        },
+        "division": "Light Heavyweight Bout",
+        "winner": null,
+        "method": "",
+        "round": null,
+        "outcome": "pending"
+      },
+      {
+        "id": "13169",
+        "red": {
+          "id": "allen-frye-jr",
+          "name": "Allen Frye Jr.",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2025-12/FRYE_ALLEN_L_12-13.png?itok=SBzhvOqV",
+          "source": "https://www.ufc.com/athlete/allen-frye-jr",
+          "cost": 10
+        },
+        "blue": {
+          "id": "rj-harris",
+          "name": "RJ Harris",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-07/HARRIS_RJ_L_07-18.png?itok=D1Bf-wPO",
+          "source": "https://www.ufc.com/athlete/rj-harris",
+          "cost": 10
+        },
+        "division": "Heavyweight Bout",
+        "winner": null,
+        "method": "",
+        "round": null,
+        "outcome": "pending"
+      },
+      {
+        "id": "13170",
+        "red": {
+          "id": "alice-pereira",
+          "name": "Alice Pereira",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-04/PEREIRA_ALICE_L_04-04.png?itok=A45X3rs7",
+          "source": "https://www.ufc.com/athlete/alice-pereira",
+          "cost": 10
+        },
+        "blue": {
+          "id": "dariya-zheleznyakova",
+          "name": "Daria Zhelezniakova",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-04/ZHELEZNIAKOVA_DARIA_R_04-18.png?itok=0CG0RrC_",
+          "source": "https://www.ufc.com/athlete/dariya-zheleznyakova",
+          "cost": 10
+        },
+        "division": "Women's Bantamweight Bout",
+        "winner": null,
+        "method": "",
+        "round": null,
+        "outcome": "pending"
+      },
+      {
+        "id": "13171",
+        "red": {
+          "id": "ernesta-kareckaite",
+          "name": "Ernesta Kareckaitė",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2025-01/9/KARECKAITE_ERNESTA_L_01-11.png?itok=P9bM3yQi",
+          "source": "https://www.ufc.com/athlete/ernesta-kareckaite",
+          "cost": 10
+        },
+        "blue": {
+          "id": "melissa-gatto",
+          "name": "Melissa Gatto",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-04/GATTO_MELISSA_R_04-04.png?itok=xPWhL6mM",
+          "source": "https://www.ufc.com/athlete/melissa-gatto",
+          "cost": 10
+        },
+        "division": "Women's Flyweight Bout",
+        "winner": null,
+        "method": "",
+        "round": null,
+        "outcome": "pending"
+      }
+    ]
+  },
+  {
+    "id": "ufc-333",
+    "name": "UFC 333: Volkanovski vs Evloev",
+    "kind": "Premium",
+    "location": "Abu Dhabi, UAE",
+    "source": "https://www.ufc.com/event/ufc-333",
+    "replay": false,
+    "startsAt": 1792857600000,
+    "checkedAt": 1791081041755,
+    "bouts": [
+      {
+        "id": "13063",
+        "red": {
+          "id": "alexander-volkanovski",
+          "name": "Alexander Volkanovski",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-01/VOLKANOVSKI_ALEXANDER_L_BELT_01-31.png?itok=3qNxrgq4",
+          "source": "https://www.ufc.com/athlete/alexander-volkanovski",
+          "cost": 16
+        },
+        "blue": {
+          "id": "movsar-evloev",
+          "name": "Movsar Evloev",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2025-01/5/EVLOEV_MOVSAR_R_01-20.png?itok=cpiJumzn",
+          "source": "https://www.ufc.com/athlete/movsar-evloev",
+          "cost": 15
+        },
+        "division": "Featherweight Title Bout",
+        "winner": null,
+        "method": "",
+        "round": null,
+        "outcome": "pending"
+      },
+      {
+        "id": "13064",
+        "red": {
+          "id": "petr-yan",
+          "name": "Petr Yan",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2025-12/YAN_PETR_L_BELT_04-09.png?itok=JNq7gX3A",
+          "source": "https://www.ufc.com/athlete/petr-yan",
+          "cost": 16
+        },
+        "blue": {
+          "id": "merab-dvalishvili",
+          "name": "Merab Dvalishvili",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2022-08/DVALISHVILI_MERAB_R_08-20.png?itok=zSea1zIt",
+          "source": "https://www.ufc.com/athlete/merab-dvalishvili",
+          "cost": 15
+        },
+        "division": "Bantamweight Title Bout",
+        "winner": null,
+        "method": "",
+        "round": null,
+        "outcome": "pending"
+      },
+      {
+        "id": "13066",
+        "red": {
+          "id": "loneer-kavanagh",
+          "name": "Lone’er Kavanagh",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2025-03/KAVANAGH_LONEER_L_03-22.png?itok=_veRL6Og",
+          "source": "https://www.ufc.com/athlete/loneer-kavanagh",
+          "cost": 13
+        },
+        "blue": {
+          "id": "ramazan-temirov",
+          "name": "Ramazan Temirov",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-07/TEMIROV_RAMAZAN_R_07-25.png?itok=mTV8xLSo",
+          "source": "https://www.ufc.com/athlete/ramazan-temirov",
+          "cost": 13
+        },
+        "division": "Flyweight Bout",
+        "winner": null,
+        "method": "",
+        "round": null,
+        "outcome": "pending"
+      },
+      {
+        "id": "13125",
+        "red": {
+          "id": "alexander-volkov",
+          "name": "Alexander Volkov",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-05/VOLKOV_ALEXANDER_L_05-09.png?itok=kdHGCtDI",
+          "source": "https://www.ufc.com/athlete/alexander-volkov",
+          "cost": 15
+        },
+        "blue": {
+          "id": "rizvan-kuniev",
+          "name": "Rizvan Kuniev",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-07/KUNIEV_RIZVAN_R_02-07.png?itok=qMQIRmwO",
+          "source": "https://www.ufc.com/athlete/rizvan-kuniev",
+          "cost": 13
+        },
+        "division": "Heavyweight Bout",
+        "winner": null,
+        "method": "",
+        "round": null,
+        "outcome": "pending"
+      },
+      {
+        "id": "13080",
+        "red": {
+          "id": "arnold-allen",
+          "name": "Arnold Allen",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-05/ALLEN_ARNOLD_L_05-16.png?itok=ZSXY9vo0",
+          "source": "https://www.ufc.com/athlete/arnold-allen",
+          "cost": 13
+        },
+        "blue": {
+          "id": "aaron-pico",
+          "name": "Aaron Pico",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2025-08/PICO_AARON_R_08-16.png?itok=c4FjhSRf",
+          "source": "https://www.ufc.com/athlete/aaron-pico",
+          "cost": 12
+        },
+        "division": "Featherweight Bout",
+        "winner": null,
+        "method": "",
+        "round": null,
+        "outcome": "pending"
+      },
+      {
+        "id": "13065",
+        "red": {
+          "id": "azamat-murzakanov",
+          "name": "Azamat Murzakanov",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-04/MURZAKANOV_AZAMAT_L_04-11.png?itok=Ivep7_PI",
+          "source": "https://www.ufc.com/athlete/azamat-murzakanov",
+          "cost": 13
+        },
+        "blue": {
+          "id": "dominick-reyes",
+          "name": "Dominick Reyes",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2025-09/REYES_DOMINICK_R_09-27.png?itok=Svdf4K4D",
+          "source": "https://www.ufc.com/athlete/dominick-reyes",
+          "cost": 13
+        },
+        "division": "Light Heavyweight Bout",
+        "winner": null,
+        "method": "",
+        "round": null,
+        "outcome": "pending"
+      },
+      {
+        "id": "13081",
+        "red": {
+          "id": "nikita-krylov",
+          "name": "Nikita Krylov",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-07/KRYLOV_NIKITA_L_07-11.png?itok=QAVNE3gG",
+          "source": "https://www.ufc.com/athlete/nikita-krylov",
+          "cost": 12
+        },
+        "blue": {
+          "id": "abdulrakhman-yakhyaev",
+          "name": "Abdul Rakhman Yakhyaev",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-06/YAKHYAEV_ABDUL_RAKHMAN_L_06-27.png?itok=5uUIUgLu",
+          "source": "https://www.ufc.com/athlete/abdulrakhman-yakhyaev",
+          "cost": 10
+        },
+        "division": "Light Heavyweight Bout",
+        "winner": null,
+        "method": "",
+        "round": null,
+        "outcome": "pending"
+      },
+      {
+        "id": "13082",
+        "red": {
+          "id": "abus-magomedov",
+          "name": "Abus Magomedov",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-06/MAGOMEDOV_ABUS_L_06-27.png?itok=xmOlGKCh",
+          "source": "https://www.ufc.com/athlete/abus-magomedov",
+          "cost": 12
+        },
+        "blue": {
+          "id": "cameron-rowston",
+          "name": "Cam Rowston",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-04/ROWSTON_CAM_L_05-02.png?itok=JIk0-RqX",
+          "source": "https://www.ufc.com/athlete/cameron-rowston",
+          "cost": 10
+        },
+        "division": "Middleweight Bout",
+        "winner": null,
+        "method": "",
+        "round": null,
+        "outcome": "pending"
+      },
+      {
+        "id": "13067",
+        "red": {
+          "id": "grant-dawson",
+          "name": "Grant Dawson",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-05/DAWSON_GRANT_L_05-09.png?itok=aw_R2HhN",
+          "source": "https://www.ufc.com/athlete/grant-dawson",
+          "cost": 10
+        },
+        "blue": {
+          "id": "nurullo-aliev",
+          "name": "Nurullo Aliev",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2025-01/2/ALIEV_NURULLO_R_01-11.png?itok=CbowQZhN",
+          "source": "https://www.ufc.com/athlete/nurullo-aliev",
+          "cost": 10
+        },
+        "division": "Lightweight Bout",
+        "winner": null,
+        "method": "",
+        "round": null,
+        "outcome": "pending"
+      }
+    ]
+  },
+  {
+    "id": "ufc-331-replay",
+    "name": "UFC 331 · Replay",
+    "kind": "Premium",
+    "location": "Las Vegas, NV",
+    "source": "https://www.ufc.com/event/ufc-331",
+    "replay": true,
+    "startsAt": 1789853400000,
+    "checkedAt": 1791081041757,
+    "bouts": [
+      {
+        "id": "13017",
+        "red": {
+          "id": "joshua-van",
+          "name": "Joshua Van",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/VAN_JOSHUA_L_BELT_09-19.png?itok=bbecsBBL",
+          "source": "https://www.ufc.com/athlete/joshua-van",
+          "cost": 16
+        },
+        "blue": {
+          "id": "alexandre-pantoja",
+          "name": "Alexandre Pantoja",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/PANTOJA_ALEXANDRE_L_09-19.png?itok=qV89LIVr",
+          "source": "https://www.ufc.com/athlete/alexandre-pantoja",
+          "cost": 15
+        },
+        "division": "Flyweight Title Bout",
+        "winner": "joshua-van",
+        "method": "Decision - Unanimous",
+        "round": 5,
+        "outcome": "finished"
+      },
+      {
+        "id": "13018",
+        "red": {
+          "id": "arman-tsarukyan",
+          "name": "Arman Tsarukyan",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/TSARUKYAN_ARMAN_L_09-19.png?itok=zxxkB5tp",
+          "source": "https://www.ufc.com/athlete/arman-tsarukyan",
+          "cost": 15
+        },
+        "blue": {
+          "id": "mauricio-ruffy",
+          "name": "Mauricio Ruffy",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/RUFFY_MAURICIO_R_09-19.png?itok=wIF8KATT",
+          "source": "https://www.ufc.com/athlete/mauricio-ruffy",
+          "cost": 13
+        },
+        "division": "Lightweight Bout",
+        "winner": "arman-tsarukyan",
+        "method": "KO/TKO",
+        "round": 1,
+        "outcome": "finished"
+      },
+      {
+        "id": "13025",
+        "red": {
+          "id": "patricio-freire",
+          "name": "Patricio Pitbull",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/PITBULL_PATRICIO_L_09-19.png?itok=1Sbm3QD0",
+          "source": "https://www.ufc.com/athlete/patricio-freire",
+          "cost": 12
+        },
+        "blue": {
+          "id": "dooho-choi",
+          "name": "Dooho Choi",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/CHOI_DOOHO_R_09-19.png?itok=4mhM81Kv",
+          "source": "https://www.ufc.com/athlete/dooho-choi",
+          "cost": 10
+        },
+        "division": "Featherweight Bout",
+        "winner": "patricio-freire",
+        "method": "KO/TKO",
+        "round": 1,
+        "outcome": "finished"
+      },
+      {
+        "id": "13019",
+        "red": {
+          "id": "gable-steveson",
+          "name": "Gable Steveson",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/STEVESON_GABLE_L_09-19.png?itok=RyrTYpzb",
+          "source": "https://www.ufc.com/athlete/gable-steveson",
+          "cost": 10
+        },
+        "blue": {
+          "id": "sean-sharaf",
+          "name": "Sean Sharaf",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/SHARAF_SEAN_R_09-19.png?itok=o50RNicx",
+          "source": "https://www.ufc.com/athlete/sean-sharaf",
+          "cost": 10
+        },
+        "division": "Heavyweight Bout",
+        "winner": "sean-sharaf",
+        "method": "KO/TKO",
+        "round": 1,
+        "outcome": "finished"
+      },
+      {
+        "id": "13024",
+        "red": {
+          "id": "alonzo-menifield",
+          "name": "Alonzo Menifield",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/MENIFIELD_ALONZO_L_09-19.png?itok=CZngrX6g",
+          "source": "https://www.ufc.com/athlete/alonzo-menifield",
+          "cost": 12
+        },
+        "blue": {
+          "id": "iwo-baraniewski",
+          "name": "Iwo Baraniewski",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/BARANIEWSKI_IWO_R_09-19.png?itok=jtEfpCRC",
+          "source": "https://www.ufc.com/athlete/iwo-baraniewski",
+          "cost": 10
+        },
+        "division": "Light Heavyweight Bout",
+        "winner": "alonzo-menifield",
+        "method": "Decision - Split",
+        "round": 3,
+        "outcome": "finished"
+      },
+      {
+        "id": "13023",
+        "red": {
+          "id": "marlon-vera",
+          "name": "Marlon Vera",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/VERA_MARLON_L_09-19.png?itok=P-28TNDe",
+          "source": "https://www.ufc.com/athlete/marlon-vera",
+          "cost": 13
+        },
+        "blue": {
+          "id": "charles-jourdain",
+          "name": "Charles Jourdain",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/JOURDAIN_CHARLES_R_09-19.png?itok=wb_8N-Kb",
+          "source": "https://www.ufc.com/athlete/charles-jourdain",
+          "cost": 10
+        },
+        "division": "Bantamweight Bout",
+        "winner": "marlon-vera",
+        "method": "KO/TKO",
+        "round": 3,
+        "outcome": "finished"
+      },
+      {
+        "id": "13020",
+        "red": {
+          "id": "tai-tuivasa",
+          "name": "Tai Tuivasa",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/TUIVASA_TAI_L_09-19.png?itok=MYfhClNV",
+          "source": "https://www.ufc.com/athlete/tai-tuivasa",
+          "cost": 10
+        },
+        "blue": {
+          "id": "robelis-despaigne",
+          "name": "Robelis Despaigne",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/DESPAIGNE_ROBELIS_R_09-19.png?itok=9Nmjlbs4",
+          "source": "https://www.ufc.com/athlete/robelis-despaigne",
+          "cost": 10
+        },
+        "division": "Heavyweight Bout",
+        "winner": "robelis-despaigne",
+        "method": "Decision - Split",
+        "round": 3,
+        "outcome": "finished"
+      },
+      {
+        "id": "13029",
+        "red": {
+          "id": "michael-aswell-jr",
+          "name": "Michael Aswell Jr.",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/ASWELL_JR_MICHAEL_L_09-19.png?itok=pq75_444",
+          "source": "https://www.ufc.com/athlete/michael-aswell-jr",
+          "cost": 10
+        },
+        "blue": {
+          "id": "joosang-yoo",
+          "name": "JooSang Yoo",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/YOO_JOOSANG_R_09-19.png?itok=r-71yNyU",
+          "source": "https://www.ufc.com/athlete/joosang-yoo",
+          "cost": 10
+        },
+        "division": "Featherweight Bout",
+        "winner": "michael-aswell-jr",
+        "method": "Decision - Split",
+        "round": 3,
+        "outcome": "finished"
+      },
+      {
+        "id": "13021",
+        "red": {
+          "id": "ryan-gandra",
+          "name": "Ryan Gandra",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/GANDRA_RYAN_L_09-19.png?itok=E5Ht3MuJ",
+          "source": "https://www.ufc.com/athlete/ryan-gandra",
+          "cost": 10
+        },
+        "blue": {
+          "id": "ozzy-diaz",
+          "name": "Ozzy Diaz",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2025-03/DIAZ_OZZY_R_03-08.png?itok=g7iPOGWX",
+          "source": "https://www.ufc.com/athlete/ozzy-diaz",
+          "cost": 10
+        },
+        "division": "Middleweight Bout",
+        "winner": "ryan-gandra",
+        "method": "KO/TKO",
+        "round": 1,
+        "outcome": "finished"
+      },
+      {
+        "id": "13026",
+        "red": {
+          "id": "edmen-shahbazyan",
+          "name": "Edmen Shahbazyan",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/SHAHBAZYAN_EDMEN_L_09-19.png?itok=GFUJfPbZ",
+          "source": "https://www.ufc.com/athlete/edmen-shahbazyan",
+          "cost": 10
+        },
+        "blue": {
+          "id": "brunno-ferreira",
+          "name": "Brunno Ferreira",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/FERREIRA_BRUNNO_R_09-19.png?itok=HE3nibuG",
+          "source": "https://www.ufc.com/athlete/brunno-ferreira",
+          "cost": 10
+        },
+        "division": "Middleweight Bout",
+        "winner": "edmen-shahbazyan",
+        "method": "Decision - Unanimous",
+        "round": 3,
+        "outcome": "finished"
+      },
+      {
+        "id": "13028",
+        "red": {
+          "id": "casey-oneill",
+          "name": "Casey O'Neill",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/ONEILL_CASEY_L_09-19.png?itok=zfwSR6nI",
+          "source": "https://www.ufc.com/athlete/casey-oneill",
+          "cost": 12
+        },
+        "blue": {
+          "id": "eduarda-moura",
+          "name": "Eduarda Moura",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/MOURA_EDUARDA_R_09-19.png?itok=jrkKwlWT",
+          "source": "https://www.ufc.com/athlete/eduarda-moura",
+          "cost": 12
+        },
+        "division": "Women's Flyweight Bout",
+        "winner": "casey-oneill",
+        "method": "Submission",
+        "round": 1,
+        "outcome": "finished"
+      },
+      {
+        "id": "13027",
+        "red": {
+          "id": "giga-chikadze",
+          "name": "Giga Chikadze",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/CHIKADZE_GIGA_L_09-19.png?itok=_uspisQi",
+          "source": "https://www.ufc.com/athlete/giga-chikadze",
+          "cost": 10
+        },
+        "blue": {
+          "id": "joanderson-brito",
+          "name": "Joanderson Brito",
+          "photo": "https://ufc.com/images/styles/event_fight_card_upper_body_of_standing_athlete/s3/2026-09/BRITO_JOANDERSON_R_09-19.png?itok=npTfeyHc",
+          "source": "https://www.ufc.com/athlete/joanderson-brito",
+          "cost": 10
+        },
+        "division": "Featherweight Bout",
+        "winner": "joanderson-brito",
+        "method": "KO/TKO",
+        "round": 1,
+        "outcome": "finished"
+      }
+    ]
+  }
+]

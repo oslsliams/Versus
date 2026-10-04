@@ -1,5 +1,6 @@
+import {fantasyCards} from '../lib/fantasy-store';
 import handler from 'vinext/server/fetch-handler';
-export default {async fetch(request: Request, env: Cloudflare.Env, ctx: ExecutionContext) {
+export default {scheduled(_controller:ScheduledController,env:Cloudflare.Env,ctx:ExecutionContext){if(env.DB)ctx.waitUntil(fantasyCards(env.DB));},async fetch(request: Request, env: Cloudflare.Env, ctx: ExecutionContext) {
   const response = await handler.fetch(request, env, ctx);
   const headers = new Headers(response.headers);
   headers.set('X-Content-Type-Options', 'nosniff');
