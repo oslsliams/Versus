@@ -1,0 +1,3 @@
+CREATE TABLE community_suggestions(id TEXT PRIMARY KEY,user TEXT NOT NULL REFERENCES auth_accounts(id) ON DELETE CASCADE,title TEXT NOT NULL CHECK(length(title) BETWEEN 5 AND 100),body TEXT NOT NULL CHECK(length(body) BETWEEN 10 AND 1200),category TEXT NOT NULL CHECK(category IN('Feature','Fighter','Moment','Shop','Data correction')),status TEXT NOT NULL DEFAULT 'Open' CHECK(status IN('Open','Planned','Completed','Hidden')),created INTEGER NOT NULL);
+CREATE INDEX suggestions_created ON community_suggestions(created);
+CREATE TABLE suggestion_votes(suggestion TEXT NOT NULL REFERENCES community_suggestions(id) ON DELETE CASCADE,user TEXT NOT NULL REFERENCES auth_accounts(id) ON DELETE CASCADE,PRIMARY KEY(suggestion,user));

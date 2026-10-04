@@ -9,10 +9,11 @@ import "./settings.css";
 import "./social.css";
 import "./moments.css";
 import "./polish.css";
+import "./archive.css";
 
 export const metadata: Metadata = {
-  title: "VERSUS — Compare. Debate. Predict.",
-  description: "Your arena for competitor comparisons, free predictions, and community debate.",
+  title: "VERSUS — The UFC Fighter Archive",
+  description: "Explore UFC fighter careers, compare statistics, collect iconic Moments, and draft your fantasy fight team.",
   other: {
     "codex-preview": "development",
   },
