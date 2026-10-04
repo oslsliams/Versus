@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "versus",
+  "main": "build/cloudflare-worker.ts",
+  "compatibility_date": "2026-05-15",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "versusarena.org",
+      "custom_domain": true
+    }
+  ],
+  "vars": {
+    "AUTH_MODE": "cloudflare"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "versus-db",
+      "database_id": "095a8220-43dc-4f61-8232-612e961a08cd",
+      "migrations_dir": "cloudflare-migrations"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

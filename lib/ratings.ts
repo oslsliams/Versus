@@ -1,0 +1,7 @@
+import type {Competitor,Prediction} from './domain';
+import {categories} from './categories';
+export const probabilityScale=12;
+export function overall(c:Competitor,weights=categories.find(x=>x.id===c.category)!.weights){const total=Object.values(weights).reduce((a,b)=>a+b,0);return total>0?Object.entries(weights).reduce((s,[k,w])=>s+(c.attributes[k]??0)*w,0)/total:0;}
+export function probability(a:Competitor,b:Competitor){return 100/(1+10**((overall(b)-overall(a))/probabilityScale));}
+export function record(predictions:Prediction[],results:Prediction[],user:string){let correct=0,settled=0,current=0,best=0;for(const r of results.filter(r=>r.user===user).sort((a,b)=>a.created-b.created)){const p=predictions.find(p=>p.user===user&&p.matchup===r.matchup);if(!p)continue;settled++;if(p.winner===r.winner){correct++;current++;best=Math.max(best,current);}else current=0;}return{total:predictions.filter(p=>p.user===user).length,correct,settled,accuracy:settled?Math.round(correct/settled*100):null,current,best};}
+export const achievementDefinitions=[{name:'First Prediction',description:'Submit your first prediction.'},{name:'10 Predictions',description:'Submit 10 predictions.'},{name:'100 Predictions',description:'Submit 100 predictions.'},{name:'70% Accuracy',description:'70% winner accuracy over at least 10 settled picks.'},{name:'10-Win Streak',description:'Get 10 consecutive winner picks right.'},{name:'Top 100 Predictor',description:'Top 100 among users with 10 settled picks.'},{name:'Debate Champion',description:'Earn 25 upvotes from other people.'}];

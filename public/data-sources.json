@@ -1,0 +1,538 @@
+{
+  "retrievedOn": "2026-10-03",
+  "scope": {
+    "record": "Professional career MMA W-L-D with no contests separate",
+    "winMethods": "Professional career MMA classification from official UFC athlete page",
+    "performance": "Official UFC athlete profile rates for tracked fights, primarily UFC; not all professional career fights. Source does not guarantee same denominator as UFCStats.",
+    "dates": "Event local dates; regional UFC sites may show following day",
+    "strikeAccuracy": "Calculated percentage from official significant landed/attempted totals, rounded to 2 decimal places"
+  },
+  "verification": "Official UFC profiles retrieved through search index because direct page fetches were blocked. Secondary Sherdog used to corroborate records, DOB, latest results and resolve official narrative/card discrepancies.",
+  "fighters": [
+    {
+      "name": "Alex Pereira",
+      "nickname": "Poatan",
+      "division": "Heavyweight",
+      "status": "Active",
+      "dob": "1987-07-07",
+      "heightIn": 76,
+      "reachIn": 79,
+      "record": {
+        "wins": 13,
+        "losses": 4,
+        "draws": 0,
+        "noContests": 0
+      },
+      "careerWinMethods": {
+        "koTko": 11,
+        "submission": 0,
+        "decision": 2
+      },
+      "ufcStats": {
+        "slpm": 5.01,
+        "strikeAccuracyPct": 61.3556338028169,
+        "tdAvgPer15Min": 0.11,
+        "tdDefensePct": 80
+      },
+      "lastFights": [
+        [
+          "2026-06-14",
+          "Ciryl Gane",
+          "L",
+          "KO/TKO · R2"
+        ],
+        [
+          "2025-10-04",
+          "Magomed Ankalaev",
+          "W",
+          "KO/TKO · R1"
+        ],
+        [
+          "2025-03-08",
+          "Magomed Ankalaev",
+          "L",
+          "DEC · R5"
+        ],
+        [
+          "2024-10-05",
+          "Khalil Rountree Jr.",
+          "W",
+          "KO/TKO · R4"
+        ],
+        [
+          "2024-06-29",
+          "Jiří Procházka",
+          "W",
+          "KO/TKO · R2"
+        ]
+      ],
+      "sources": [
+        "https://www.ufc.com/athlete/alex-pereira"
+      ],
+      "notes": [
+        "Result cards on the UFC page mislabel some losses as wins; results here follow the athlete biography narrative. Height/reach are UFC listings."
+      ]
+    },
+    {
+      "name": "Israel Adesanya",
+      "nickname": "The Last Stylebender",
+      "division": "Middleweight",
+      "status": "Active",
+      "dob": "1989-07-22",
+      "heightIn": 76,
+      "reachIn": 80,
+      "record": {
+        "wins": 24,
+        "losses": 6,
+        "draws": 0,
+        "noContests": 0
+      },
+      "careerWinMethods": {
+        "koTko": 16,
+        "submission": 0,
+        "decision": 8
+      },
+      "ufcStats": {
+        "slpm": 4.03,
+        "strikeAccuracyPct": 48.37877671333825,
+        "tdAvgPer15Min": 0.05,
+        "tdDefensePct": 76
+      },
+      "lastFights": [
+        [
+          "2026-03-28",
+          "Joe Pyfer",
+          "L",
+          "KO/TKO · R2"
+        ],
+        [
+          "2025-02-01",
+          "Nassourdine Imavov",
+          "L",
+          "KO/TKO · R2"
+        ],
+        [
+          "2024-08-17",
+          "Dricus du Plessis",
+          "L",
+          "SUB · R4"
+        ],
+        [
+          "2023-09-09",
+          "Sean Strickland",
+          "L",
+          "DEC · R5"
+        ],
+        [
+          "2023-04-08",
+          "Alex Pereira",
+          "W",
+          "KO/TKO · R2"
+        ]
+      ],
+      "sources": [
+        "https://www.ufc.com/athlete/israel-adesanya",
+        "https://www.tapology.com/fightcenter/fighters/79163-israel-adesanya"
+      ],
+      "notes": [
+        "Result cards on UFC page mislabel losses as wins; results here follow official biography narrative."
+      ]
+    },
+    {
+      "name": "Jon Jones",
+      "nickname": "Bones",
+      "division": "Heavyweight",
+      "status": "Active (official UFC profile)",
+      "dob": "1987-07-19",
+      "heightIn": 76,
+      "reachIn": 84.5,
+      "record": {
+        "wins": 28,
+        "losses": 1,
+        "draws": 0,
+        "noContests": 1
+      },
+      "careerWinMethods": {
+        "koTko": 11,
+        "submission": 7,
+        "decision": 10
+      },
+      "ufcStats": {
+        "slpm": 4.38,
+        "strikeAccuracyPct": 58.91,
+        "strikeAccuracyCalculation": "1564/2655*100",
+        "tdAvgPer15Min": 1.89,
+        "tdDefensePct": 95
+      },
+      "lastFights": [
+        [
+          "2024-11-16",
+          "Stipe Miocic",
+          "W",
+          "KO/TKO"
+        ],
+        [
+          "2023-03-04",
+          "Ciryl Gane",
+          "W",
+          "SUB"
+        ],
+        [
+          "2020-02-08",
+          "Dominick Reyes",
+          "W",
+          "DEC unanimous"
+        ],
+        [
+          "2019-07-06",
+          "Thiago Santos",
+          "W",
+          "DEC split"
+        ],
+        [
+          "2019-03-02",
+          "Anthony Smith",
+          "W",
+          "DEC unanimous"
+        ]
+      ],
+      "sources": [
+        "https://www.ufc.com/athlete/jon-jones",
+        "https://www.sherdog.com/fighter/Jon-Jones-27944",
+        "https://www.ufc.com/news/ufc-statement-light-heavyweight-title"
+      ],
+      "notes": [
+        "Roster status is profile label, not a claim of a scheduled bout."
+      ]
+    },
+    {
+      "name": "Georges St-Pierre",
+      "nickname": "Rush",
+      "division": "Middleweight (last UFC division)",
+      "status": "Retired",
+      "dob": "1981-05-19",
+      "heightIn": 70.5,
+      "reachIn": 76,
+      "record": {
+        "wins": 26,
+        "losses": 2,
+        "draws": 0,
+        "noContests": 0
+      },
+      "careerWinMethods": {
+        "koTko": 8,
+        "submission": 6,
+        "decision": 12
+      },
+      "ufcStats": {
+        "slpm": 3.78,
+        "strikeAccuracyPct": 53.62,
+        "strikeAccuracyCalculation": "1393/2598*100",
+        "tdAvgPer15Min": 4.16,
+        "tdDefensePct": 84
+      },
+      "lastFights": [
+        [
+          "2017-11-04",
+          "Michael Bisping",
+          "W",
+          "SUB"
+        ],
+        [
+          "2013-11-16",
+          "Johny Hendricks",
+          "W",
+          "DEC split"
+        ],
+        [
+          "2013-03-16",
+          "Nick Diaz",
+          "W",
+          "DEC unanimous"
+        ]
+      ],
+      "sources": [
+        "https://www.ufc.com/athlete/georges-st-pierre",
+        "https://www.sherdog.com/fighter/Georges-St-Pierre-3500",
+        "https://www.ufc.com/news/ufc-and-canadian-icon-georges-st-pierre-retires"
+      ],
+      "notes": [
+        "Height is official UFC listing; Sherdog lists 70 inches and FOX lists 71 inches.",
+        "Official UFC statistical totals and TD defense differ from UFCStats-derived secondary pages; keep one coherent official source."
+      ]
+    },
+    {
+      "name": "Anderson Silva",
+      "nickname": "The Spider",
+      "division": "Middleweight",
+      "status": "Retired from MMA October 2020 (official UFC Hall of Fame article)",
+      "dob": "1975-04-14",
+      "heightIn": 74,
+      "reachIn": 77,
+      "record": {
+        "wins": 34,
+        "losses": 11,
+        "draws": 0,
+        "noContests": 1
+      },
+      "careerWinMethods": {
+        "koTko": 22,
+        "submission": 4,
+        "decision": 8
+      },
+      "ufcStats": {
+        "slpm": 3.05,
+        "strikeAccuracyPct": 61.52,
+        "strikeAccuracyCalculation": "1282/2084*100",
+        "tdAvgPer15Min": 0.5,
+        "tdDefensePct": 69
+      },
+      "lastFights": [
+        [
+          "2020-10-31",
+          "Uriah Hall",
+          "L",
+          "KO/TKO"
+        ],
+        [
+          "2019-05-11",
+          "Jared Cannonier",
+          "L",
+          "KO/TKO"
+        ],
+        [
+          "2019-02-09",
+          "Israel Adesanya",
+          "L",
+          "DEC unanimous"
+        ],
+        [
+          "2017-02-11",
+          "Derek Brunson",
+          "W",
+          "DEC unanimous"
+        ],
+        [
+          "2016-07-09",
+          "Daniel Cormier",
+          "L",
+          "DEC unanimous"
+        ]
+      ],
+      "sources": [
+        "https://www.ufc.com/athlete/anderson-silva?id=&page=1",
+        "https://www.sherdog.com/fighter/Anderson-Silva-1356",
+        "https://www.ufc.com/news/anderson-silva-named-ufc-hall-fame-class-2023-middleweight-brazil"
+      ],
+      "notes": [
+        "Official UFC profile result cards incorrectly show some losses as wins; fight results above follow Sherdog and official Hall of Fame narrative.",
+        "UFC categorizes career wins 22 KO/4 SUB/8 DEC; Sherdog categorizes 23 KO/3 SUB/8 DEC. This is source classification discrepancy, not a changed record.",
+        "Record and results are MMA only; exclude later boxing bouts."
+      ]
+    },
+    {
+      "name": "Khabib Nurmagomedov",
+      "nickname": "The Eagle",
+      "division": "Lightweight",
+      "status": "Retired",
+      "dob": "1988-09-20",
+      "heightIn": 70,
+      "reachIn": 70,
+      "record": {
+        "wins": 29,
+        "losses": 0,
+        "draws": 0,
+        "noContests": 0
+      },
+      "careerWinMethods": {
+        "koTko": 8,
+        "submission": 11,
+        "decision": 10
+      },
+      "ufcStats": {
+        "slpm": 4.1,
+        "strikeAccuracyPct": 48.82,
+        "strikeAccuracyCalculation": "705/1444*100",
+        "tdAvgPer15Min": 5.32,
+        "tdDefensePct": 85
+      },
+      "lastFights": [
+        [
+          "2020-10-24",
+          "Justin Gaethje",
+          "W",
+          "SUB"
+        ],
+        [
+          "2019-09-07",
+          "Dustin Poirier",
+          "W",
+          "SUB"
+        ],
+        [
+          "2018-10-06",
+          "Conor McGregor",
+          "W",
+          "SUB"
+        ],
+        [
+          "2018-04-07",
+          "Al Iaquinta",
+          "W",
+          "DEC unanimous"
+        ],
+        [
+          "2017-12-30",
+          "Edson Barboza",
+          "W",
+          "DEC unanimous"
+        ]
+      ],
+      "sources": [
+        "https://www.ufc.com/athlete/khabib-nurmagomedov?id=&page=1",
+        "https://www.sherdog.com/fighter/Khabib-Nurmagomedov-56035",
+        "https://www.ufc.com/hof/khabib-nurmagomedov-hall-of-fame"
+      ],
+      "notes": [
+        "Official UFC narrative has erroneous Poirier date 10/7/19; corrected from Sherdog to 2019-09-07.",
+        "Official profile has stale/inconsistent win-streak and UFC record prose. Do not use those lines."
+      ]
+    },
+    {
+      "name": "Islam Makhachev",
+      "nickname": null,
+      "division": "Welterweight",
+      "status": "Active",
+      "dob": "1991-10-27",
+      "heightIn": 70,
+      "reachIn": 70.5,
+      "record": {
+        "wins": 29,
+        "losses": 1,
+        "draws": 0,
+        "noContests": 0
+      },
+      "careerWinMethods": {
+        "koTko": 5,
+        "submission": 13,
+        "decision": 11
+      },
+      "ufcStats": {
+        "slpm": 2.27,
+        "strikeAccuracyPct": 58.01,
+        "strikeAccuracyCalculation": "507/874*100",
+        "tdAvgPer15Min": 3.22,
+        "tdDefensePct": 91
+      },
+      "lastFights": [
+        [
+          "2026-08-15",
+          "Ian Machado Garry",
+          "W",
+          "DEC unanimous"
+        ],
+        [
+          "2025-11-15",
+          "Jack Della Maddalena",
+          "W",
+          "DEC unanimous"
+        ],
+        [
+          "2025-01-18",
+          "Renato Moicano",
+          "W",
+          "SUB"
+        ],
+        [
+          "2024-06-01",
+          "Dustin Poirier",
+          "W",
+          "SUB"
+        ],
+        [
+          "2023-10-21",
+          "Alexander Volkanovski",
+          "W",
+          "KO/TKO"
+        ]
+      ],
+      "sources": [
+        "https://www.ufc.com/athlete/islam-makhachev",
+        "https://www.sherdog.com/fighter/Islam-Makhachev-76836"
+      ],
+      "notes": [
+        "Official UFC page updated through August 2026. Stats are snapshot values from that page."
+      ]
+    },
+    {
+      "name": "Ilia Topuria",
+      "nickname": "El Matador",
+      "division": "Lightweight",
+      "status": "Active",
+      "dob": "1997-01-21",
+      "heightIn": 67,
+      "reachIn": 69,
+      "record": {
+        "wins": 17,
+        "losses": 1,
+        "draws": 0,
+        "noContests": 0
+      },
+      "careerWinMethods": {
+        "koTko": 7,
+        "submission": 8,
+        "decision": 2
+      },
+      "ufcStats": {
+        "slpm": 4.82,
+        "strikeAccuracyPct": 50.1,
+        "strikeAccuracyCalculation": "502/1002*100",
+        "tdAvgPer15Min": 1.73,
+        "tdDefensePct": 95
+      },
+      "lastFights": [
+        [
+          "2026-06-14",
+          "Justin Gaethje",
+          "L",
+          "KO/TKO corner stoppage"
+        ],
+        [
+          "2025-06-28",
+          "Charles Oliveira",
+          "W",
+          "KO/TKO"
+        ],
+        [
+          "2024-10-26",
+          "Max Holloway",
+          "W",
+          "KO/TKO"
+        ],
+        [
+          "2024-02-17",
+          "Alexander Volkanovski",
+          "W",
+          "KO/TKO"
+        ],
+        [
+          "2023-06-24",
+          "Josh Emmett",
+          "W",
+          "DEC unanimous"
+        ]
+      ],
+      "sources": [
+        "https://www.ufc.com/athlete/ilia-topuria?language_content_entity=ko&page=1",
+        "https://www.sherdog.com/fighter/Ilia-Topuria-202445",
+        "https://www.ufc.com/athlete/justin-gaethje?page=4",
+        "https://www.ufc.com/news/ilia-topuria-shackles-off-ufc-317"
+      ],
+      "notes": [
+        "Latest result card incorrectly says Win, but official biography prose, Gaethje profile, career record, and Sherdog all confirm loss.",
+        "Holloway narrative lists erroneous Oct 30 2024; corrected to Oct 26 2024 from official news/photo date and Korean official result card.",
+        "Official UFC height is 67 inches; Sherdog lists 68 inches."
+      ]
+    }
+  ]
+}

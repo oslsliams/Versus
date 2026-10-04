@@ -1,0 +1,10 @@
+import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core';
+export const users = sqliteTable('users', {id:text('id').primaryKey(),username:text('username').notNull(),favorites:text('favorites').notNull(),created:integer('created').notNull(),active:integer('active').notNull()});
+export const predictions = sqliteTable('predictions', {user:text('user').notNull(),matchup:text('matchup').notNull(),winner:text('winner').notNull(),method:text('method').notNull(),round:integer('round').notNull(),created:integer('created').notNull()},t=>[primaryKey({columns:[t.user,t.matchup]})]);
+export const votes = sqliteTable('votes', {user:text('user').notNull(),matchup:text('matchup').notNull(),competitor:text('competitor').notNull()},t=>[primaryKey({columns:[t.user,t.matchup]})]);
+export const debates = sqliteTable('debates', {id:text('id').primaryKey(),user:text('user').notNull(),matchup:text('matchup').notNull(),body:text('body').notNull(),parent:text('parent'),created:integer('created').notNull()});
+export const likes = sqliteTable('likes', {user:text('user').notNull(),debate:text('debate').notNull()},t=>[primaryKey({columns:[t.user,t.debate]})]);
+export const follows = sqliteTable('follows', {user:text('user').notNull(),target:text('target').notNull()},t=>[primaryKey({columns:[t.user,t.target]})]);
+export const rankings = sqliteTable('rankings', {id:text('id').primaryKey(),user:text('user').notNull(),title:text('title').notNull(),category:text('category').notNull(),competitors:text('competitors').notNull(),created:integer('created').notNull()});
+// Personal demo settlements, never real event outcomes.
+export const results = sqliteTable('results', {user:text('user').notNull(),matchup:text('matchup').notNull(),winner:text('winner').notNull(),method:text('method').notNull(),round:integer('round').notNull(),created:integer('created').notNull()},t=>[primaryKey({columns:[t.user,t.matchup]})]);
