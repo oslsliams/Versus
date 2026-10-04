@@ -2,7 +2,7 @@
 
 Sign up and sign in with a unique username and password. No email is requested. Existing accounts use their current username and unchanged password; account IDs, sessions, owner privileges, badges, coins, and saved activity remain intact. Usernames ignore capitalization and surrounding spaces. Changing a username changes the name used to sign in.
 
-The legacy auth_accounts.email column remains for compatibility with existing account records and the pinned owner bootstrap. New records use an internal account ID placeholder, never a supplied email. This field is not shown or used to authenticate. Passwords remain salted hashes and sign-in is remembered with a 30-day HttpOnly session cookie. Password reset remains unavailable.
+The legacy auth_accounts.email column remains for compatibility with existing account records and the pinned owner bootstrap. New records use an internal account ID placeholder, never a supplied email. This field is not shown or used to authenticate. Passwords remain salted hashes and sign-in is remembered with a 30-day HttpOnly session cookie. Password changes and recovery codes are now available in [Account settings](ACCOUNT-SETTINGS.md).
 
 Arena Coins can purchase nine permanent cosmetics: three avatar frames (150–300 coins), three profile banners (250–500), and three profile titles (100–350). Users buy each item once, then equip or restore the free defaults whenever they like. Cosmetics provide no scoring advantage. No real money, random rewards, paid account badges, trades, or withdrawals are involved.
 

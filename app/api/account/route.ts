@@ -1,5 +1,6 @@
 import {database} from '../../../db/store';
 import {cloudflareAccounts, digest, equalHash, passwordHash, randomToken, sessionCookie, sessionLifetime} from '../../../lib/account-auth';
+import {recoveryCode,recoveryDigest} from '../../../lib/account-security';
 import {z} from 'zod';
 export const dynamic='force-dynamic';
 const input=z.discriminatedUnion('action',[
@@ -27,24 +28,25 @@ export async function POST(request:Request){
       const counter=await db.prepare('INSERT INTO auth_limits (key,count,expires) VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count=CASE WHEN expires<=? THEN 1 ELSE count+1 END, expires=CASE WHEN expires<=? THEN excluded.expires ELSE expires END RETURNING count').bind(key,now+15*60*1000,now,now).first<{count:number}>();
       if(counter&&counter.count>10)return Response.json({error:'Too many attempts. Try again in 15 minutes.'},{status:429,headers:{'Retry-After':'900'}});
     }
-    let id:string;
+    let id:string;let version=0;let verifiedHash='';let code:string|undefined;
     if(p.action==='register'){
 
 
-      if(await db.prepare('SELECT id FROM users WHERE lower(trim(username))=lower(trim(?))').bind(p.username).first())return Response.json({error:'That username is already taken. Choose another.'},{status:409});id=crypto.randomUUID();const salt=randomToken();const hash=await passwordHash(p.password,salt);
+      if(await db.prepare('SELECT id FROM users WHERE lower(trim(username))=lower(trim(?))').bind(p.username).first())return Response.json({error:'That username is already taken. Choose another.'},{status:409});id=crypto.randomUUID();const salt=randomToken();const hash=await passwordHash(p.password,salt);verifiedHash=hash;code=recoveryCode();
       await db.batch([
-        db.prepare('INSERT INTO auth_accounts (id,email,password_hash,salt,created) VALUES (?,?,?,?,?)').bind(id,'account:'+id,hash,salt,now),
+        db.prepare('INSERT INTO auth_accounts (id,email,password_hash,salt,created,recovery_hash,recovery_created) VALUES (?,?,?,?,?,?,?)').bind(id,'account:'+id,hash,salt,now,await recoveryDigest(code),now),
         db.prepare('INSERT INTO users (id,username,favorites,created,active) VALUES (?,?,?,?,?)').bind(id,p.username,'["mma"]',now,now)
       ]);
     }else{
-      const account=await db.prepare('SELECT a.id,a.password_hash,a.salt FROM auth_accounts a JOIN users u ON u.id=a.id WHERE lower(trim(u.username))=lower(trim(?))').bind(p.username).first<{id:string;password_hash:string;salt:string}>();
+      const account=await db.prepare('SELECT a.id,a.password_hash,a.salt,a.password_version FROM auth_accounts a JOIN users u ON u.id=a.id WHERE lower(trim(u.username))=lower(trim(?))').bind(p.username).first<{id:string;password_hash:string;salt:string;password_version:number}>();
       const hash=await passwordHash(p.password,account?.salt??'missing-account-dummy-salt');
-      if(!account||!equalHash(hash,account.password_hash))return Response.json({error:'Username or password is incorrect.'},{status:401});id=account.id;
+      if(!account||!equalHash(hash,account.password_hash))return Response.json({error:'Username or password is incorrect.'},{status:401});id=account.id;version=account.password_version;verifiedHash=account.password_hash;
     }
-    const token=randomToken();await db.batch([
+    const token=randomToken();const issued=await db.batch([
       db.prepare('DELETE FROM auth_sessions WHERE expires<?').bind(now),
-      db.prepare('INSERT INTO auth_sessions (token_hash,user,expires) VALUES (?,?,?)').bind(await digest(token),id,now+sessionLifetime*1000)
+      db.prepare('INSERT INTO auth_sessions (token_hash,user,expires,version) SELECT ?,id,?,password_version FROM auth_accounts WHERE id=? AND password_version=? AND password_hash=?').bind(await digest(token),now+sessionLifetime*1000,id,version,verifiedHash)
     ]);
-    return Response.json({ok:true},{headers:{'Set-Cookie':cookie(request,token,sessionLifetime),'Cache-Control':'no-store'}});
+    if(!issued[1].meta.changes)return Response.json({error:'Account security changed. Try signing in again.'},{status:409});
+    return Response.json({ok:true,recoveryCode:code},{headers:{'Set-Cookie':cookie(request,token,sessionLifetime),'Cache-Control':'no-store'}});
   }catch(e){if(String(e).includes('users_username_unique')||String(e).includes('users.username'))return Response.json({error:'That username is already taken. Choose another.'},{status:409}); return Response.json({error:'Could not complete sign-in. Please try again.'},{status:503}); }
 }

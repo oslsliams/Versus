@@ -27,9 +27,9 @@ Open http://127.0.0.1:5174. Existing Sites preview remains available through the
 
 ## Accounts
 
-Visitors can browse publicly. Email/password accounts let each person save predictions, rankings, and arguments and sign in on another device. Passwords use salted PBKDF2-SHA256 hashes; only hashes of opaque session cookies are stored. Cookies are HttpOnly, SameSite=Lax, Secure on HTTPS, expire in 30 days, and are revoked on sign-out. Login and registration are rate limited. Cloudflare identity never trusts the former Sites user headers.
+Visitors can browse publicly. Username/password accounts let each person save predictions, rankings, and arguments and sign in on another device. Passwords use salted PBKDF2-SHA256 hashes; only hashes of opaque session cookies are stored. Cookies are HttpOnly, SameSite=Lax, Secure on HTTPS, expire in 30 days, and are revoked on sign-out. Login and registration are rate limited. Cloudflare identity never trusts the former Sites user headers.
 
-Email verification and password recovery are not implemented yet. Use a password you can keep safely. Simulated results remain private; no public verified prediction leaderboard is available yet.
+Accounts do not require email. Password recovery uses private recovery codes saved at signup or in Account settings; see [Account settings and recovery](ACCOUNT-SETTINGS.md). Simulated results remain private; no public verified prediction leaderboard is available yet.
 
 ## Hosting configuration
 

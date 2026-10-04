@@ -1,0 +1,3 @@
+import {database} from '../../../../db/store';
+export const dynamic='force-dynamic';
+export async function GET(req:Request,{params}:{params:Promise<{id:string}>}){const{id}=await params;if(!/^[a-f0-9-]{36}$/i.test(id))return new Response('Not found',{status:404});const row=await database().prepare('SELECT data,mime FROM profile_photos WHERE user=?').bind(id).first<{data:number[];mime:string}>();if(!row)return new Response('Not found',{status:404});return new Response(new Uint8Array(row.data),{headers:{'Content-Type':row.mime,'X-Content-Type-Options':'nosniff','Cache-Control':'public, max-age=3600'}});}
