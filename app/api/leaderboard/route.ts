@@ -1,0 +1,5 @@
+import {database} from '../../../db/store';
+import {getAccountUser} from '../../../lib/account-auth';
+import {leaderboardQuery} from '../../../lib/coin-leaderboard';
+export const dynamic='force-dynamic';
+export async function GET(req:Request){try{const account=await getAccountUser(),friends=new URL(req.url).searchParams.get('scope')==='friends';if(friends&&!account)return Response.json({error:'Sign in to see your friends leaderboard.'},{status:401});const db=database(),query=leaderboardQuery(friends),id=account?.userId??'';const [leaders,me,total]=await Promise.all([db.prepare(query+'SELECT * FROM ranked ORDER BY balance DESC,lower(username),id LIMIT 50').bind(id).all(),db.prepare(query+'SELECT * FROM ranked WHERE id=?1').bind(id).first(),db.prepare(query+'SELECT COUNT(*) AS n FROM ranked').bind(id).first<{n:number}>()]);return Response.json({leaders:leaders.results,me,total:total?.n??0,updatedAt:Date.now()},{headers:{'Cache-Control':'no-store'}});}catch{return Response.json({error:'Could not load the coin leaderboard.'},{status:503});}}
