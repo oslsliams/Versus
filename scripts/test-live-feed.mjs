@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {parseScoreboard,parseNews,parseFightStats,safeESPN} from '../lib/live-feed.ts';
+assert.equal(safeESPN('https://www.espn.com/mma/'),'https://www.espn.com/mma/');for(const url of ['javascript:alert(1)','https://espn.com.evil.example','http://www.espn.com/mma/'])assert.equal(safeESPN(url),'');
+const fighter=(id,name,winner)=>({id,athlete:{displayName:name},winner,statistics:[],records:[{type:'total',summary:'10-1'}]});
+const events=parseScoreboard({events:[{id:'100',name:'A sourced event',date:'2026-10-03T20:00Z',status:{type:{state:'in',description:'Live'}},links:[{rel:['summary'],href:'https://www.espn.com/mma/'}],competitions:[{id:'200',type:{abbreviation:'Welterweight'},status:{period:2,displayClock:'2:10',type:{state:'in',shortDetail:'Round 2'}},competitors:[fighter('1','Fighter A',false),fighter('2','Fighter B',false)]}]}]});
+assert.equal(events[0].state,'in');assert.equal(events[0].bouts[0].round,2);assert.equal(events[0].bouts[0].fighters[0].stats.length,0);assert.equal(events[0].bouts[0].fighters[0].winner,false);
+assert.throws(()=>parseScoreboard({oops:[]}));assert.deepEqual(parseScoreboard({events:[]}),[]);
+const news=parseNews('<rss><channel><item><title><![CDATA[UFC &amp; MMA]]></title><link>https://www.espn.com/mma/story</link><pubDate>Sun, 04 Oct 2026 21:00:00 GMT</pubDate></item><item><title>Unsafe</title><link>javascript:bad</link></item></channel></rss>');assert.equal(news.length,1);assert.equal(news[0].title,'UFC & MMA');
+const stats=parseFightStats({splits:{categories:[{stats:[{name:'sigStrikesLanded',displayValue:'32'},{name:'timeInControl',displayValue:'1:20'}]}]}});assert.equal(stats.rows.find(s=>s.label==='Significant strikes landed').value,'32');assert.equal(stats.rows.find(s=>s.label==='Control time').value,'1:20');assert.equal(stats.rows.find(s=>s.label==='Takedowns landed').value,null);assert.throws(()=>parseFightStats({}));
+console.log('PASS: trusted outbound links, live states and clocks, attributed headlines, supplied stats, and unavailable values never filled with fabricated zeros.');

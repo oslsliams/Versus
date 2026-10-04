@@ -10,6 +10,7 @@ import "./social.css";
 import "./moments.css";
 import "./polish.css";
 import "./archive.css";
+import "./qol.css";
 
 export const metadata: Metadata = {
   title: "VERSUS — The UFC Fighter Archive",
