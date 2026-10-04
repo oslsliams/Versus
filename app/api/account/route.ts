@@ -31,7 +31,7 @@ export async function POST(request:Request){
     if(p.action==='register'){
       const existing=await db.prepare('SELECT id FROM auth_accounts WHERE email=?').bind(p.email).first();
       if(existing)return Response.json({error:'Unable to create this account. Try signing in instead.'},{status:400});
-      id=crypto.randomUUID();const salt=randomToken();const hash=await passwordHash(p.password,salt);
+      if(await db.prepare('SELECT id FROM users WHERE lower(trim(username))=lower(trim(?))').bind(p.username).first())return Response.json({error:'That username is already taken. Choose another.'},{status:409});id=crypto.randomUUID();const salt=randomToken();const hash=await passwordHash(p.password,salt);
       await db.batch([
         db.prepare('INSERT INTO auth_accounts (id,email,password_hash,salt,created) VALUES (?,?,?,?,?)').bind(id,p.email,hash,salt,now),
         db.prepare('INSERT INTO users (id,username,favorites,created,active) VALUES (?,?,?,?,?)').bind(id,p.username,'["mma"]',now,now)
@@ -46,5 +46,5 @@ export async function POST(request:Request){
       db.prepare('INSERT INTO auth_sessions (token_hash,user,expires) VALUES (?,?,?)').bind(await digest(token),id,now+sessionLifetime*1000)
     ]);
     return Response.json({ok:true},{headers:{'Set-Cookie':cookie(request,token,sessionLifetime),'Cache-Control':'no-store'}});
-  }catch{ return Response.json({error:'Could not complete sign-in. Please try again.'},{status:503}); }
+  }catch(e){if(String(e).includes('users_username_unique')||String(e).includes('users.username'))return Response.json({error:'That username is already taken. Choose another.'},{status:409}); return Response.json({error:'Could not complete sign-in. Please try again.'},{status:503}); }
 }

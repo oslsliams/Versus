@@ -3,6 +3,7 @@ import "./globals.css";
 import "./upgrade.css";
 import "./fantasy.css";
 import "./coins.css";
+import "./owner.css";
 
 export const metadata: Metadata = {
   title: "VERSUS — Compare. Debate. Predict.",
