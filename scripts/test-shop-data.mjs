@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {readFileSync} from 'node:fs';import {shopItems} from '../lib/shop.ts';
+const db=new DatabaseSync(':memory:');db.exec('PRAGMA foreign_keys=ON;CREATE TABLE auth_accounts(id TEXT PRIMARY KEY,created INTEGER);');
+for(const file of ['0005_arena_coins.sql','0008_shop.sql'])db.exec(readFileSync(new URL('../cloudflare-migrations/'+file,import.meta.url),'utf8'));
+db.prepare('INSERT INTO auth_accounts VALUES(?,?)').run('buyer',1);
+for(const item of shopItems)assert.deepEqual({...db.prepare('SELECT id,kind,value,price FROM shop_items WHERE id=?').get(item.id)},{id:item.id,kind:item.kind,value:item.value,price:item.price});
+const buy=(item,price)=>db.prepare('INSERT INTO shop_purchases VALUES(?,?,?,?)').run('buyer',item,price,2);
+assert.throws(()=>buy('frame-gold',1));assert.equal(db.prepare("SELECT balance FROM coin_wallets WHERE user='buyer'").get().balance,1000);
+assert.throws(()=>db.prepare("INSERT INTO shop_equipped(user,frame) VALUES('buyer','gold')").run());
+buy('frame-gold',300);buy('banner-aurora',400);buy('title-cage',200);assert.equal(db.prepare("SELECT balance FROM coin_wallets WHERE user='buyer'").get().balance,100);
+assert.throws(()=>buy('frame-gold',300));assert.throws(()=>buy('banner-gold',500));assert.equal(db.prepare("SELECT balance FROM coin_wallets WHERE user='buyer'").get().balance,100);
+db.prepare("INSERT INTO shop_equipped VALUES('buyer','gold','aurora','cage')").run();assert.throws(()=>db.prepare("UPDATE shop_equipped SET frame='ice' WHERE user='buyer'").run());db.prepare("UPDATE shop_equipped SET frame='classic' WHERE user='buyer'").run();
+assert.equal(db.prepare("SELECT COUNT(*) AS n FROM shop_purchases WHERE user='buyer'").get().n,3);assert.equal(db.prepare("SELECT SUM(delta) AS n FROM coin_ledger WHERE user='buyer'").get().n,100);
+console.log('PASS: catalog prices, atomic debit, one purchase per item, insufficient funds, owned-only equipment, free reset, and ledger integrity.');

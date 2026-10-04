@@ -3,8 +3,8 @@ import {cloudflareAccounts, digest, equalHash, passwordHash, randomToken, sessio
 import {z} from 'zod';
 export const dynamic='force-dynamic';
 const input=z.discriminatedUnion('action',[
-  z.object({action:z.literal('register'),email:z.string().trim().email().max(254).transform(x=>x.toLowerCase()),password:z.string().min(12).max(128),username:z.string().trim().min(3).max(24).regex(/^[a-zA-Z0-9_ ]+$/)}),
-  z.object({action:z.literal('login'),email:z.string().email().max(254).transform(x=>x.toLowerCase().trim()),password:z.string().min(1).max(128)}),
+  z.object({action:z.literal('register'),password:z.string().min(12).max(128),username:z.string().trim().min(3).max(24).regex(/^[a-zA-Z0-9_ ]+$/)}),
+  z.object({action:z.literal('login'),username:z.string().trim().min(3).max(24).regex(/^[a-zA-Z0-9_ ]+$/),password:z.string().min(1).max(128)}),
   z.object({action:z.literal('logout')})
 ]);
 function cookie(request:Request, value:string, seconds:number){return `${sessionCookie}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${seconds}${new URL(request.url).protocol==='https:'?'; Secure':''}`;}
@@ -21,25 +21,25 @@ export async function POST(request:Request){
       if(token&&/^[a-f0-9]{64}$/.test(token))await db.prepare('DELETE FROM auth_sessions WHERE token_hash=?').bind(await digest(token)).run();
       return Response.json({ok:true},{headers:{'Set-Cookie':cookie(request,'',0),'Cache-Control':'no-store'}});
     }
-    // Atomic counters limit both a trusted Cloudflare client IP and the account email.
-    const keys=await Promise.all(['ip:'+(request.headers.get('cf-connecting-ip')??'local-preview'),'email:'+p.email].map(digest));
+    // Atomic counters limit both a trusted Cloudflare client IP and the normalized username.
+    const keys=await Promise.all(['ip:'+(request.headers.get('cf-connecting-ip')??'local-preview'),'username:'+p.username.toLowerCase()].map(digest));
     for(const key of keys){
       const counter=await db.prepare('INSERT INTO auth_limits (key,count,expires) VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count=CASE WHEN expires<=? THEN 1 ELSE count+1 END, expires=CASE WHEN expires<=? THEN excluded.expires ELSE expires END RETURNING count').bind(key,now+15*60*1000,now,now).first<{count:number}>();
       if(counter&&counter.count>10)return Response.json({error:'Too many attempts. Try again in 15 minutes.'},{status:429,headers:{'Retry-After':'900'}});
     }
     let id:string;
     if(p.action==='register'){
-      const existing=await db.prepare('SELECT id FROM auth_accounts WHERE email=?').bind(p.email).first();
-      if(existing)return Response.json({error:'Unable to create this account. Try signing in instead.'},{status:400});
+
+
       if(await db.prepare('SELECT id FROM users WHERE lower(trim(username))=lower(trim(?))').bind(p.username).first())return Response.json({error:'That username is already taken. Choose another.'},{status:409});id=crypto.randomUUID();const salt=randomToken();const hash=await passwordHash(p.password,salt);
       await db.batch([
-        db.prepare('INSERT INTO auth_accounts (id,email,password_hash,salt,created) VALUES (?,?,?,?,?)').bind(id,p.email,hash,salt,now),
+        db.prepare('INSERT INTO auth_accounts (id,email,password_hash,salt,created) VALUES (?,?,?,?,?)').bind(id,'account:'+id,hash,salt,now),
         db.prepare('INSERT INTO users (id,username,favorites,created,active) VALUES (?,?,?,?,?)').bind(id,p.username,'["mma"]',now,now)
       ]);
     }else{
-      const account=await db.prepare('SELECT id,password_hash,salt FROM auth_accounts WHERE email=?').bind(p.email).first<{id:string;password_hash:string;salt:string}>();
+      const account=await db.prepare('SELECT a.id,a.password_hash,a.salt FROM auth_accounts a JOIN users u ON u.id=a.id WHERE lower(trim(u.username))=lower(trim(?))').bind(p.username).first<{id:string;password_hash:string;salt:string}>();
       const hash=await passwordHash(p.password,account?.salt??'missing-account-dummy-salt');
-      if(!account||!equalHash(hash,account.password_hash))return Response.json({error:'Email or password is incorrect.'},{status:401});id=account.id;
+      if(!account||!equalHash(hash,account.password_hash))return Response.json({error:'Username or password is incorrect.'},{status:401});id=account.id;
     }
     const token=randomToken();await db.batch([
       db.prepare('DELETE FROM auth_sessions WHERE expires<?').bind(now),

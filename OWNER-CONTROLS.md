@@ -6,7 +6,7 @@ Ownership is bound once to an immutable authenticated account ID. Bootstrap requ
 
 Migration 0007 reserves usernames across both signup and profile edits using a case-insensitive, trimmed database uniqueness constraint. If legacy duplicate names exist, the oldest account keeps the name and later duplicates receive a suffix; their account IDs and saved data stay intact. Profile display names remain editable when the new name is available.
 
-Account passwords remain salted password hashes. An HttpOnly, SameSite session cookie remembers sign-in for 30 days, with Secure set over HTTPS. Signing out revokes the session. Returning users can sign in with the same email and password to retrieve saved profiles, predictions, rankings, fantasy teams, and coin wallets. No password is saved in browser local storage. Password reset and email verification are not implemented.
+Account passwords remain salted password hashes. An HttpOnly, SameSite session cookie remembers sign-in for 30 days, with Secure set over HTTPS. Signing out revokes the session. Returning users can sign in with the current username and password to retrieve saved profiles, predictions, rankings, fantasy teams, and coin wallets. No password is saved in browser local storage. Password reset and email verification are not implemented.
 
 Cloudflare deployment applies migrations 0006 and 0007. After deployment, sign in to the already-existing owner account and open Profile to initialize the owner binding and view the control room.
 

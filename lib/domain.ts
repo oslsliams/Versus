@@ -1,7 +1,7 @@
 export type Category={id:string;name:string;short:string;attributes:string[];weights:Record<string,number>;enabled:boolean};
 export type Competitor={id:string;category:string;name:string;nickname:string;country:string;flag:string;age:number|null;height:number|null;reach:number|null;division:string;record:[number,number,number];nc:number;status:string;source:string;snapshot:string;notes:string[];rating?:{elo:number;peakElo:number;ufcBouts:number;ufcWins:number;titleWins:number;base:number;confidence:number;snapshot:string;version:string};attributes:Record<string,number>;methods:[number|null,number|null,number|null];recent:string[];stats:{landed:number|null;accuracy:number|null;takedowns:number|null;defense:number|null};color:string;initials:string};
 export type Matchup={id:string;a:string;b:string;title:string;category:string;label:string;rounds:number;votes:[number,number];scheduled:string};
-export type Person={id:string;username:string;favorites:string;created:number;active:number;bio?:string;location?:string;avatar?:string;accent?:string;favoriteFighter?:string;earlySupporter?:number;approved?:number;owner?:number};
+export type Person={id:string;username:string;favorites:string;created:number;active:number;bio?:string;location?:string;avatar?:string;accent?:string;favoriteFighter?:string;earlySupporter?:number;approved?:number;owner?:number;profileFrame?:string;profileBanner?:string;profileTitle?:string};
 export type Prediction={user:string;matchup:string;winner:string;method:string;round:number;created:number};
 export type Debate={id:string;user:string;matchup:string;body:string;parent:string|null;created:number};
 export type Ranking={id:string;user:string;title:string;category:string;competitors:string;created:number};

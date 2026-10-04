@@ -1,6 +1,6 @@
 # Arena Coins
 
-Arena Coins are free virtual points used to back a fighter on upcoming fantasy cards. They have no cash value and cannot be bought, transferred, withdrawn, or redeemed. Fantasy lineup draft credits remain separate; drafting does not require coins.
+Arena Coins are free virtual points used to back a fighter on upcoming fantasy cards. They have no cash value and cannot be bought with money, transferred, or withdrawn. They can be spent on permanent profile cosmetics in the Shop. Fantasy lineup draft credits remain separate; drafting does not require coins.
 
 ## Accounts and rewards
 

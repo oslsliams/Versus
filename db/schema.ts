@@ -18,3 +18,6 @@ export const ownerBinding = sqliteTable('owner_binding',{singleton:integer('sing
 export const accountPrivileges = sqliteTable('account_privileges',{user:text('user').primaryKey(),approved:integer('approved').notNull().default(0)});
 export const ownerSettings = sqliteTable('owner_settings',{key:text('key').primaryKey(),value:text('value').notNull()});
 export const ownerAudit = sqliteTable('owner_audit',{id:text('id').primaryKey(),owner:text('owner').notNull(),action:text('action').notNull(),target:text('target').notNull(),detail:text('detail').notNull(),amount:integer('amount'),created:integer('created').notNull()});
+export const shopCatalog = sqliteTable('shop_items',{id:text('id').primaryKey(),kind:text('kind').notNull(),value:text('value').notNull(),price:integer('price').notNull()});
+export const shopPurchases = sqliteTable('shop_purchases',{user:text('user').notNull(),item:text('item').notNull(),price:integer('price').notNull(),created:integer('created').notNull()},t=>[primaryKey({columns:[t.user,t.item]})]);
+export const shopEquipped = sqliteTable('shop_equipped',{user:text('user').primaryKey(),frame:text('frame').notNull().default('classic'),banner:text('banner').notNull().default('arena'),title:text('title').notNull().default('contender')});
