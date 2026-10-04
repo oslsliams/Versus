@@ -27,10 +27,20 @@ rounds or winner probabilities.
 The historical fighter archive remains a dated, sourced snapshot. Editorial
 collectibles, shop items, and career photographs are reviewed additions; they
 are not generated automatically from news headlines. This release includes
-318 Moments covering 300 of 500 fighters (60%), with every new Legacy card
+396 Moments, including a card for all 176 distinct officially ranked fighters
+checked October 4, 2026. The archive contains 565 fighters. Every new Legacy card
 linked to a recorded UFCStats win. Existing collectible IDs and prices remain
 unchanged. The collection loads 24 cards at a time to keep browsing responsive.
 
-Required deployment: build, apply 0016_legacy_moments.sql with the other existing
+The profile card showcase stores up to six different owned cards, in user-selected
+order, with a public caption. Foreign keys enforce ownership even if an API check
+is bypassed. Public profile responses include only showcased cards; the full
+inventory is returned only to its owner. Clearing or reordering a showcase does
+not change card ownership, a Moments lineup, or any wallet balance. Profiles also
+have section links, completion hints, username copying, favorite-fighter links,
+short contribution previews, and collapsible owner tools.
+
+Required deployment: build, apply 0016_legacy_moments.sql, 0017_ranked_moments.sql,
+and 0018_profile_showcase.sql with the other existing
 migrations, deploy the worker including its scheduled handler and cron trigger.
 The existing GitHub-connected Cloudflare build already performs these steps.
