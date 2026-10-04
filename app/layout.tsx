@@ -8,6 +8,7 @@ import "./shop.css";
 import "./settings.css";
 import "./social.css";
 import "./moments.css";
+import "./polish.css";
 
 export const metadata: Metadata = {
   title: "VERSUS — Compare. Debate. Predict.",

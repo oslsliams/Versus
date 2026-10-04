@@ -4,22 +4,23 @@ import {z} from 'zod';
 export const dynamic='force-dynamic';
 const cache={'Cache-Control':'no-store'};
 export async function GET(){try{
-  if(!await ownerIdentity())return Response.json({error:'Owner access required.'},{status:403,headers:cache});
-  const db=database();const [stats,users,debates,audit,announcement]=await Promise.all([
+  const owner=await ownerIdentity();if(!owner)return Response.json({error:'Owner access required.'},{status:403,headers:cache});
+  const db=database();const [stats,users,debates,audit,announcement,self]=await Promise.all([
     db.prepare('SELECT (SELECT COUNT(*) FROM auth_accounts) AS accounts,(SELECT COUNT(*) FROM fantasy_lineups) AS lineups,(SELECT COUNT(*) FROM coin_picks) AS picks,(SELECT COALESCE(SUM(balance),0) FROM coin_wallets) AS coins').first(),
     db.prepare('SELECT u.id,u.username,COALESCE(p.approved,0) AS approved,CASE WHEN o.user IS NOT NULL THEN 1 ELSE 0 END AS owner,w.balance FROM users u JOIN auth_accounts a ON a.id=u.id LEFT JOIN account_privileges p ON p.user=u.id LEFT JOIN owner_binding o ON o.user=u.id LEFT JOIN coin_wallets w ON w.user=u.id ORDER BY u.created DESC LIMIT 1000').all(),
     db.prepare('SELECT d.id,d.body,d.hidden,d.created,u.username FROM debates d JOIN users u ON u.id=d.user ORDER BY d.created DESC LIMIT 100').all(),
     db.prepare('SELECT a.action,a.target,a.detail,a.created,u.username FROM owner_audit a LEFT JOIN users u ON u.id=a.target ORDER BY a.created DESC LIMIT 30').all(),
-    db.prepare("SELECT value FROM owner_settings WHERE key='announcement'").first<{value:string}>()
-  ]);return Response.json({stats,users:users.results,debates:debates.results,audit:audit.results,announcement:announcement?.value??''},{headers:cache});
+    db.prepare("SELECT value FROM owner_settings WHERE key='announcement'").first<{value:string}>(),
+    db.prepare('SELECT u.id,u.username,w.balance FROM users u JOIN coin_wallets w ON w.user=u.id WHERE u.id=?').bind(owner).first()
+  ]);return Response.json({self,stats,users:users.results,debates:debates.results,audit:audit.results,announcement:announcement?.value??''},{headers:cache});
 }catch(e){console.error('Owner read:',e);return Response.json({error:'Could not load owner controls.'},{status:503,headers:cache});}}
 const action=z.discriminatedUnion('action',[
-  z.object({action:z.literal('approve'),target:z.string().uuid(),approved:z.boolean()}),
-  z.object({action:z.literal('coins'),target:z.string().uuid(),amount:z.number().int().min(1).max(10000)}),
-  z.object({action:z.literal('announcement'),text:z.string().trim().max(240)}),
-  z.object({action:z.literal('moderate'),target:z.string().uuid(),hidden:z.boolean()})
+  z.object({action:z.literal('approve'),target:z.string().uuid(),approved:z.boolean()}).strict(),
+  z.object({action:z.literal('coins'),target:z.string().uuid(),amount:z.number().int().min(1).max(10000)}).strict(),
+  z.object({action:z.literal('announcement'),text:z.string().trim().max(240)}).strict(),
+  z.object({action:z.literal('moderate'),target:z.string().uuid(),hidden:z.boolean()}).strict()
 ]);
-const input=z.object({requestId:z.string().uuid(),command:action});
+const input=z.object({requestId:z.string().uuid(),command:action}).strict();
 export async function POST(req:Request){
   if(req.headers.get('origin')!==new URL(req.url).origin)return Response.json({error:'Invalid request origin.'},{status:403});
   try{
