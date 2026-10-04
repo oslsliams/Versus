@@ -1,0 +1,17 @@
+'use client';
+import {useId,useState} from 'react';
+import {Upload,Trash2} from 'lucide-react';
+import type {Person} from '../lib/domain';
+import {useArena} from './arena-context';
+
+export default function ProfilePhotoUpload({person,disabled=false,onChange,onBusyChange}:{person:Person;disabled?:boolean;onChange?:(avatar:string)=>void;onBusyChange?:(busy:boolean)=>void}){
+  const id=useId();const{reload}=useArena();const[busy,setBusy]=useState(false);const[message,setMessage]=useState('');const[error,setError]=useState('');
+  function pending(value:boolean){setBusy(value);onBusyChange?.(value);}
+  async function upload(file:File){pending(true);setError('');setMessage('');try{
+    if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024)throw Error('Choose a JPG, PNG, or WebP under 5 MB.');
+    let bitmap:ImageBitmap;try{bitmap=await createImageBitmap(file);}catch{throw Error('This image could not be opened. Try another JPG, PNG, or WebP.');}
+    try{const canvas=document.createElement('canvas');canvas.width=512;canvas.height=512;const ctx=canvas.getContext('2d');if(!ctx)throw Error('Could not prepare your photo.');const side=Math.min(bitmap.width,bitmap.height);ctx.fillStyle='#18212b';ctx.fillRect(0,0,512,512);ctx.drawImage(bitmap,(bitmap.width-side)/2,(bitmap.height-side)/2,side,side,0,0,512,512);const blob=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(Error('Could not prepare your photo.')),'image/jpeg',0.82));if(blob.size>200000)throw Error('Choose a simpler or smaller photo.');const response=await fetch('/api/profile-photo',{method:'POST',headers:{'Content-Type':'image/jpeg'},body:blob});const result=await response.json() as {error?:string};if(!response.ok)throw Error(result.error??'Could not upload photo.');await reload();onChange?.('upload');setMessage('Your new profile picture is saved.');}finally{bitmap.close();}
+  }catch(e){setError(e instanceof Error?e.message:'Could not upload photo.');}finally{pending(false);}}
+  async function remove(){pending(true);setError('');setMessage('');try{const response=await fetch('/api/profile-photo',{method:'DELETE'});const result=await response.json() as {error?:string};if(!response.ok)throw Error(result.error??'Could not remove photo.');await reload();onChange?.(person.avatar==='upload'?'initials':person.avatar??'initials');setMessage('Uploaded photo removed.');}catch(e){setError(e instanceof Error?e.message:'Could not remove photo.');}finally{pending(false);}}
+  return <div className="profile-upload"><input id={id} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" disabled={disabled||busy} onChange={e=>{const file=e.target.files?.[0];e.target.value='';if(file)void upload(file);}}/><label htmlFor={id} className={`button outline upload-file-button ${disabled||busy?'is-disabled':''}`}><Upload size={17}/>{busy?'Saving photo…':person.photoUpdated?'Change uploaded photo':'Upload your own photo'}</label><small>Choose a file from your phone or computer. JPG, PNG, or WebP · Up to 5 MB. Automatically cropped to a square.</small>{!!person.photoUpdated&&<button type="button" className="text-link upload-remove" disabled={disabled||busy} onClick={remove}><Trash2 size={14}/> Remove uploaded photo</button>}{error&&<p className="account-error" role="alert">{error}</p>}{message&&<p className="upload-success" role="status">{message}</p>}</div>;
+}

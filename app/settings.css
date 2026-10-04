@@ -2,3 +2,5 @@
 
 .account-scene.account-recovery{grid-template-columns:1fr;max-width:600px;margin-inline:auto}.account-recovery .account-panel{min-width:0}.account-recovery .logo{display:inline-block;margin-bottom:32px}
 .account-scene.account-recovery .account-panel{max-width:none}.account-scene.account-recovery .account-panel>.logo{font-size:32px;color:#fff;margin:0 0 12px}
+
+.profile-upload{margin-top:22px;max-width:100%}.profile-upload small{display:block;color:#a3b3c4;font-size:12px;line-height:1.65;margin:12px 0}.upload-file-button{display:inline-flex!important;cursor:pointer;text-align:center;font-size:13px!important}.upload-file-button.is-disabled{opacity:.5;pointer-events:none}.profile-upload:focus-within .upload-file-button{outline:2px solid #c5f74f;outline-offset:3px}.profile-upload .upload-remove{display:flex;align-items:center;gap:7px;background:none;border:none;font-size:12px}.profile-upload .upload-success{color:#c5f74f;font-size:13px}.profile-customizer .profile-upload{max-width:300px}
