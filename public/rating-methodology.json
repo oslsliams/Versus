@@ -1,0 +1,16 @@
+{
+  "version": "ufc-opponent-elo-v2",
+  "snapshot": "2026-07-07",
+  "source": "https://github.com/rfordatascience/tidytuesday/tree/main/data/2026/2026-07-07",
+  "bouts": 8736,
+  "initialElo": 1500,
+  "k": 32,
+  "mode": "career-peak",
+  "formula": "70 + (peakElo - 1500) / 9 + min(5, UFC title wins * 0.35), capped 52–98; attribute-weight adjustment up to 3 points",
+  "limitations": [
+    "No cross-era or weight-class calibration",
+    "Archived results through June 27, 2026",
+    "Not official UFC rankings or calibrated win probabilities",
+    "Attributes shrink toward neutral 50 by UFC bouts / (UFC bouts + 8)"
+  ]
+}

@@ -3,7 +3,7 @@ import {cloudflareAccounts, digest, equalHash, passwordHash, randomToken, sessio
 import {z} from 'zod';
 export const dynamic='force-dynamic';
 const input=z.discriminatedUnion('action',[
-  z.object({action:z.literal('register'),email:z.string().email().max(254).transform(x=>x.toLowerCase().trim()),password:z.string().min(12).max(128),username:z.string().trim().min(3).max(24).regex(/^[a-zA-Z0-9_ ]+$/)}),
+  z.object({action:z.literal('register'),email:z.string().trim().email().max(254).transform(x=>x.toLowerCase()),password:z.string().min(12).max(128),username:z.string().trim().min(3).max(24).regex(/^[a-zA-Z0-9_ ]+$/)}),
   z.object({action:z.literal('login'),email:z.string().email().max(254).transform(x=>x.toLowerCase().trim()),password:z.string().min(1).max(128)}),
   z.object({action:z.literal('logout')})
 ]);
