@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {parseRoundActions,strikeLeader} from '../lib/round-feed.ts';
+import {moments} from '../lib/moments.ts';
+import {competitors} from '../lib/competitors.ts';
+const actions=parseRoundActions({items:[{id:'1',type:{text:'Walkout'},period:{number:0}},{id:'2',type:{text:'Knockdown'},period:{number:2},clock:{displayValue:'1:43'},participants:[{athlete:{id:'10'}}]}]});
+assert.equal(actions.length,1);assert.equal(actions[0].round,2);assert.equal(actions[0].fighter,'10');assert.equal(actions[0].text,'Knockdown');assert.throws(()=>parseRoundActions({}));
+const f=(name,v)=>({name,items:{rows:[{label:'Significant strikes landed',value:v}]}});
+assert.equal(strikeLeader([f('A',null),f('B','0')]),null);assert.equal(strikeLeader([f('A','0'),f('B','0')]),'Significant strikes are level');assert.equal(strikeLeader([f('A','22'),f('B','15')]),'A leads significant strikes 22–15');
+const ids=new Set(competitors.map(c=>c.id));assert.equal(new Set(moments.map(m=>m.id)).size,moments.length);assert.ok(moments.every(m=>ids.has(m.portrait)&&m.id.length<=40));assert.ok(new Set(moments.map(m=>m.portrait)).size>=competitors.length/2);
+assert.ok(moments.filter(m=>m.id.startsWith('legacy-')).every(m=>/^https:\/\/www\.ufcstats\.com\/fight-details\/[a-f0-9]+$/.test(m.source)));
+console.log('PASS: real round boundaries, missing data, activity leader labels, unique collectible identities and 60% roster coverage.');

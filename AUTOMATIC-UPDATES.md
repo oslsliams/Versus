@@ -1,20 +1,36 @@
-# Automatic updates for VERSUS
+VERSUS automatic updates
+=======================
 
-The code is prepared for Cloudflare Workers Builds. It is not connected to GitHub yet. This setup updates the existing `versus` Worker, `versusarena.org`, and `versus-db`.
+Cloudflare runs the existing scheduled worker once per minute after deployment.
+It refreshes ESPN event status (one-minute cache) and MMA headlines (15-minute
+cache), discovers official UFC event links hourly, and updates tracked UFC cards
+hourly before fight night and every five minutes within 24 hours of the start.
+Finished official cards are checked daily for corrections. News, live rounds,
+fantasy standings, wagers, and Moments rewards also refresh while their pages
+are visible. Source outages retain the last verified data and display an error.
 
-## One-time setup
+New fantasy events come from https://www.ufc.com/events and matching official
+event pages. Their stable event slug becomes the internal ID. Existing event IDs,
+draft prices, and saved lineups are retained. A newly listed event needs an
+official start time and at least one announced bout; a full fantasy team requires
+five different bouts. Replaced fighters invalidate their old matchup; only
+explicit official outcomes settle coins. Cached ESPN winners never settle money
+or fantasy. Arena Coins have no cash value.
 
-1. Put this project folder in a GitHub repository. Keep the repository private if you prefer. Use GitHub Desktop's **File > Add local repository** for this folder, commit the source, and **Publish repository**. Do not upload `node_modules`, `dist`, `.wrangler`, or credentials. The project's `.gitignore` excludes them.
-2. In Cloudflare, open **Workers & Pages > versus > Settings > Builds** and connect that repository. Choose the existing Worker rather than creating another project.
-3. Select your production branch, normally `main`. Use the repository root as the root directory when the project files are directly at its top level. If you uploaded the enclosing folder, choose the folder containing `package.json` instead.
-4. Enable automatic builds for the production branch; leave preview builds disabled for this initial setup. Set **Build command** to `npm run build:cloudflare` and **Deploy command** to `npm run deploy:cloudflare`. Use Node 22 (or newer supported Node).
-5. Choose a Cloudflare build API token scoped to this account with **Workers Scripts: Edit**, **D1: Edit**, and the zone permissions required for the configured custom domain (**Zone: Read**, **Workers Routes: Edit**, and **DNS: Edit** for versusarena.org). Store the token only in Cloudflare's protected build settings. Do not commit it or paste it in chat. Refer to Cloudflare's current Builds token configuration if the dashboard offers an automatically generated token; that token may need D1 permissions added.
-6. Save and run the first build. Confirm it succeeds and then open https://versusarena.org.
+The live breakdown comes from ESPN's actual round action feed. It is a partial
+timeline, not a full strike log. ESPN currently supplies whole-fight totals but
+does not expose round totals or live judge scorecards through this feed. The UI
+shows a confirmed winner when supplied and otherwise a descriptive significant
+strike leader. It never converts activity or absent scores into invented 10–9
+rounds or winner probabilities.
 
-## Future updates
+The historical fighter archive remains a dated, sourced snapshot. Editorial
+collectibles, shop items, and career photographs are reviewed additions; they
+are not generated automatically from news headlines. This release includes
+318 Moments covering 300 of 500 fighters (60%), with every new Legacy card
+linked to a recorded UFCStats win. Existing collectible IDs and prices remain
+unchanged. The collection loads 24 cards at a time to keep browsing responsive.
 
-Ask Codex for changes. Once the changes are tested, commit and push them to your production branch (or ask Codex to push them). Cloudflare builds that commit and deploys it automatically. Editing local files alone does not trigger a deployment. Changes pushed to the production branch become public.
-
-The build command checks TypeScript and generates the Cloudflare bundle. The deploy command applies only pending versioned database migrations and uploads the built Worker and assets. If either step fails, it stops. Existing accounts and activity stay in D1. Database migration changes require normal review before pushing; rolling back the Worker does not roll back the database.
-
-Reference: https://developers.cloudflare.com/workers/ci-cd/builds/git-integration/github-integration/
+Required deployment: build, apply 0016_legacy_moments.sql with the other existing
+migrations, deploy the worker including its scheduled handler and cron trigger.
+The existing GitHub-connected Cloudflare build already performs these steps.

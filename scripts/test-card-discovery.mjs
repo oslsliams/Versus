@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import ts from 'typescript';
+let source=readFileSync(new URL('../lib/card-discovery.ts',import.meta.url),'utf8');
+for(const name of ['live-feed','fantasy'])source=source.replace(`'./${name}'`,JSON.stringify(new URL(`../lib/${name}.ts`,import.meta.url).href));
+const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
+const {parseEventLinks,eventName}=await import('data:text/javascript;base64,'+Buffer.from(compiled).toString('base64'));
+assert.deepEqual(parseEventLinks('<a href="/event/ufc-333">Card</a><a href="/event/ufc-333">Again</a><a href="https://evil.example/event/card">No</a><a href="/event/../../secrets">No</a>'),['https://www.ufc.com/event/ufc-333']);
+assert.throws(()=>parseEventLinks('<p>No official links</p>'));
+assert.equal(parseEventLinks(Array.from({length:30},(_,i)=>`<a href="/event/ufc-${i}">Card</a>`).join('')).length,16);
+assert.equal(eventName('<title>UFC 333 | UFC</title>','ufc-333'),'UFC 333');
+console.log('PASS: announced-card discovery uses unique official UFC paths, bounded work, trusted names, and handles missing schedules.');
