@@ -27,7 +27,31 @@ export const shopItems:ShopItem[]=[
 {"id":"title-ringside","kind":"title","value":"ringside","name":"Ringside Regular","price":125,"description":"A familiar face on fight night."},
 {"id":"title-southpaw","kind":"title","value":"southpaw","name":"Southpaw Society","price":175,"description":"A different angle on the sport."},
 {"id":"title-five-rounds","kind":"title","value":"five-rounds","name":"Five Round Fan","price":225,"description":"Here from the opener to the final horn."},
-{"id":"title-archivist","kind":"title","value":"archivist","name":"The Archivist","price":300,"description":"Keep the history alive."}
+{"id":"title-archivist","kind":"title","value":"archivist","name":"The Archivist","price":300,"description":"Keep the history alive."},
+{"id":"frame-ruby","kind":"frame","value":"ruby","name":"Ruby Champion","price":450,"description":"A ruby champion finish for your avatar."},
+{"id":"frame-emerald","kind":"frame","value":"emerald","name":"Emerald Elite","price":450,"description":"A emerald elite finish for your avatar."},
+{"id":"frame-platinum","kind":"frame","value":"platinum","name":"Platinum Legacy","price":650,"description":"A platinum legacy finish for your avatar."},
+{"id":"frame-copper","kind":"frame","value":"copper","name":"Copper Corner","price":175,"description":"A copper corner finish for your avatar."},
+{"id":"frame-cyan","kind":"frame","value":"cyan","name":"Cyber Cage","price":350,"description":"A cyber cage finish for your avatar."},
+{"id":"frame-lavender","kind":"frame","value":"lavender","name":"Lavender Haze","price":275,"description":"A lavender haze finish for your avatar."},
+{"id":"frame-black-gold","kind":"frame","value":"black-gold","name":"Black & Gold","price":550,"description":"A black & gold finish for your avatar."},
+{"id":"frame-rainbow","kind":"frame","value":"rainbow","name":"Spectrum","price":600,"description":"A spectrum finish for your avatar."},
+{"id":"banner-storm","kind":"banner","value":"storm","name":"Storm Warning","price":400,"description":"Give your profile the storm warning treatment."},
+{"id":"banner-lava","kind":"banner","value":"lava","name":"Volcanic Arena","price":450,"description":"Give your profile the volcanic arena treatment."},
+{"id":"banner-royal","kind":"banner","value":"royal","name":"Royal Corner","price":500,"description":"Give your profile the royal corner treatment."},
+{"id":"banner-grid","kind":"banner","value":"grid","name":"Neon Grid","price":375,"description":"Give your profile the neon grid treatment."},
+{"id":"banner-desert","kind":"banner","value":"desert","name":"Desert Camp","price":250,"description":"Give your profile the desert camp treatment."},
+{"id":"banner-rose","kind":"banner","value":"rose","name":"Rose Spotlight","price":325,"description":"Give your profile the rose spotlight treatment."},
+{"id":"banner-frost","kind":"banner","value":"frost","name":"Frozen Octagon","price":375,"description":"Give your profile the frozen octagon treatment."},
+{"id":"banner-retro","kind":"banner","value":"retro","name":"Retro Fight Poster","price":300,"description":"Give your profile the retro fight poster treatment."},
+{"id":"title-tape","kind":"title","value":"tape","name":"Tape Study Club","price":175,"description":"Wear Tape Study Club as your profile title."},
+{"id":"title-legend","kind":"title","value":"legend","name":"Legacy Collector","price":300,"description":"Wear Legacy Collector as your profile title."},
+{"id":"title-grappler","kind":"title","value":"grappler","name":"Grappling Department","price":200,"description":"Wear Grappling Department as your profile title."},
+{"id":"title-striker","kind":"title","value":"striker","name":"Stand & Bang","price":200,"description":"Wear Stand & Bang as your profile title."},
+{"id":"title-underdog","kind":"title","value":"underdog","name":"Underdog Energy","price":150,"description":"Wear Underdog Energy as your profile title."},
+{"id":"title-champion","kind":"title","value":"champion","name":"Championship Mindset","price":400,"description":"Wear Championship Mindset as your profile title."},
+{"id":"title-veteran","kind":"title","value":"veteran","name":"Octagon Veteran","price":350,"description":"Wear Octagon Veteran as your profile title."},
+{"id":"title-night","kind":"title","value":"night","name":"Fight Night Fixture","price":125,"description":"Wear Fight Night Fixture as your profile title."}
 ];
 export const styleDefaults={frame:'classic',banner:'arena',title:'contender'};
 export const profileTitle=(value?:string)=>shopItems.find(i=>i.kind==='title'&&i.value===value)?.name??'VERSUS CONTENDER';

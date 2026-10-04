@@ -8,7 +8,7 @@ const source=readFileSync(new URL('../lib/moments-store.ts',import.meta.url),'ut
 const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
 const {settleMoments}=await import('data:text/javascript;base64,'+Buffer.from(compiled).toString('base64'));
 const sql=new DatabaseSync(':memory:');sql.exec('PRAGMA foreign_keys=ON;CREATE TABLE auth_accounts(id TEXT PRIMARY KEY,created INTEGER);CREATE TABLE fantasy_cards(id TEXT PRIMARY KEY,data TEXT);');
-for(const name of ['0005_arena_coins.sql','0008_shop.sql','0011_moments.sql','0012_archive_catalog.sql'])sql.exec(readFileSync(new URL('../cloudflare-migrations/'+name,import.meta.url),'utf8'));
+for(const name of ['0005_arena_coins.sql','0008_shop.sql','0011_moments.sql','0012_archive_catalog.sql','0014_more_collectibles.sql'])sql.exec(readFileSync(new URL('../cloudflare-migrations/'+name,import.meta.url),'utf8'));
 for(const id of ['a','b'])sql.prepare('INSERT INTO auth_accounts VALUES(?,?)').run(id,1);
 const balance=id=>sql.prepare('SELECT balance FROM coin_wallets WHERE user=?').get(id).balance;
 const buy=(user,id,price=moments.find(m=>m.id===id).price)=>sql.prepare('INSERT INTO moment_purchases VALUES(?,?,?,?)').run(user,id,price,1);

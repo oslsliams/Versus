@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';import {DatabaseSync} from 'node:sqlite';import {readFileSync} from 'node:fs';import {shopItems} from '../lib/shop.ts';
 const db=new DatabaseSync(':memory:');db.exec('PRAGMA foreign_keys=ON;CREATE TABLE auth_accounts(id TEXT PRIMARY KEY,created INTEGER);CREATE TABLE fantasy_cards(id TEXT PRIMARY KEY,data TEXT);');
-for(const file of ['0005_arena_coins.sql','0008_shop.sql','0011_moments.sql','0012_archive_catalog.sql'])db.exec(readFileSync(new URL('../cloudflare-migrations/'+file,import.meta.url),'utf8'));
+for(const file of ['0005_arena_coins.sql','0008_shop.sql','0011_moments.sql','0012_archive_catalog.sql','0014_more_collectibles.sql'])db.exec(readFileSync(new URL('../cloudflare-migrations/'+file,import.meta.url),'utf8'));
 db.prepare('INSERT INTO auth_accounts VALUES(?,?)').run('buyer',1);
 for(const item of shopItems)assert.deepEqual({...db.prepare('SELECT id,kind,value,price FROM shop_items WHERE id=?').get(item.id)},{id:item.id,kind:item.kind,value:item.value,price:item.price});
 const buy=(item,price)=>db.prepare('INSERT INTO shop_purchases VALUES(?,?,?,?)').run('buyer',item,price,2);

@@ -5,12 +5,13 @@ import {competitor} from '../lib/competitors';
 import {overall} from '../lib/ratings';
 import {sampleDebates,samplePeople} from '../lib/community';
 import {useArena} from './arena-context';
-import {useState} from 'react';
+import {useState,useEffect} from 'react';
+import scenes from '../lib/fighter-scenes.json';
 import photos from '../lib/fighter-photos.json';
 import UserAvatar from './user-avatar';
 import {ApprovedBadge} from './owner-panel';
 const photoMap:Record<string,{url:string}>=photos;
-export function Portrait({c,large=false}:{c:Competitor;large?:boolean}){const[failed,setFailed]=useState(false);const image=photoMap[c.id]?.url;return <div className={`portrait ${large?'large':''} ${image&&!failed?'has-photo':''}`} style={{'--fighter-color':c.color} as React.CSSProperties}>{image&&!failed?<img src={image} alt={c.name} loading={large?'eager':'lazy'} decoding="async" onError={()=>setFailed(true)}/>:<><UserRound strokeWidth={.8}/><span className="portrait-initials">{c.initials}</span></>}<span className="portrait-label">{c.flag}</span></div>}
+export function Portrait({c,large=false,feature=false}:{c:Competitor;large?:boolean;feature?:boolean}){const[failed,setFailed]=useState(0);useEffect(()=>setFailed(0),[c.id,feature]);const scene=(scenes as Record<string,{url:string}[]>)[c.id]?.[0]?.url;const candidates=(feature?[scene,photoMap[c.id]?.url]:[photoMap[c.id]?.url]).filter((url):url is string=>!!url);const image=candidates[failed];return <div className={`portrait ${large?'large':''} ${image?'has-photo':''} ${feature?'feature-portrait':''} ${scene&&image===scene?'scene-photo':''} art-${c.id.length%4}`} style={{'--fighter-color':c.color} as React.CSSProperties}>{image?<img src={image} alt={c.name} loading={large?'eager':'lazy'} decoding="async" onError={()=>setFailed(n=>n+1)}/>:<><UserRound strokeWidth={.8}/><span className="portrait-initials">{c.initials}</span></>}<span className="portrait-label">{c.flag}</span></div>}
 export function Head({eyebrow,title,subtitle,children}:{eyebrow:string;title:string;subtitle?:string;children?:React.ReactNode}){return <div className="page-head"><div><div className="eyebrow">{eyebrow}</div><h1>{title}</h1>{subtitle&&<p>{subtitle}</p>}</div>{children}</div>}
 export function Empty({title,body,children}:{title:string;body:string;children?:React.ReactNode}){return <div className="empty"><Target/><h3>{title}</h3><p>{body}</p>{children}</div>}
 export function Score({c}:{c:Competitor}){return <span className="score" style={{color:c.color}}>{overall(c).toFixed(1)}</span>}

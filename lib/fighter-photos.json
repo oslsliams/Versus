@@ -1198,5 +1198,1793 @@
     "source": "https://www.ufc.com/hof/bas-rutten-hall-of-fame",
     "name": "Bas Rutten",
     "checked": "2026-10-03"
+  },
+  "sara-mcmann": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2022-06/MCMANN_SARA_L_03-26.png?itok=2xmwujVX",
+    "source": "https://www.ufc.com/athlete/sara-mcmann",
+    "name": "Sara McMann",
+    "checked": "2026-10-04"
+  },
+  "amanda-ribas": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-07/RIBAS_AMANDA_L_07-26.png?itok=3dIeCYcl",
+    "source": "https://www.ufc.com/athlete/amanda-ribas",
+    "name": "Amanda Ribas",
+    "checked": "2026-10-04"
+  },
+  "bethe-correia": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2021-10/67465%252Fprofile-galery%252Ffullbodyleft-picture%252FCORREIA_BETHE_L_10-02.png?itok=d7bYhcGV",
+    "source": "https://www.ufc.com/athlete/bethe-correia",
+    "name": "Bethe Correia",
+    "checked": "2026-10-04"
+  },
+  "montana-de-la-rosa": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-02/DE_LA_ROSA_MONTANA_L_03-01.png?itok=GZ87f_5M",
+    "source": "https://www.ufc.com/athlete/montana-de-la-rosa",
+    "name": "Montana De La Rosa",
+    "checked": "2026-10-04"
+  },
+  "marion-reneau": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2021-07/68708%252Fprofile-galery%252Ffullbodyleft-picture%252FRENEAU_MARION_L_07-17.png?itok=45VZY-3u",
+    "source": "https://www.ufc.com/athlete/marion-reneau",
+    "name": "Marion Reneau",
+    "checked": "2026-10-04"
+  },
+  "norma-dumont": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-09/DUMONT_NORMA_L_09-26.png?itok=dgRHr2qv",
+    "source": "https://www.ufc.com/athlete/norma-dumont",
+    "name": "Norma Dumont",
+    "checked": "2026-10-04"
+  },
+  "claudia-gadelha": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2020-11/67642%252Fprofile-galery%252Ffullbodyleft-picture%252FGADELHA_CLAUDIA_L_07-06.png?itok=ByvKEkK-",
+    "source": "https://www.ufc.com/athlete/claudia-gadelha",
+    "name": "Claudia Gadelha",
+    "checked": "2026-10-04"
+  },
+  "jennifer-maia": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2023-03/MAIA_JENNIFER_L_03-18.png?itok=ngRTqNSj",
+    "source": "https://www.ufc.com/athlete/jennifer-maia",
+    "name": "Jennifer Maia",
+    "checked": "2026-10-04"
+  },
+  "sam-hughes": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-02/HUGHES_SAM_L_02-24.png?itok=g_WvjE_Z",
+    "source": "https://www.ufc.com/athlete/sam-hughes",
+    "name": "Sam Hughes",
+    "checked": "2026-10-04"
+  },
+  "miranda-maverick": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-01/5/MAVERICK_MIRANDA_L_12-14.png?itok=Og7YekgL",
+    "source": "https://www.ufc.com/athlete/miranda-maverick",
+    "name": "Miranda Maverick",
+    "checked": "2026-10-04"
+  },
+  "roxanne-modafferi": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2021-09/69156%252Fprofile-galery%252Ffullbodyleft-picture%252FMODAFFERI_ROXANNE_L_09-25.png?itok=Ju248get",
+    "source": "https://www.ufc.com/athlete/roxanne-modafferi",
+    "name": "Roxanne Modafferi",
+    "checked": "2026-10-04"
+  },
+  "jasmine-jasudavicius": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-04/JASUDAVICIUS_JASMINE_L_04-18.png?itok=brWuBeJK",
+    "source": "https://www.ufc.com/athlete/jasmine-jasudavicius",
+    "name": "Jasmine Jasudavicius",
+    "checked": "2026-10-04"
+  },
+  "maryna-moroz": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-03/MOROZ_MARYNA_L_08-19.png?itok=NQTS2etI",
+    "source": "https://www.ufc.com/athlete/maryna-moroz",
+    "name": "Maryna Moroz",
+    "checked": "2026-10-04"
+  },
+  "polyana-viana": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2023-08/VIANA_POLYANA_L_08-12.png?itok=BH04lqi0",
+    "source": "https://www.ufc.com/athlete/polyana-viana",
+    "name": "Polyana Viana",
+    "checked": "2026-10-04"
+  },
+  "yana-santos": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-05/SANTOS_YANA_L_05-03.png?itok=pkR_XniN",
+    "source": "https://www.ufc.com/athlete/yana-santos",
+    "name": "Yana Santos",
+    "checked": "2026-10-04"
+  },
+  "pannie-kianzad": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-08/KIANZAD_PANNIE_L_08-10.png?itok=FtTs5JoV",
+    "source": "https://www.ufc.com/athlete/pannie-kianzad",
+    "name": "Pannie Kianzad",
+    "checked": "2026-10-04"
+  },
+  "lina-lansberg": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2023-02/LANSBERG_LINA_L_02-18.png?itok=E9s84PKe",
+    "source": "https://www.ufc.com/athlete/lina-lansberg",
+    "name": "Lina Lansberg",
+    "checked": "2026-10-04"
+  },
+  "loma-lookboonmee": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/LOOKBOONMEE_LOMA_L_05-30.png?itok=0i4vxYP3",
+    "source": "https://www.ufc.com/athlete/loma-lookboonmee",
+    "name": "Loma Lookboonmee",
+    "checked": "2026-10-04"
+  },
+  "lucie-pudilova": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2023-11/PUDILOVA_LUCIE_L_11-18.png?itok=HKM6Vztw",
+    "source": "https://www.ufc.com/athlete/lucie-pudilova",
+    "name": "Lucie Pudilova",
+    "checked": "2026-10-04"
+  },
+  "tabatha-ricci": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-07/RICCI_TABATHA_L_07-18.png?itok=aQRpl-cY",
+    "source": "https://www.ufc.com/athlete/tabatha-ricci",
+    "name": "Tabatha Ricci",
+    "checked": "2026-10-04"
+  },
+  "risu-kamushiyu": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2018-10/CARMOUCHE_LIZ_L_0.png?VersionId=y7Lr5Uzdovy4aC3ACQ_iEnQrcs2Jn44y&amp;itok=oHGXDIyt",
+    "source": "https://www.ufc.com/athlete/risu-kamushiyu",
+    "name": "Liz Carmouche",
+    "checked": "2026-10-04"
+  },
+  "luana-carolina": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-07/CAROLINA_LUANA_L_07-20.png?itok=wgswNfoS",
+    "source": "https://www.ufc.com/athlete/luana-carolina",
+    "name": "Luana Carolina",
+    "checked": "2026-10-04"
+  },
+  "ashley-yoder": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2021-08/YODER_ASHLEY_L_07-31.png?itok=3Z-e9BVI",
+    "source": "https://www.ufc.com/athlete/ashley-yoder",
+    "name": "Ashley Yoder",
+    "checked": "2026-10-04"
+  },
+  "germaine-de-randamie": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-10/2/DE_RANDAMIE_GERMAINE_L_04-06.png?itok=tedriVjA",
+    "source": "https://www.ufc.com/athlete/germaine-de-randamie",
+    "name": "Germaine de Randamie",
+    "checked": "2026-10-04"
+  },
+  "vanessa-demopoulos": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-09/DEMOPOULOS_VANESSA_L_09-26.png?itok=jcLkueyj",
+    "source": "https://www.ufc.com/athlete/vanessa-demopoulos",
+    "name": "Vanessa Demopoulos",
+    "checked": "2026-10-04"
+  },
+  "nina-nunes": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2022-07/5d2baa3d-591b-4d49-b2fa-49a46db97993%252FNUNES_NINA_L_07-09.png?itok=Vv4ekMuQ",
+    "source": "https://www.ufc.com/athlete/nina-nunes",
+    "name": "Nina Nunes",
+    "checked": "2026-10-04"
+  },
+  "sijara-eubanks": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2023-01/EUBANKS_SIJARA_L_01-14.png?itok=nKHBstXw",
+    "source": "https://www.ufc.com/athlete/sijara-eubanks",
+    "name": "Sijara Eubanks",
+    "checked": "2026-10-04"
+  },
+  "veronica-hardy": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-10/HARDY_VERONICA_L_10-04.png?itok=qkwM9Ng_",
+    "source": "https://www.ufc.com/athlete/veronica-hardy",
+    "name": "Veronica Hardy",
+    "checked": "2026-10-04"
+  },
+  "ji-yeon-kim": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2023-05/KIM_JI_YEON_L_05-13.png?itok=yQO2kGkG",
+    "source": "https://www.ufc.com/athlete/ji-yeon-kim",
+    "name": "Ji Yeon Kim",
+    "checked": "2026-10-04"
+  },
+  "felice-herrig": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2022-06/5c116be1-673b-4dcd-ba93-1a686f495f2a%252FHERRIG_FELICE_L_06-04.png?itok=oEQY9L37",
+    "source": "https://www.ufc.com/athlete/felice-herrig",
+    "name": "Felice Herrig",
+    "checked": "2026-10-04"
+  },
+  "jessica-rose-clark": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2023-05/CLARK_JESSICA-ROSE_L_05-13.png?itok=CXmDTPeh",
+    "source": "https://www.ufc.com/athlete/jessica-rose-clark",
+    "name": "Jessica-Rose Clark",
+    "checked": "2026-10-04"
+  },
+  "elise-reed": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-05/REED_ELISE_L_05-17.png?itok=5ZUQC1H3",
+    "source": "https://www.ufc.com/athlete/elise-reed",
+    "name": "Elise Reed",
+    "checked": "2026-10-04"
+  },
+  "julija-stoliarenko": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-05/STOLIARENKO_JULIJA_L_02-03.png?itok=Y9eu-i99",
+    "source": "https://www.ufc.com/athlete/julija-stoliarenko",
+    "name": "Julija Stoliarenko",
+    "checked": "2026-10-04"
+  },
+  "jessica-penne": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-10/14/PENNE_JESSICA_L_10-19.png?itok=M4ExL1ei",
+    "source": "https://www.ufc.com/athlete/jessica-penne",
+    "name": "Jessica Penne",
+    "checked": "2026-10-04"
+  },
+  "paige-vanzant": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2019-01/VANZANT_PAIGE_L.png?VersionId=rDvHkKI517fjEl4bZXcbza533TPWxUDr&amp;itok=h1eV0Y4x",
+    "source": "https://www.ufc.com/athlete/paige-vanzant",
+    "name": "Paige VanZant",
+    "checked": "2026-10-04"
+  },
+  "sarah-moras": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2022-03/bc95c750-2c9f-49b0-97af-3dcdf3bb801d%252FMORAS_SARAH_L_05-04.png?itok=NHA8Bv9a",
+    "source": "https://www.ufc.com/athlete/sarah-moras",
+    "name": "Sarah Moras",
+    "checked": "2026-10-04"
+  },
+  "ashlee-evans-smith": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2023-07/EVANS-SMITH_ASHLEE_L_07-15.png?itok=Ows8La6l",
+    "source": "https://www.ufc.com/athlete/ashlee-evans-smith",
+    "name": "Ashlee Evans-Smith",
+    "checked": "2026-10-04"
+  },
+  "aiemann-zahabi": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-06/ZAHABI_AIEMANN_R_06-14.png?itok=Rkew0wVb",
+    "source": "https://www.ufc.com/athlete/aiemann-zahabi",
+    "name": "Aiemann Zahabi",
+    "checked": "2026-10-04"
+  },
+  "bruna-brasil": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-02/BRASIL_BRUNA_L_02-07.png?itok=OOoqetRu",
+    "source": "https://www.ufc.com/athlete/bruna-brasil",
+    "name": "Bruna Brasil",
+    "checked": "2026-10-04"
+  },
+  "brendan-allen": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-06/ALLEN_BRENDAN_L_06-06.png?itok=ww_FOqAD",
+    "source": "https://www.ufc.com/athlete/brendan-allen",
+    "name": "Brendan Allen",
+    "checked": "2026-10-04"
+  },
+  "diana-belbita": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-04/BELBITA_DIANA_L_04-05.png?itok=FsCwpokr",
+    "source": "https://www.ufc.com/athlete/diana-belbita",
+    "name": "Diana Belbita",
+    "checked": "2026-10-04"
+  },
+  "mauricio-ruffy": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-06/RUFFY_MAURICIO_L_06-14.png?itok=CtSQD7Ui",
+    "source": "https://www.ufc.com/athlete/mauricio-ruffy",
+    "name": "Mauricio Ruffy",
+    "checked": "2026-10-04"
+  },
+  "edgar-chairez": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-02/CHAIREZ_EDGAR_L_02-28.png?itok=WL7kQO7z",
+    "source": "https://www.ufc.com/athlete/edgar-chairez",
+    "name": "Edgar Chairez",
+    "checked": "2026-10-04"
+  },
+  "gabriel-bonfim": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-11/BONFIM_GABRIEL_L_11-08.png?itok=FGdOTced",
+    "source": "https://www.ufc.com/athlete/gabriel-bonfim",
+    "name": "Gabriel Bonfim",
+    "checked": "2026-10-04"
+  },
+  "joanderson-brito": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-12/BRITO_JOANDERSON_L_12-13.png?itok=MAvkv4Zx",
+    "source": "https://www.ufc.com/athlete/joanderson-brito",
+    "name": "Joanderson Brito",
+    "checked": "2026-10-04"
+  },
+  "chelsea-chandler": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-04/CHANDLER_CHELSEA_L_04-26.png?itok=DL0RRFId",
+    "source": "https://www.ufc.com/athlete/chelsea-chandler",
+    "name": "Chelsea Chandler",
+    "checked": "2026-10-04"
+  },
+  "iwo-baraniewski": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-06/BARANIEWSKI_IWO_L_06-06.png?itok=zp1QNRHk",
+    "source": "https://www.ufc.com/athlete/iwo-baraniewski",
+    "name": "Iwo Baraniewski",
+    "checked": "2026-10-04"
+  },
+  "jeisla-chaves": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-06/CHAVES_JEISLA_L_06-06.png?itok=mXsCur2H",
+    "source": "https://www.ufc.com/athlete/jeisla-chaves",
+    "name": "Jeisla Chaves",
+    "checked": "2026-10-04"
+  },
+  "alessandro-costa": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-07/COSTA_ALESSANDRO_L_07-11.png?itok=okElYxK7",
+    "source": "https://www.ufc.com/athlete/alessandro-costa",
+    "name": "Alessandro Costa",
+    "checked": "2026-10-04"
+  },
+  "yuneisy-duben": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-03/DUBEN_YUNEISY_L_03-15.png?itok=0wFdwn-N",
+    "source": "https://www.ufc.com/athlete/yuneisy-duben",
+    "name": "Yuneisy Duben",
+    "checked": "2026-10-04"
+  },
+  "jordan-leavitt": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-06/LEAVITT_JORDAN_L_06-06.png?itok=6oX30sib",
+    "source": "https://www.ufc.com/athlete/jordan-leavitt",
+    "name": "Jordan Leavitt",
+    "checked": "2026-10-04"
+  },
+  "santiago-luna": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-02/LUNA_SANTIAGO_L_02-28.png?itok=zdTFJx55",
+    "source": "https://www.ufc.com/athlete/santiago-luna",
+    "name": "Santiago Luna",
+    "checked": "2026-10-04"
+  },
+  "marcus-mcghee": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-10/MCGHEE_MARCUS_L_10-03.png?itok=cosM5Jgp",
+    "source": "https://www.ufc.com/athlete/marcus-mcghee",
+    "name": "Marcus McGhee",
+    "checked": "2026-10-04"
+  },
+  "bryce-mitchell": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-06/MITCHELL_BRYCE_L_06-06.png?itok=a7goLmAY",
+    "source": "https://www.ufc.com/athlete/bryce-mitchell",
+    "name": "Bryce Mitchell",
+    "checked": "2026-10-04"
+  },
+  "ketlen-souza": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-06/SOUZA_KETLEN_L_06-06.png?itok=6jQmx9wf",
+    "source": "https://www.ufc.com/athlete/ketlen-souza",
+    "name": "Ketlen Souza",
+    "checked": "2026-10-04"
+  },
+  "bruno-silva": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-06/SILVA_BRUNO_L_06-06.png?itok=l_D2GW69",
+    "source": "https://www.ufc.com/athlete/bruno-silva",
+    "name": "Bruno Silva",
+    "checked": "2026-10-04"
+  },
+  "tom-nolan": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-09/NOLAN_TOM_L_09-27.png?itok=MyU46nSD",
+    "source": "https://www.ufc.com/athlete/tom-nolan",
+    "name": "Tom Nolan",
+    "checked": "2026-10-04"
+  },
+  "edmen-shahbazyan": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-09/SHAHBAZYAN_EDMEN_L_09-19.png?itok=R5qwzicB",
+    "source": "https://www.ufc.com/athlete/edmen-shahbazyan",
+    "name": "Edmen Shahbazyan",
+    "checked": "2026-10-04"
+  },
+  "junior-tafa": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-04/TAFA_JUNIOR_L_05-02.png?itok=dLi9Oyuv",
+    "source": "https://www.ufc.com/athlete/junior-tafa",
+    "name": "Junior Tafa",
+    "checked": "2026-10-04"
+  },
+  "john-yannis": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-07/YANNIS_JOHN_R_08-02.png?itok=6f71jGGi",
+    "source": "https://www.ufc.com/athlete/john-yannis",
+    "name": "John Yannis",
+    "checked": "2026-10-04"
+  },
+  "fares-ziam": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-09/ZIAM_FARES_L_09-05.png?itok=8ypjC9fW",
+    "source": "https://www.ufc.com/athlete/fares-ziam",
+    "name": "Farès Ziam",
+    "checked": "2026-10-04"
+  },
+  "jaqueline-amorim": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-10/AMORIM_JAQUELINE_L_10-25.png?itok=kKvKcJBq",
+    "source": "https://www.ufc.com/athlete/jaqueline-amorim",
+    "name": "Jaqueline Amorim",
+    "checked": "2026-10-04"
+  },
+  "aoriqileng": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-08/AORIQILENG_L_08-29.png?itok=579Lml2L",
+    "source": "https://www.ufc.com/athlete/aoriqileng",
+    "name": "Aoriqileng",
+    "checked": "2026-10-04"
+  },
+  "kai-asakura": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/ASAKURA_KAI_L_05-30.png?itok=RXn11ARV",
+    "source": "https://www.ufc.com/athlete/kai-asakura",
+    "name": "Kai Asakura",
+    "checked": "2026-10-04"
+  },
+  "luis-gurule": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-09/GURULE_LUIS_R_09-13.png?itok=S4-QiBmF",
+    "source": "https://www.ufc.com/athlete/luis-gurule",
+    "name": "Luis Gurule",
+    "checked": "2026-10-04"
+  },
+  "cody-haddon": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-11/HADDON_CODY_L_10-12.png?itok=C0RuaCHl",
+    "source": "https://www.ufc.com/athlete/cody-haddon",
+    "name": "Cody Haddon",
+    "checked": "2026-10-04"
+  },
+  "luis-dias-de-assis": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-09/DIAS_LUIS_FELIPE_R_09-05.png?itok=ZvARTQos",
+    "source": "https://www.ufc.com/athlete/luis-dias-de-assis",
+    "name": "Luis Felipe Dias",
+    "checked": "2026-10-04"
+  },
+  "zhu-kangjie": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/KANGJIE_ZHU_L_05-30.png?itok=tEmk2_YM",
+    "source": "https://www.ufc.com/athlete/zhu-kangjie",
+    "name": "Zhu Kangjie",
+    "checked": "2026-10-04"
+  },
+  "yi-sak-lee": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/LEE_YISAK_L_05-30.png?itok=lwpEKxvo",
+    "source": "https://www.ufc.com/athlete/yi-sak-lee",
+    "name": "YiSak Lee",
+    "checked": "2026-10-04"
+  },
+  "jake-matthews": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/MATTHEWS_JAKE_L_05-30.png?itok=kYM4Kq87",
+    "source": "https://www.ufc.com/athlete/jake-matthews",
+    "name": "Jake Matthews",
+    "checked": "2026-10-04"
+  },
+  "jingnan-xiong": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-08/JINGNAN_XIONG_L_08-29.png?itok=Z567CSO7",
+    "source": "https://www.ufc.com/athlete/jingnan-xiong",
+    "name": "Xiong Jingnan",
+    "checked": "2026-10-04"
+  },
+  "ding-meng": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-08/MENG_DING_L_08-29.png?itok=xVbHhebz",
+    "source": "https://www.ufc.com/athlete/ding-meng",
+    "name": "Ding Meng",
+    "checked": "2026-10-04"
+  },
+  "zhang-mingyang": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/MINGYANG_ZHANG_L_05-30.png?itok=2J_lSlBx",
+    "source": "https://www.ufc.com/athlete/zhang-mingyang",
+    "name": "Zhang Mingyang",
+    "checked": "2026-10-04"
+  },
+  "alonzo-menifield": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-09/MENIFIELD_ALONZO_L_09-19.png?itok=YNK1f7Ue",
+    "source": "https://www.ufc.com/athlete/alonzo-menifield",
+    "name": "Alonzo Menifield",
+    "checked": "2026-10-04"
+  },
+  "jose-henrique": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/SOUZA_JOSE_R_05-30.png?itok=-YP5UjdJ",
+    "source": "https://www.ufc.com/athlete/jose-henrique",
+    "name": "José Souza",
+    "checked": "2026-10-04"
+  },
+  "alex-perez": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-08/PEREZ_ALEX_L_08-29.png?itok=hDi458D_",
+    "source": "https://www.ufc.com/athlete/alex-perez",
+    "name": "Alex Perez",
+    "checked": "2026-10-04"
+  },
+  "tallison-teixeira": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-07/TEIXEIRA_TALLISON_R_07-12.png?itok=vtmFVu5M",
+    "source": "https://www.ufc.com/athlete/tallison-teixeira",
+    "name": "Tallison Teixeira",
+    "checked": "2026-10-04"
+  },
+  "rei-tsuruya": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-08/TSURUYA_REI_L_08-29.png?itok=9BBdq5UI",
+    "source": "https://www.ufc.com/athlete/rei-tsuruya",
+    "name": "Rei Tsuruya",
+    "checked": "2026-10-04"
+  },
+  "rodrigo-vera": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/VERA_RODRIGO_R_05-30.png?itok=ZvELiIEn",
+    "source": "https://www.ufc.com/athlete/rodrigo-vera",
+    "name": "Rodrigo Vera",
+    "checked": "2026-10-04"
+  },
+  "song-yadong": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/YADONG_SONG_L_05-30.png?itok=yMtLdKZS",
+    "source": "https://www.ufc.com/athlete/song-yadong",
+    "name": "Song Yadong",
+    "checked": "2026-10-04"
+  },
+  "arnold-allen": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/ALLEN_ARNOLD_L_05-16.png?itok=d2l8gVp-",
+    "source": "https://www.ufc.com/athlete/arnold-allen",
+    "name": "Arnold Allen",
+    "checked": "2026-10-04"
+  },
+  "shauna-bannon": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/BANNON_SHAUNA_L_05-16.png?itok=MoHNOg5o",
+    "source": "https://www.ufc.com/athlete/shauna-bannon",
+    "name": "Shauna Bannon",
+    "checked": "2026-10-04"
+  },
+  "nicolle-caliari": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-01/2/CALIARI_NICOLLE_L_01-11.png?itok=F6kDO8bo",
+    "source": "https://www.ufc.com/athlete/nicolle-caliari",
+    "name": "Nicolle Caliari",
+    "checked": "2026-10-04"
+  },
+  "modestas-bukauskas": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/BUKAUSKAS_MODESTAS_L_05-16.png?itok=J4AuKXWf",
+    "source": "https://www.ufc.com/athlete/modestas-bukauskas",
+    "name": "Modestas Bukauskas",
+    "checked": "2026-10-04"
+  },
+  "alice-ardelean": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/ARDELEAN_ALICE_L_05-16.png?itok=8kSUhwkV",
+    "source": "https://www.ufc.com/athlete/alice-ardelean",
+    "name": "Alice Ardelean",
+    "checked": "2026-10-04"
+  },
+  "cody-brundage": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/BRUNDAGE_CODY_L_05-16.png?itok=6XckDt9Q",
+    "source": "https://www.ufc.com/athlete/cody-brundage",
+    "name": "Cody Brundage",
+    "checked": "2026-10-04"
+  },
+  "jacqueline-cavalcanti": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-01/5/CAVALCANTI_JACQUELINE_L_08-24.png?itok=NQZ5w4CU",
+    "source": "https://www.ufc.com/athlete/jacqueline-cavalcanti",
+    "name": "Jacqueline Cavalcanti",
+    "checked": "2026-10-04"
+  },
+  "timothy-cuamba": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/CUAMBA_TIMOTHY_L_05-16.png?itok=QVPT-XKP",
+    "source": "https://www.ufc.com/athlete/timothy-cuamba",
+    "name": "Timmy Cuamba",
+    "checked": "2026-10-04"
+  },
+  "dooho-choi": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/CHOI_DOOHO_L_05-16.png?itok=pN8VMyeW",
+    "source": "https://www.ufc.com/athlete/dooho-choi",
+    "name": "Dooho Choi",
+    "checked": "2026-10-04"
+  },
+  "juan-diaz": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/DIAS_JUAN_R_05-16.png?itok=ii8fyksW",
+    "source": "https://www.ufc.com/athlete/juan-diaz",
+    "name": "Juan Diaz",
+    "checked": "2026-10-04"
+  },
+  "melquizael-costa": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-12/COSTA_MELQUIZAEL_L_12-13.png?itok=4B7irp2h",
+    "source": "https://www.ufc.com/athlete/melquizael-costa",
+    "name": "Melquizael Costa",
+    "checked": "2026-10-04"
+  },
+  "christian-edwards": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/EDWARDS_CHRISTIAN_R_05-16.png?itok=9hKWjz5V",
+    "source": "https://www.ufc.com/athlete/christian-edwards",
+    "name": "Christian Edwards",
+    "checked": "2026-10-04"
+  },
+  "artur-minev": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/MINEV_ARTUR_R_05-16.png?itok=6AQl2L9a",
+    "source": "https://www.ufc.com/athlete/artur-minev",
+    "name": "Artur Minev",
+    "checked": "2026-10-04"
+  },
+  "thomas-gantt": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/GANTT_THOMAS_L_05-16.png?itok=mXejZpYg",
+    "source": "https://www.ufc.com/athlete/thomas-gantt",
+    "name": "Tommy Gantt",
+    "checked": "2026-10-04"
+  },
+  "andre-petroski": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-12/3/PETROSKI_ANDRE_L_09-07.png?itok=XRHPUO-h",
+    "source": "https://www.ufc.com/athlete/andre-petroski",
+    "name": "Andre Petroski",
+    "checked": "2026-10-04"
+  },
+  "daniel-santos": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-10/SANTOS_DANIEL_L_10-04.png?itok=v0mSMNti",
+    "source": "https://www.ufc.com/athlete/daniel-santos",
+    "name": "Daniel Santos",
+    "checked": "2026-10-04"
+  },
+  "benardo-sopaj": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-01/6/SOPAJ_BENARDO_L_03-02.png?itok=fxyt7hIc",
+    "source": "https://www.ufc.com/athlete/benardo-sopaj",
+    "name": "Benardo Sopaj",
+    "checked": "2026-10-04"
+  },
+  "diego-sanchez": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2020-09/SANCHEZ_DIEGO_L_02-15.png?VersionId=wQhmItCaHls0WX8jW8XYH4YtnuxmvKE0&amp;itok=Z32tREZi",
+    "source": "https://www.ufc.com/athlete/diego-sanchez",
+    "name": "Diego Sanchez",
+    "checked": "2026-10-04"
+  },
+  "edson-barboza": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-08/BARBOZA_EDSON_L_08-15.png?itok=UqUBJbeT",
+    "source": "https://www.ufc.com/athlete/edson-barboza",
+    "name": "Edson Barboza",
+    "checked": "2026-10-04"
+  },
+  "matt-brown": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2023-05/BROWN_MATT_L_05-13.png?itok=waGEXUsg",
+    "source": "https://www.ufc.com/athlete/matt-brown",
+    "name": "Matt Brown",
+    "checked": "2026-10-04"
+  },
+  "alex-caceres": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-02/CACERES_ALEX_L_05-11.png?itok=xF6Ij7tB",
+    "source": "https://www.ufc.com/athlete/alex-caceres",
+    "name": "Alex Caceres",
+    "checked": "2026-10-04"
+  },
+  "michael-johnson": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-01/JOHNSON_MICHAEL_L_01-24.png?itok=fCCyiIzI",
+    "source": "https://www.ufc.com/athlete/michael-johnson",
+    "name": "Michael Johnson",
+    "checked": "2026-10-04"
+  },
+  "kevin-holland": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-04/HOLLAND_KEVIN_L_04-11.png?itok=mOqmHvqp",
+    "source": "https://www.ufc.com/athlete/kevin-holland",
+    "name": "Kevin Holland",
+    "checked": "2026-10-04"
+  },
+  "tim-means": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-04/MEANS_TIM_L_04-27.png?itok=jBeiIDO3",
+    "source": "https://www.ufc.com/athlete/tim-means",
+    "name": "Tim Means",
+    "checked": "2026-10-04"
+  },
+  "ovince-saint-preux": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-03/SAINT_PREUX_OVINCE_L_03-16.png?itok=x3IiV0CW",
+    "source": "https://www.ufc.com/athlete/ovince-saint-preux",
+    "name": "Ovince Saint Preux",
+    "checked": "2026-10-04"
+  },
+  "darren-elkins": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-08/ELKINS_DARREN_L_08-08.png?itok=4W6b5BAT",
+    "source": "https://www.ufc.com/athlete/darren-elkins",
+    "name": "Darren Elkins",
+    "checked": "2026-10-04"
+  },
+  "brad-tavares": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-03/TAVARES_BRAD_L_03-14.png?itok=b95gOYRd",
+    "source": "https://www.ufc.com/athlete/brad-tavares",
+    "name": "Brad Tavares",
+    "checked": "2026-10-04"
+  },
+  "bobby-green": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-10/GREEN_KING_L_10-03.png?itok=Gyyev0tB",
+    "source": "https://www.ufc.com/athlete/bobby-green",
+    "name": "King Green",
+    "checked": "2026-10-04"
+  },
+  "joe-lauzon": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2022-06/LAUZON_JOE_L_05-07.png?itok=F0YuobGL",
+    "source": "https://www.ufc.com/athlete/joe-lauzon",
+    "name": "Joe Lauzon",
+    "checked": "2026-10-04"
+  },
+  "frank-mir": {
+    "url": "https://ufc.com/images/2022-03/fa208625-4fe1-47ab-8bf5-9598ed1028e7%252FFrankMir_Headshot.png",
+    "source": "https://www.ufc.com/athlete/frank-mir",
+    "name": "Frank Mir",
+    "checked": "2026-10-04"
+  },
+  "gleison-tibau": {
+    "url": "https://ufc.com/images/image/ufc-fighter-container/68033/profile-galery/profile-picture/GleisonTibau_Headshot2012.png?VersionId=thNUHTpDxk4nJmMrUx9v._xQXEQe7jWC",
+    "source": "https://www.ufc.com/athlete/gleison-tibau",
+    "name": "Gleison Tibau",
+    "checked": "2026-10-04"
+  },
+  "thiago-alves": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2019-01/ALVES_THIAGO_L.png?VersionId=_iXg0Zp.wNih3AwI7LIRzu9dvtBESmRn&amp;itok=PXo5x4eg",
+    "source": "https://www.ufc.com/athlete/thiago-alves",
+    "name": "Thiago Alves",
+    "checked": "2026-10-04"
+  },
+  "drew-dober": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-03/DOBER_DREW_L_03-07.png?itok=2b9RABZl",
+    "source": "https://www.ufc.com/athlete/drew-dober",
+    "name": "Drew Dober",
+    "checked": "2026-10-04"
+  },
+  "beneil-dariush": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-04/DARIUSH_BENEIL_L_05-02.png?itok=EGBjHKgU",
+    "source": "https://www.ufc.com/athlete/beneil-dariush",
+    "name": "Beneil Dariush",
+    "checked": "2026-10-04"
+  },
+  "kelvin-gastelum": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-04/GASTELUM_KELVIN_L_04-11.png?itok=yRQgInm7",
+    "source": "https://www.ufc.com/athlete/kelvin-gastelum",
+    "name": "Kelvin Gastelum",
+    "checked": "2026-10-04"
+  },
+  "ross-pearson": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/image/fighter_images/Ross_Pearson/PEARSON_ROSS_L.png?VersionId=AGAmplZvoKETfW2hAJo3tmjyRV1aBUdo&amp;itok=MNPZu4Q7",
+    "source": "https://www.ufc.com/athlete/ross-pearson",
+    "name": "Ross Pearson",
+    "checked": "2026-10-04"
+  },
+  "cub-swanson": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-04/SWANSON_CUB_L_04-11.png?itok=8LCtVmm8",
+    "source": "https://www.ufc.com/athlete/cub-swanson",
+    "name": "Cub Swanson",
+    "checked": "2026-10-04"
+  },
+  "francisco-trinaldo": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2021-06/67967%252Fprofile-galery%252Ffullbodyleft-picture%252FTRINALDO_FRANCISCO_L_06-05.png?itok=1qFvrdrA",
+    "source": "https://www.ufc.com/athlete/francisco-trinaldo",
+    "name": "Francisco Trinaldo",
+    "checked": "2026-10-04"
+  },
+  "gerald-meerschaert": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-08/MEERSCHAERT_GERALD_L_08-16.png?itok=ZSkiqY23",
+    "source": "https://www.ufc.com/athlete/gerald-meerschaert",
+    "name": "Gerald Meerschaert",
+    "checked": "2026-10-04"
+  },
+  "ed-herman": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2023-06/HERMAN_ED_L_04-15.png?itok=DMREwKee",
+    "source": "https://www.ufc.com/athlete/ed-herman",
+    "name": "Ed Herman",
+    "checked": "2026-10-04"
+  },
+  "marlon-vera": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-09/VERA_MARLON_L_09-19.png?itok=Rvs2dM33",
+    "source": "https://www.ufc.com/athlete/marlon-vera",
+    "name": "Marlon Vera",
+    "checked": "2026-10-04"
+  },
+  "josh-koscheck": {
+    "url": "https://ufc.com/images/image/fighter_images/Josh_Koscheck/JoshKoscheck_Headshot.png?VersionId=viZpx6FdhQSEc_ctz2JcAXmZ9OUszZNb",
+    "source": "https://www.ufc.com/athlete/josh-koscheck",
+    "name": "Josh Koscheck",
+    "checked": "2026-10-04"
+  },
+  "nitsuku-rentsu": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2022-03/0e14e257-608c-4a80-9658-65359a2ce0f9%252FLENTZ_NIK_L_01-25.png?itok=kwinOM30",
+    "source": "https://www.ufc.com/athlete/nitsuku-rentsu",
+    "name": "Nik Lentz",
+    "checked": "2026-10-04"
+  },
+  "anthony-smith": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-04/SMITH_ANTHONY_L_04-26.png?itok=q1kFSJ8p",
+    "source": "https://www.ufc.com/athlete/anthony-smith",
+    "name": "Anthony Smith",
+    "checked": "2026-10-04"
+  },
+  "tim-boetsch": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/image/fighter_images/Tim_Boetsch/BOETSCH_TIM_L.png?VersionId=SqHnE1bMaD0Zp26o1WhqWIWmbYwSCRYX&amp;itok=LQ8ZxW6p",
+    "source": "https://www.ufc.com/athlete/tim-boetsch",
+    "name": "Tim Boetsch",
+    "checked": "2026-10-04"
+  },
+  "dan-hooker": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-09/HOOKER_DAN_L_09-05.png?itok=cLfQlP6e",
+    "source": "https://www.ufc.com/athlete/dan-hooker",
+    "name": "Dan Hooker",
+    "checked": "2026-10-04"
+  },
+  "vicente-luque": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-08/LUQUE_VICENTE_L_08-15.png?itok=UplLKsVD",
+    "source": "https://www.ufc.com/athlete/vicente-luque",
+    "name": "Vicente Luque",
+    "checked": "2026-10-04"
+  },
+  "sam-alvey": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2022-08/ALVEY_SAM_L_08-06.png?itok=eFj1cAmC",
+    "source": "https://www.ufc.com/athlete/sam-alvey",
+    "name": "Sam Alvey",
+    "checked": "2026-10-04"
+  },
+  "nate-marquardt": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2022-03/ccb00869-3e4e-450c-af29-4826dab8e2d8%252FNate-Marquardt_358_LeftFullBodyImage.png?itok=pPOSJYXh",
+    "source": "https://www.ufc.com/athlete/nate-marquardt",
+    "name": "Nate Marquardt",
+    "checked": "2026-10-04"
+  },
+  "alex-morono": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-02/MORONO_ALEX_L_02-07.png?itok=b6bEvrIe",
+    "source": "https://www.ufc.com/athlete/alex-morono",
+    "name": "Alex Morono",
+    "checked": "2026-10-04"
+  },
+  "thiago-santos": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2022-08/SANTOS_THIAGO_L_08-06.png?itok=LZvxY1fZ",
+    "source": "https://www.ufc.com/athlete/thiago-santos",
+    "name": "Thiago Santos",
+    "checked": "2026-10-04"
+  },
+  "marcin-tybura": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-03/TYBURA_MARCIN_L_03-28.png?itok=TNTDlOaO",
+    "source": "https://www.ufc.com/athlete/marcin-tybura",
+    "name": "Marcin Tybura",
+    "checked": "2026-10-04"
+  },
+  "stefan-struve": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2019-02/STRUVE_STEFAN_L.png?VersionId=.cG0rPsvhW3ZmC.Q1Qr355L1ZQDRBAqU&amp;itok=s0jZQRum",
+    "source": "https://www.ufc.com/athlete/stefan-struve",
+    "name": "Stefan Struve",
+    "checked": "2026-10-04"
+  },
+  "rashad-evans": {
+    "url": "https://ufc.com/images/image/ufc-fighter-container/69052/profile-galery/profile-picture/RashadEvans_Headshot.png?VersionId=prqJA4zIQtQElnvJJwAzDOiMs8ei4CJE",
+    "source": "https://www.ufc.com/athlete/rashad-evans",
+    "name": "Rashad Evans",
+    "checked": "2026-10-04"
+  },
+  "court-mcgee": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-10/MCGEE_COURT_L_10-03.png?itok=J0eLYXrp",
+    "source": "https://www.ufc.com/athlete/court-mcgee",
+    "name": "Court McGee",
+    "checked": "2026-10-04"
+  },
+  "gabriel-gonzaga": {
+    "url": "https://ufc.com/images/2022-03/da23c777-1670-474a-a474-18f04079cde0%252FGabrielGonzaga_Headshot.png",
+    "source": "https://www.ufc.com/athlete/gabriel-gonzaga",
+    "name": "Gabriel Gonzaga",
+    "checked": "2026-10-04"
+  },
+  "melvin-guillard": {
+    "url": "https://ufc.com/images/image/fighter_images/Melvin_Guillard/MelvinGuillard_Headshot.png?VersionId=NTYXeQ5qLKorj8c2Sv_jb7vVc7eyL7Di",
+    "source": "https://www.ufc.com/athlete/melvin-guillard",
+    "name": "Melvin Guillard",
+    "checked": "2026-10-04"
+  },
+  "tim-elliott": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-09/ELLIOTT_TIM_L_09-12.png?itok=ig5zg9at",
+    "source": "https://www.ufc.com/athlete/tim-elliott",
+    "name": "Tim Elliott",
+    "checked": "2026-10-04"
+  },
+  "michael-chiesa": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-03/CHIESA_MICHAEL_L_03-28.png?itok=sCF2lLlZ",
+    "source": "https://www.ufc.com/athlete/michael-chiesa",
+    "name": "Michael Chiesa",
+    "checked": "2026-10-04"
+  },
+  "randy-brown": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-04/BROWN_RANDY_L_04-26.png?itok=alaUuEEQ",
+    "source": "https://www.ufc.com/athlete/randy-brown",
+    "name": "Randy Brown",
+    "checked": "2026-10-04"
+  },
+  "chris-leben": {
+    "url": "https://ufc.com/images/image/fighter_images/Chris_Leben/ChrisLeben_Headshot.png?VersionId=7PRT.FYTUhkDOJIZKpv1fYu9VvTX9BNb",
+    "source": "https://www.ufc.com/athlete/chris-leben",
+    "name": "Chris Leben",
+    "checked": "2026-10-04"
+  },
+  "pedro-munhoz": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-03/MUNHOZ_PEDRO_L_03-09.png?itok=gGqE8qHV",
+    "source": "https://www.ufc.com/athlete/pedro-munhoz",
+    "name": "Pedro Munhoz",
+    "checked": "2026-10-04"
+  },
+  "joseph-benavidez": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/image/fighter_images/Joseph_Benavidez/BENAVIDEZ_JOSEPH_L.png?VersionId=a8wJrP2mqxdlJbDOx5fZtlHCdVZrg3tZ&amp;itok=qczp5MEF",
+    "source": "https://www.ufc.com/athlete/joseph-benavidez",
+    "name": "Joseph Benavidez",
+    "checked": "2026-10-04"
+  },
+  "alex-oliveira": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2021-04/67204%252Fprofile-galery%252Ffullbodyleft-picture%252FOLIVEIRA_ALEX_L_04-24.png?itok=jitledzc",
+    "source": "https://www.ufc.com/athlete/alex-oliveira",
+    "name": "Alex Oliveira",
+    "checked": "2026-10-04"
+  },
+  "derek-brunson": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2023-03/BRUNSON_DEREK_L_03-05.png?itok=CDhkITh0",
+    "source": "https://www.ufc.com/athlete/derek-brunson",
+    "name": "Derek Brunson",
+    "checked": "2026-10-04"
+  },
+  "paul-craig": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-05/CRAIG_PAUL_L_05-04.png?itok=hS2zyDZ2",
+    "source": "https://www.ufc.com/athlete/paul-craig",
+    "name": "Paul Craig",
+    "checked": "2026-10-04"
+  },
+  "evan-dunham": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/image/ufc-fighter-container/67929/profile-galery/fullbodyleft-picture/Evan-Dunham_1025_LeftFullBodyImage.png?itok=ai55A892",
+    "source": "https://www.ufc.com/athlete/evan-dunham",
+    "name": "Evan Dunham",
+    "checked": "2026-10-04"
+  },
+  "jake-ellenberger": {
+    "url": "https://ufc.com/images/image/ufc-fighter-container/68154/profile-galery/profile-picture/JakeEllenberger_Headshot151.png?VersionId=751i_7pzeSqZWTIHtUKmxIkD0mkP8W1B",
+    "source": "https://www.ufc.com/athlete/jake-ellenberger",
+    "name": "Jake Ellenberger",
+    "checked": "2026-10-04"
+  },
+  "rob-font": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-03/FONT_ROB_L_03-07.png?itok=1MgNWkzy",
+    "source": "https://www.ufc.com/athlete/rob-font",
+    "name": "Rob Font",
+    "checked": "2026-10-04"
+  },
+  "dan-ige": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-07/IGE_DAN_L_07-19.png?itok=eje2mypv",
+    "source": "https://www.ufc.com/athlete/dan-ige",
+    "name": "Dan Ige",
+    "checked": "2026-10-04"
+  },
+  "nikita-krylov": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-07/KRYLOV_NIKITA_L_07-11.png?itok=G-SKEXs5",
+    "source": "https://www.ufc.com/athlete/nikita-krylov",
+    "name": "Nikita Krylov",
+    "checked": "2026-10-04"
+  },
+  "thales-leites": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/image/fighter_images/Thales_Lietes/LEITES_THALES_L.png?itok=n7pVe_Wr",
+    "source": "https://www.ufc.com/athlete/thales-leites",
+    "name": "Thales Leites",
+    "checked": "2026-10-04"
+  },
+  "johny-hendricks": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/image/ufc-fighter-container/68317/profile-galery/fullbodyleft-picture/Johny-Hendricks_130419_LeftFullBodyImage.png?VersionId=tA1q4UycLfNtdHGfHs8riZy4.7XEZcEB&amp;itok=bC19NIxR",
+    "source": "https://www.ufc.com/athlete/johny-hendricks",
+    "name": "Johny Hendricks",
+    "checked": "2026-10-04"
+  },
+  "yushin-okami": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/image/ufc-fighter-container/69611/profile-galery/fullbodyleft-picture/OKAMI_YUSHIN_L.png?VersionId=husoBhWJZG1oVRzlecdEhkL3KKJblqYh&amp;itok=TAtWYmuq",
+    "source": "https://www.ufc.com/athlete/yushin-okami",
+    "name": "Yushin Okami",
+    "checked": "2026-10-04"
+  },
+  "niko-price": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-06/PRICE_NIKO_L_06-28.png?itok=pV3E99ve",
+    "source": "https://www.ufc.com/athlete/niko-price",
+    "name": "Niko Price",
+    "checked": "2026-10-04"
+  },
+  "rani-yahya": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-04/YAHYA_RANI_L_04-27.png?itok=wgsb3r6w",
+    "source": "https://www.ufc.com/athlete/rani-yahya",
+    "name": "Rani Yahya",
+    "checked": "2026-10-04"
+  },
+  "dennis-siver": {
+    "url": "https://ufc.com/images/2022-03/88da98d0-b24f-477b-9cd5-9de7e7569954%252FDennisSiver_Headshot.png",
+    "source": "https://www.ufc.com/athlete/dennis-siver",
+    "name": "Dennis Siver",
+    "checked": "2026-10-04"
+  },
+  "eryk-anders": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-08/ANDERS_ERYK_L_08-09.png?itok=gQG7b3iT",
+    "source": "https://www.ufc.com/athlete/eryk-anders",
+    "name": "Eryk Anders",
+    "checked": "2026-10-04"
+  },
+  "jared-cannonier": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-07/CANNONIER_JARED_L_07-18.png?itok=_lep6e-l",
+    "source": "https://www.ufc.com/athlete/jared-cannonier",
+    "name": "Jared Cannonier",
+    "checked": "2026-10-04"
+  },
+  "ryan-bader": {
+    "url": "https://ufc.com/images/2022-03/bae259e2-b569-40d6-8949-b8f6c7399a47%252FRyanBader_Headshot.png",
+    "source": "https://www.ufc.com/athlete/ryan-bader",
+    "name": "Ryan Bader",
+    "checked": "2026-10-04"
+  },
+  "patrick-cote": {
+    "url": "https://ufc.com/images/image/ufc-fighter-container/68980/profile-galery/profile-picture/PatrickCote_Headshot.png?VersionId=6BlMmDuz2SnZ2D5EXiWEr1SGULaB8lPh",
+    "source": "https://www.ufc.com/athlete/patrick-cote",
+    "name": "Patrick Cote",
+    "checked": "2026-10-04"
+  },
+  "john-makdessi": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2022-09/MAKDESSI_JOHN_L_09-03.png?itok=5D0KrPQ7",
+    "source": "https://www.ufc.com/athlete/john-makdessi",
+    "name": "John Makdessi",
+    "checked": "2026-10-04"
+  },
+  "yves-edwards": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/image/ufc-fighter-container/69552/profile-galery/fullbodyleft-picture/Yves-Edwards_247_LeftFullBodyImage.png?VersionId=Fh7Duzrl041hDNxaXYQ0i9Uxas3i85dK&amp;itok=1asacK5m",
+    "source": "https://www.ufc.com/athlete/yves-edwards",
+    "name": "Yves Edwards",
+    "checked": "2026-10-04"
+  },
+  "cb-dollaway": {
+    "url": "https://ufc.com/images/2022-03/eb3c4a89-aed0-4a81-b064-fb9688318e97%252FCBDolloway_Headshot.png",
+    "source": "https://www.ufc.com/athlete/cb-dollaway",
+    "name": "CB Dollaway",
+    "checked": "2026-10-04"
+  },
+  "gray-maynard": {
+    "url": "https://ufc.com/images/image/ufc-fighter-container/68043/profile-galery/profile-picture/GrayMaynard_Headshot.png?VersionId=eC9MC_Z8HexjsLcIIKpp3AvqHL0Zld2m",
+    "source": "https://www.ufc.com/athlete/gray-maynard",
+    "name": "Gray Maynard",
+    "checked": "2026-10-04"
+  },
+  "cole-miller": {
+    "url": "https://ufc.com/images/image/ufc-fighter-container/67659/profile-galery/profile-picture/ColeMiller_Headshot.png?VersionId=RkI.WI36WSuNmPZyWdru_lAIxj.fYCKw",
+    "source": "https://www.ufc.com/athlete/cole-miller",
+    "name": "Cole Miller",
+    "checked": "2026-10-04"
+  },
+  "renato-moicano": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-04/MOICANO_RENATO_L_04-04.png?itok=2zj_9GSb",
+    "source": "https://www.ufc.com/athlete/renato-moicano",
+    "name": "Renato Moicano",
+    "checked": "2026-10-04"
+  },
+  "santiago-ponzinibbio": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-07/PONZINIBBIO_SANTIAGO_L_07-25.png?itok=qqXgQOmg",
+    "source": "https://www.ufc.com/athlete/santiago-ponzinibbio",
+    "name": "Santiago Ponzinibbio",
+    "checked": "2026-10-04"
+  },
+  "sam-stout": {
+    "url": "https://ufc.com/images/image/ufc-fighter-container/69192/profile-galery/profile-picture/SamStout_Headshot.png?VersionId=UF5Sin3b6n.Z3Y0UeACVYf3VVzepJ1mP",
+    "source": "https://www.ufc.com/athlete/sam-stout",
+    "name": "Sam Stout",
+    "checked": "2026-10-04"
+  },
+  "raphael-assuncao": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2023-03/ASSUNCAO_RAPHAEL_L_03-11.png?itok=S9Xx_-3y",
+    "source": "https://www.ufc.com/athlete/raphael-assuncao",
+    "name": "Raphael Assunção",
+    "checked": "2026-10-04"
+  },
+  "bryan-barberena": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2023-07/BARBERENA_BRYAN_L_07-22.png?itok=yYLC_kVh",
+    "source": "https://www.ufc.com/athlete/bryan-barberena",
+    "name": "Bryan Barberena",
+    "checked": "2026-10-04"
+  },
+  "joshua-burkman": {
+    "url": "https://ufc.com/images/2022-03/42617952-287f-40cb-a308-c8dd2e930612%252FJoshBurkman_Headshot.png",
+    "source": "https://www.ufc.com/athlete/joshua-burkman",
+    "name": "Joshua Burkman",
+    "checked": "2026-10-04"
+  },
+  "rich-franklin": {
+    "url": "https://ufc.com/images/image/fighter_images/Rich_Franklin/RichFranklin_Headshot.png?VersionId=gfURoyZ231zA9zs1hG3IhWhqqReP3HN.",
+    "source": "https://www.ufc.com/athlete/rich-franklin",
+    "name": "Rich Franklin",
+    "checked": "2026-10-04"
+  },
+  "chris-camozzi": {
+    "url": "https://ufc.com/images/2022-03/7384edf5-fce1-45d6-b14b-32e6f8227d40%252FChrisCamozzi_Headshot.png",
+    "source": "https://www.ufc.com/athlete/chris-camozzi",
+    "name": "Chris Camozzi",
+    "checked": "2026-10-04"
+  },
+  "max-griffin": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-04/GRIFFIN_MAX_L_04-25.png?itok=nrxbmm1d",
+    "source": "https://www.ufc.com/athlete/max-griffin",
+    "name": "Max Griffin",
+    "checked": "2026-10-04"
+  },
+  "uriah-hall": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2022-06/8b787623-45ca-45ae-9642-49677bf57ce9%252FHALL_URIAH_L_07-02.png?itok=bGjENNRd",
+    "source": "https://www.ufc.com/athlete/uriah-hall",
+    "name": "Uriah Hall",
+    "checked": "2026-10-04"
+  },
+  "jack-hermansson": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-11/HERMANSSON_JACK_L_11-22.png?itok=wMzrEHaB",
+    "source": "https://www.ufc.com/athlete/jack-hermansson",
+    "name": "Jack Hermansson",
+    "checked": "2026-10-04"
+  },
+  "anthony-johnson": {
+    "url": "https://ufc.com/images/image/ufc-fighter-container/67359/profile-galery/profile-picture/AnthonyJohnson_Headshot.png?VersionId=53BHqNLZsDwSiHzt.yaQmJNb6n7K3s0k",
+    "source": "https://www.ufc.com/athlete/anthony-johnson",
+    "name": "Anthony Johnson",
+    "checked": "2026-10-04"
+  },
+  "roy-nelson": {
+    "url": "https://ufc.com/images/2022-03/d55f977f-dd27-4d8b-b68f-34ffcb04ea54%252FRoyNelson_Headshot.png",
+    "source": "https://www.ufc.com/athlete/roy-nelson",
+    "name": "Roy Nelson",
+    "checked": "2026-10-04"
+  },
+  "mike-pyle": {
+    "url": "https://ufc.com/images/2022-03/b796792b-c934-46b9-82f7-db8bef54e0fb%252FMikePyle_Headshot.png",
+    "source": "https://www.ufc.com/athlete/mike-pyle",
+    "name": "Mike Pyle",
+    "checked": "2026-10-04"
+  },
+  "kevin-lee": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2023-06/LEE_KEVIN_L_07-01.png?itok=QSxFKNau",
+    "source": "https://www.ufc.com/athlete/kevin-lee",
+    "name": "Kevin Lee",
+    "checked": "2026-10-04"
+  },
+  "ben-saunders": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/image/ufc-fighter-container/67448/profile-galery/fullbodyleft-picture/SAUNDERS_BEN_L.png?VersionId=WCnPGuqeVmHgwUhh7M0nFW16w1xdUuua&amp;itok=WPH7SSRk",
+    "source": "https://www.ufc.com/athlete/ben-saunders",
+    "name": "Ben Saunders",
+    "checked": "2026-10-04"
+  },
+  "alexander-volkov": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/VOLKOV_ALEXANDER_L_05-09.png?itok=Z7Pt4p3a",
+    "source": "https://www.ufc.com/athlete/alexander-volkov",
+    "name": "Alexander Volkov",
+    "checked": "2026-10-04"
+  },
+  "rick-story": {
+    "url": "https://ufc.com/images/2022-03/660d93b0-d4ce-463a-8a6e-afa1a0a0db83%252FRickStory_Headshot.png",
+    "source": "https://www.ufc.com/athlete/rick-story",
+    "name": "Rick Story",
+    "checked": "2026-10-04"
+  },
+  "iuri-alcantara": {
+    "url": "https://ufc.com/images/image/ufc-fighter-container/68134/profile-galery/profile-picture/IuriAlcantara_Headshot.png?VersionId=0ltfmUGUCF4QGXIzam_1jlcCdW9UNtym",
+    "source": "https://www.ufc.com/athlete/iuri-alcantara",
+    "name": "Iuri Alcantara",
+    "checked": "2026-10-04"
+  },
+  "marcos-rogerio-de-lima": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-01/5/ROGERIO%20DE%20LIMA_MARCOS_L_02-17.png?itok=hdKE0Yev",
+    "source": "https://www.ufc.com/athlete/marcos-rogerio-de-lima",
+    "name": "Marcos Rogerio de Lima",
+    "checked": "2026-10-04"
+  },
+  "tj-dillashaw": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2021-07/DILLASHAW_TJ_L_07-24.png?itok=T1b3ehHf",
+    "source": "https://www.ufc.com/athlete/tj-dillashaw",
+    "name": "TJ Dillashaw",
+    "checked": "2026-10-04"
+  },
+  "elizeu-dos-santos": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-11/DOS_SANTOS_ELIZEU_L_11-09.png?itok=Ud3E-HJn",
+    "source": "https://www.ufc.com/athlete/elizeu-dos-santos",
+    "name": "Elizeu Zaleski dos Santos",
+    "checked": "2026-10-04"
+  },
+  "jon-fitch": {
+    "url": "https://ufc.com/images/image/fighter_images/Jon_Fitch/JonFitch_Headshot.png?VersionId=9kxtcIMHT2cmoU156w9E2egPHwoRwJAd",
+    "source": "https://www.ufc.com/athlete/jon-fitch",
+    "name": "Jon Fitch",
+    "checked": "2026-10-04"
+  },
+  "julian-erosa": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-03/EROSA_JULIAN_L_03-28.png?itok=QBTJINN6",
+    "source": "https://www.ufc.com/athlete/julian-erosa",
+    "name": "Julian Erosa",
+    "checked": "2026-10-04"
+  },
+  "jared-gordon": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-05/GORDON_JARED_L_05-17.png?itok=JksSLA9u",
+    "source": "https://www.ufc.com/athlete/jared-gordon",
+    "name": "Jared Gordon",
+    "checked": "2026-10-04"
+  },
+  "alexander-gustafsson": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2022-07/GUSTAFSSON_ALEXANDER_L_07-23.png?itok=4dniStrY",
+    "source": "https://www.ufc.com/athlete/alexander-gustafsson",
+    "name": "Alexander Gustafsson",
+    "checked": "2026-10-04"
+  },
+  "urijah-faber": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-01/1/FABER_URIJAH_L.png?itok=vuU6AsF7",
+    "source": "https://www.ufc.com/athlete/urijah-faber",
+    "name": "Urijah Faber",
+    "checked": "2026-10-04"
+  },
+  "alexander-hernandez": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-09/HERNANDEZ_ALEXANDER_L_09-13.png?itok=B5l45CwH",
+    "source": "https://www.ufc.com/athlete/alexander-hernandez",
+    "name": "Alexander Hernandez",
+    "checked": "2026-10-04"
+  },
+  "li-jingliang": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-08/JINGLIANG_LI_L_08-17.png?itok=tjhdnWMw",
+    "source": "https://www.ufc.com/athlete/li-jingliang",
+    "name": "Li Jingliang",
+    "checked": "2026-10-04"
+  },
+  "dong-hyun-kim": {
+    "url": "https://ufc.com/images/image/ufc-fighter-container/67847/profile-galery/profile-picture/DongHyunKim_Headshot.png?VersionId=u_YY6kbhLNaIylccb7pYkc4ptK5tikVs",
+    "source": "https://www.ufc.com/athlete/dong-hyun-kim",
+    "name": "Dong Hyun Kim",
+    "checked": "2026-10-04"
+  },
+  "cheick-kongo": {
+    "url": "https://ufc.com/images/image/fighter_images/Cheick_Kongo/CheickKongo_Headshot2012.png?VersionId=mqkFCUiLmdqgkiqEXbda7jl17WxqZxvY",
+    "source": "https://www.ufc.com/athlete/cheick-kongo",
+    "name": "Cheick Kongo",
+    "checked": "2026-10-04"
+  },
+  "chris-lytle": {
+    "url": "https://ufc.com/images/styles/event_results_athlete_headshot/s3/image/fighter_images/Dan_Hardy/DanHardy_Headshot2012_2.png?VersionId=lEZVh9JNGxzSIJQSj1_8IzYoGDKsequQ&amp;itok=5TpuqNaD",
+    "source": "https://www.ufc.com/athlete/chris-lytle",
+    "name": "Chris Lytle",
+    "checked": "2026-10-04"
+  },
+  "thiago-tavares": {
+    "url": "https://ufc.com/images/2022-03/f73cb605-f323-42a6-bcaa-c27bb9845960%252FThiagoTavares_Headshot.png",
+    "source": "https://www.ufc.com/athlete/thiago-tavares",
+    "name": "Thiago Tavares",
+    "checked": "2026-10-04"
+  },
+  "tai-tuivasa": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-09/TUIVASA_TAI_L_09-19.png?itok=P6tcAa_A",
+    "source": "https://www.ufc.com/athlete/tai-tuivasa",
+    "name": "Tai Tuivasa",
+    "checked": "2026-10-04"
+  },
+  "marvin-vettori": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-10/VETTORI_MARVIN_L_10-03.png?itok=xBi6Ehwu",
+    "source": "https://www.ufc.com/athlete/marvin-vettori",
+    "name": "Marvin Vettori",
+    "checked": "2026-10-04"
+  },
+  "shian-uirante": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2021-11/68015%252Fprofile-galery%252Ffullbodyleft-picture%252FVILLANTE_GIAN_L_11-06.png?itok=OK10PX0U",
+    "source": "https://www.ufc.com/athlete/shian-uirante",
+    "name": "Gian Villante",
+    "checked": "2026-10-04"
+  },
+  "renan-barao": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2018-10/BARAO_RENAN_L.png?VersionId=mXkxLQ23sgEnbww1uAfCtyUXEiNeUWpB&amp;itok=tQVLZrgm",
+    "source": "https://www.ufc.com/athlete/renan-barao",
+    "name": "Renan Barao",
+    "checked": "2026-10-04"
+  },
+  "matt-wiman": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2020-12/68759%252Fprofile-galery%252Ffullbodyleft-picture%252FWIMAN_MATT_L_06-22.png?itok=WM0DUB6Z",
+    "source": "https://www.ufc.com/athlete/matt-wiman",
+    "name": "Matt Wiman",
+    "checked": "2026-10-04"
+  },
+  "marc-andre-barriault": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-05/BARRIAULT_MARC-ANDRE_L_05-10.png?itok=kJq5jhiN",
+    "source": "https://www.ufc.com/athlete/marc-andre-barriault",
+    "name": "Marc-Andre Barriault",
+    "checked": "2026-10-04"
+  },
+  "travis-browne": {
+    "url": "https://ufc.com/images/2022-03/b5936021-95ab-4f88-a99e-2fce717808d2%252FTravisBrowne_Headshot.png",
+    "source": "https://www.ufc.com/athlete/travis-browne",
+    "name": "Travis Browne",
+    "checked": "2026-10-04"
+  },
+  "joaquin-buckley": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-01/5/BUCKLEY_JOAQUIN_L_05-11.png?itok=yyjyefDC",
+    "source": "https://www.ufc.com/athlete/joaquin-buckley",
+    "name": "Joaquin Buckley",
+    "checked": "2026-10-04"
+  },
+  "devin-clark": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-02/CLARK_DEVIN_L_02-10.png?itok=VqW8ymUe",
+    "source": "https://www.ufc.com/athlete/devin-clark",
+    "name": "Devin Clark",
+    "checked": "2026-10-04"
+  },
+  "tenisu-hamiyutesu": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/image/fighter_images/Dennis_Bermudez/BERMUDEZ_DENNIS_L.png?itok=KYs0Bocr",
+    "source": "https://www.ufc.com/athlete/tenisu-hamiyutesu",
+    "name": "Dennis Bermudez",
+    "checked": "2026-10-04"
+  },
+  "shiyon-totsutoson": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2020-08/DODSON_JOHN_L_02-15.png?VersionId=Rtqs4QfMBwRQcvens1VOeY7SsiXJg1nt&amp;itok=c2wDAyZG",
+    "source": "https://www.ufc.com/athlete/shiyon-totsutoson",
+    "name": "John Dodson",
+    "checked": "2026-10-04"
+  },
+  "josh-emmett": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-03/EMMETT_JOSH_L_03-14.png?itok=CmMjCtXR",
+    "source": "https://www.ufc.com/athlete/josh-emmett",
+    "name": "Josh Emmett",
+    "checked": "2026-10-04"
+  },
+  "diego-ferreira": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-08/FERREIRA_DIEGO_L_08-08.png?itok=SfdTY6nN",
+    "source": "https://www.ufc.com/athlete/diego-ferreira",
+    "name": "Diego Ferreira",
+    "checked": "2026-10-04"
+  },
+  "spencer-fisher": {
+    "url": "https://ufc.com/images/image/fighter_images/Spencer_Fisher/SpencerFisher_Headshot.png?VersionId=sY8YfOF3d.tMw3CtUmKDXTgr3kTcDZsF",
+    "source": "https://www.ufc.com/athlete/spencer-fisher",
+    "name": "Spencer Fisher",
+    "checked": "2026-10-04"
+  },
+  "kenny-florian": {
+    "url": "https://ufc.com/images/styles/event_results_athlete_headshot/s3/2025-05/ALDO_JOSE_05-10.png?itok=QwpXgE5n",
+    "source": "https://www.ufc.com/athlete/kenny-florian",
+    "name": "Kenny Florian",
+    "checked": "2026-10-04"
+  },
+  "charles-jourdain": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-10/JOURDAIN_CHARLES_L_10-18.png?itok=lbnIm7ba",
+    "source": "https://www.ufc.com/athlete/charles-jourdain",
+    "name": "Charles Jourdain",
+    "checked": "2026-10-04"
+  },
+  "dustin-jacoby": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-07/JACOBY_DUSTIN_L_07-25.png?itok=Cqjm5n4D",
+    "source": "https://www.ufc.com/athlete/dustin-jacoby",
+    "name": "Dustin Jacoby",
+    "checked": "2026-10-04"
+  },
+  "krzysztof-jotko": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2022-09/JOTKO_KRZYSZTOF_L_10-01.png?itok=IAOYnR_0",
+    "source": "https://www.ufc.com/athlete/krzysztof-jotko",
+    "name": "Krzysztof Jotko",
+    "checked": "2026-10-04"
+  },
+  "cody-garbrandt": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-07/GARBRANDT_CODY_L_07-11.png?itok=vNyLFAQe",
+    "source": "https://www.ufc.com/athlete/cody-garbrandt",
+    "name": "Cody Garbrandt",
+    "checked": "2026-10-04"
+  },
+  "martin-kampmann": {
+    "url": "https://ufc.com/images/image/fighter_images/Martin_Kampmann/MartinKampmann_Headshot.png?VersionId=65lgCUlX2X8KzbHw9oopnRDA7gCl8ets",
+    "source": "https://www.ufc.com/athlete/martin-kampmann",
+    "name": "Martin Kampmann",
+    "checked": "2026-10-04"
+  },
+  "brian-kelleher": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-07/KELLEHER_BRIAN_L_07-20.png?itok=hXEANL9N",
+    "source": "https://www.ufc.com/athlete/brian-kelleher",
+    "name": "Brian Kelleher",
+    "checked": "2026-10-04"
+  },
+  "aleksei-oleinik": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2022-08/3d2c60db-88dd-426b-9552-24ee37f5e804%252FOLEINIK_ALEKSEI_L_03-26.png?itok=OvnPBpoA",
+    "source": "https://www.ufc.com/athlete/aleksei-oleinik",
+    "name": "Aleksei Oleinik",
+    "checked": "2026-10-04"
+  },
+  "ben-rothwell": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2021-05/67447%252Fprofile-galery%252Ffullbodyleft-picture%252FROTHWELL_BEN_L_05-08.png?itok=I_r7ZPdm",
+    "source": "https://www.ufc.com/athlete/ben-rothwell",
+    "name": "Ben Rothwell",
+    "checked": "2026-10-04"
+  },
+  "ricardo-lamas": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2020-08/LAMAS_RICARDO_L_08-29.png?VersionId=I.9zQ6HYSGTUEoBXp6fnuy1dbvnXxyCB&amp;itok=nD0ij4E5",
+    "source": "https://www.ufc.com/athlete/ricardo-lamas",
+    "name": "Ricardo Lamas",
+    "checked": "2026-10-04"
+  },
+  "rafael-natal": {
+    "url": "https://ufc.com/images/image/ufc-fighter-container/69034/profile-galery/profile-picture/RafaelNatal_Headshot.png?VersionId=V1cz1Xadiq3pS88c1gbS2REhpVRCAD0y",
+    "source": "https://www.ufc.com/athlete/rafael-natal",
+    "name": "Rafael Natal",
+    "checked": "2026-10-04"
+  },
+  "ricky-simon": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-03/SIMON_RICKY_L_03-28.png?itok=sJteSJT_",
+    "source": "https://www.ufc.com/athlete/ricky-simon",
+    "name": "Ricky Simon",
+    "checked": "2026-10-04"
+  },
+  "matt-schnell": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-06/SCHNELL_MATT_L_06-06.png?itok=yKzRTgaC",
+    "source": "https://www.ufc.com/athlete/matt-schnell",
+    "name": "Matt Schnell",
+    "checked": "2026-10-04"
+  },
+  "warlley-alves": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-02/ALVES_WARLLEY_L_10-21.png?itok=Da4Z5THH",
+    "source": "https://www.ufc.com/athlete/warlley-alves",
+    "name": "Warlley Alves",
+    "checked": "2026-10-04"
+  },
+  "louis-smolka": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2022-03/3e3e8bf3-f981-4091-80c0-6f47d51190ba%252FSMOLKA_LOUIS_L_12-04.png?itok=5ID3Kl3y",
+    "source": "https://www.ufc.com/athlete/louis-smolka",
+    "name": "Louis Smolka",
+    "checked": "2026-10-04"
+  },
+  "cody-durden": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-03/DURDEN_CODY_L_03-07.png?itok=vvCN2I2y",
+    "source": "https://www.ufc.com/athlete/cody-durden",
+    "name": "Cody Durden",
+    "checked": "2026-10-04"
+  },
+  "jussier-formiga": {
+    "url": "https://ufc.com/images/image/1/229/HeadshotPNGs/FORMIGA_JUSSIER.png?VersionId=O4VW4W3gavb7ao2UnPbfpilun_0LQQlh",
+    "source": "https://www.ufc.com/athlete/jussier-formiga",
+    "name": "Jussier Formiga",
+    "checked": "2026-10-04"
+  },
+  "davey-grant": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-04/GRANT_DAVEY_L_04-25.png?itok=eXuCU5Cp",
+    "source": "https://www.ufc.com/athlete/davey-grant",
+    "name": "Davey Grant",
+    "checked": "2026-10-04"
+  },
+  "walt-harris": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2021-06/69494%252Fprofile-galery%252Ffullbodyleft-picture%252FHARRIS_WALT_L_06-05.png?itok=E9nTnPBp",
+    "source": "https://www.ufc.com/athlete/walt-harris",
+    "name": "Walt Harris",
+    "checked": "2026-10-04"
+  },
+  "ilir-latifi": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2023-05/LATIFI_ILIR_L_05-20.png?itok=S4T9YE1W",
+    "source": "https://www.ufc.com/athlete/ilir-latifi",
+    "name": "Ilir Latifi",
+    "checked": "2026-10-04"
+  },
+  "thiago-moises": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-04/MOISES_THIAGO_L_04-18.png?itok=Psb_LkNa",
+    "source": "https://www.ufc.com/athlete/thiago-moises",
+    "name": "Thiago Moisés",
+    "checked": "2026-10-04"
+  },
+  "john-lineker": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/image/fighter_images/John_Lineker/LINEKER_JOHN_L.png?VersionId=xivGL9cdWSqQardY51ow5zrHpaWHUjuz&amp;itok=ZwaAVkFT",
+    "source": "https://www.ufc.com/athlete/john-lineker",
+    "name": "John Lineker",
+    "checked": "2026-10-04"
+  },
+  "volkan-oezdemir": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-11/OEZDEMIR_VOLKAN_L_11-22.png?itok=t7-CBwn_",
+    "source": "https://www.ufc.com/athlete/volkan-oezdemir",
+    "name": "Volkan Oezdemir",
+    "checked": "2026-10-04"
+  },
+  "gunnar-nelson": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-03/NELSON_GUNNAR_L_03-22.png?itok=ofXlPzVr",
+    "source": "https://www.ufc.com/athlete/gunnar-nelson",
+    "name": "Gunnar Nelson",
+    "checked": "2026-10-04"
+  },
+  "yair-rodriguez": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-04/RODRIGUEZ_YAIR_L_04-12.png?itok=MbCovx1T",
+    "source": "https://www.ufc.com/athlete/yair-rodriguez",
+    "name": "Yair Rodriguez",
+    "checked": "2026-10-04"
+  },
+  "johnny-walker": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-10/WALKER_JOHNNY_L_10-03.png?itok=h_k0j7f0",
+    "source": "https://www.ufc.com/athlete/johnny-walker",
+    "name": "Johnny Walker",
+    "checked": "2026-10-04"
+  },
+  "ryan-spann": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-07/SPANN_RYAN_L_07-19.png?itok=uktQXcGD",
+    "source": "https://www.ufc.com/athlete/ryan-spann",
+    "name": "Ryan Spann",
+    "checked": "2026-10-04"
+  },
+  "joe-stevenson": {
+    "url": "https://ufc.com/images/styles/event_results_athlete_headshot/s3/image/fighter_images/Joe_Stevenson/Joe_Stevenson_500x325.png?VersionId=MOoAnT9z7BsfiVkoHmXOXp6LOMdNBR3X&amp;itok=e7LBkats",
+    "source": "https://www.ufc.com/athlete/joe-stevenson",
+    "name": "Joe Stevenson",
+    "checked": "2026-10-04"
+  },
+  "omari-akhmedov": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2021-07/68949%252Fprofile-galery%252Ffullbodyleft-picture%252FAKHMEDOV_OMARI_L_07-10.png?itok=QA79JTB6",
+    "source": "https://www.ufc.com/athlete/omari-akhmedov",
+    "name": "Omari Akhmedov",
+    "checked": "2026-10-04"
+  },
+  "eddie-wineland": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2022-06/4a72ec41-026d-4b80-a18a-227f72333cbd%252FWINELAND_EDDIE_L_06-18.png?itok=HZYiNTrc",
+    "source": "https://www.ufc.com/athlete/eddie-wineland",
+    "name": "Eddie Wineland",
+    "checked": "2026-10-04"
+  },
+  "brandon-vera": {
+    "url": "https://ufc.com/images/image/fighter_images/Brandon_Vera/BrandonVera_Headshot2012.png?VersionId=lEyEjTslf8VDq8QWCWfbzypop8xngXHO",
+    "source": "https://www.ufc.com/athlete/brandon-vera",
+    "name": "Brandon Vera",
+    "checked": "2026-10-04"
+  },
+  "corey-anderson": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2020-02/ANDERSON_COREY_L.png?VersionId=.CDYKJ1oE6XrUF64Z67E0wo20v4GTQ39&amp;itok=K5jgtqGl",
+    "source": "https://www.ufc.com/athlete/corey-anderson",
+    "name": "Corey Anderson",
+    "checked": "2026-10-04"
+  },
+  "alan-belcher": {
+    "url": "https://ufc.com/images/image/ufc-fighter-container/67180/profile-galery/profile-picture/AlanBelcher_Headshot.png?VersionId=KDutyvuULyteazlIwgTc35MOz7cF5ScF",
+    "source": "https://www.ufc.com/athlete/alan-belcher",
+    "name": "Alan Belcher",
+    "checked": "2026-10-04"
+  },
+  "raoni-barcelos": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-01/BARCELOS_RAONI_L_01-18.png?itok=wbdKRVUn",
+    "source": "https://www.ufc.com/athlete/raoni-barcelos",
+    "name": "Raoni Barcelos",
+    "checked": "2026-10-04"
+  },
+  "stephan-bonnar": {
+    "url": "https://ufc.com/images/styles/event_results_athlete_headshot/s3/2020-10/67302%252Fprofile-galery%252Fprofile-picture%252FSILVA_ANDERSON_10-31.png?itok=Uft1m0eL",
+    "source": "https://www.ufc.com/athlete/stephan-bonnar",
+    "name": "Stephan Bonnar",
+    "checked": "2026-10-04"
+  },
+  "nicolas-dalby": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-11/DALBY_NICOLAS_L_11-22.png?itok=MsZO3BbI",
+    "source": "https://www.ufc.com/athlete/nicolas-dalby",
+    "name": "Nicolas Dalby",
+    "checked": "2026-10-04"
+  },
+  "gabriel-benitez": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-04/BENITEZ_GABRIEL_L_04-27.png?itok=Sy0Nwnkn",
+    "source": "https://www.ufc.com/athlete/gabriel-benitez",
+    "name": "Gabriel Benitez",
+    "checked": "2026-10-04"
+  },
+  "grant-dawson": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-05/DAWSON_GRANT_L_05-09.png?itok=JuVEhRo_",
+    "source": "https://www.ufc.com/athlete/grant-dawson",
+    "name": "Grant Dawson",
+    "checked": "2026-10-04"
+  },
+  "marc-diakiese": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2023-07/DIAKIESE_MARC_L_07-22.png?itok=KIy-BSTb",
+    "source": "https://www.ufc.com/athlete/marc-diakiese",
+    "name": "Marc Diakiese",
+    "checked": "2026-10-04"
+  },
+  "forrest-griffin": {
+    "url": "https://ufc.com/images/image/fighter_images/Forest_Griffin/ForrestGriffin_Headshot2012.png?VersionId=k92qXdpeYlLoYUeEMF8tMTNNPIIbToI4",
+    "source": "https://www.ufc.com/athlete/forrest-griffin",
+    "name": "Forrest Griffin",
+    "checked": "2026-10-04"
+  },
+  "paul-felder": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2020-11/68984%252Fprofile-galery%252Ffullbodyleft-picture%252FFELDER_PAUL_L_11-14.png?itok=0lR089HT",
+    "source": "https://www.ufc.com/athlete/paul-felder",
+    "name": "Paul Felder",
+    "checked": "2026-10-04"
+  },
+  "cezar-ferreira": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/image/fighter_images/Cezar_Ferreira/FERREIRA_CEZAR_L.png?itok=q9hcJFNf",
+    "source": "https://www.ufc.com/athlete/cezar-ferreira",
+    "name": "Cezar Ferreira",
+    "checked": "2026-10-04"
+  },
+  "chris-gutierrez": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-10/GUTIERREZ_CHRIS_L_10-04.png?itok=n5xQXYog",
+    "source": "https://www.ufc.com/athlete/chris-gutierrez",
+    "name": "Chris Gutierrez",
+    "checked": "2026-10-04"
+  },
+  "nasrat-haqparast": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-10/HAQPARAST_NASRAT_L_10-25.png?itok=mn2ANLv7",
+    "source": "https://www.ufc.com/athlete/nasrat-haqparast",
+    "name": "Nasrat Haqparast",
+    "checked": "2026-10-04"
+  },
+  "al-iaquinta": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2021-11/67178%252Fprofile-galery%252Ffullbodyleft-picture%252FIAQUINTA_AL_L_11-06.png?itok=44fdx2Hw",
+    "source": "https://www.ufc.com/athlete/al-iaquinta",
+    "name": "Al Iaquinta",
+    "checked": "2026-10-04"
+  },
+  "calvin-kattar": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-07/KATTAR_CALVIN_L_07-12.png?itok=poQjUSo-",
+    "source": "https://www.ufc.com/athlete/calvin-kattar",
+    "name": "Calvin Kattar",
+    "checked": "2026-10-04"
+  },
+  "anthony-rocco-martin": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2019-03/ROCCO_MARTIN_ANTHONY_L.png?VersionId=_k_up9QAygSxWCBpnXiOk51ItXJg7Otb&amp;itok=-nQ-59Q4",
+    "source": "https://www.ufc.com/athlete/anthony-rocco-martin",
+    "name": "Anthony Rocco Martin",
+    "checked": "2026-10-04"
+  },
+  "jonathan-martinez": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-11/MARTINEZ_JONATHAN_L_11-16.png?itok=bznVqcTr",
+    "source": "https://www.ufc.com/athlete/jonathan-martinez",
+    "name": "Jonathan Martinez",
+    "checked": "2026-10-04"
+  },
+  "yancy-medeiros": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2021-05/69524%252Fprofile-galery%252Ffullbodyleft-picture%252FMEDEIROS_YANCY_L_05-22.png?itok=uN2az_41",
+    "source": "https://www.ufc.com/athlete/yancy-medeiros",
+    "name": "Yancy Medeiros",
+    "checked": "2026-10-04"
+  },
+  "mark-munoz": {
+    "url": "https://ufc.com/images/image/fighter_images/Mark_Munoz/MarkMunoz_Headshot.png?VersionId=wIonzkATXpd1sLpPXeiLTGE2BPQxGyLT",
+    "source": "https://www.ufc.com/athlete/mark-munoz",
+    "name": "Mark Munoz",
+    "checked": "2026-10-04"
+  },
+  "josh-neer": {
+    "url": "https://ufc.com/images/image/fighter_images/Josh_Neer/JoshNeer_Headshot.png?VersionId=WxXjbBOkAwZT_YazUiBtZMdlmCtb8NAs",
+    "source": "https://www.ufc.com/athlete/josh-neer",
+    "name": "Josh Neer",
+    "checked": "2026-10-04"
+  },
+  "kennedy-nzechukwu": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-08/NZECHUKWU_KENNEDY_L_08-22.png?itok=YliCidte",
+    "source": "https://www.ufc.com/athlete/kennedy-nzechukwu",
+    "name": "Kennedy Nzechukwu",
+    "checked": "2026-10-04"
+  },
+  "mike-perry": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2021-04/68841%252Fprofile-galery%252Ffullbodyleft-picture%252FPERRY_MIKE_L_04-10.png?itok=9s6hBQMT",
+    "source": "https://www.ufc.com/athlete/mike-perry",
+    "name": "Mike Perry",
+    "checked": "2026-10-04"
+  },
+  "ricardo-ramos": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-10/RAMOS_RICARDO_L_10-11.png?itok=p9mhA9zS",
+    "source": "https://www.ufc.com/athlete/ricardo-ramos",
+    "name": "Ricardo Ramos",
+    "checked": "2026-10-04"
+  },
+  "dominick-reyes": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-04/REYES_DOMINICK_L_04-11.png?itok=7HSVtv1p",
+    "source": "https://www.ufc.com/athlete/dominick-reyes",
+    "name": "Dominick Reyes",
+    "checked": "2026-10-04"
+  },
+  "alessio-sakara": {
+    "url": "https://ufc.com/images/image/fighter_images/Alessio_Sakara/AlessioSakara_Headshot.png?VersionId=VY7sUbEhwi.tGE6XFFFIgJqbCrINMUcA",
+    "source": "https://www.ufc.com/athlete/alessio-sakara",
+    "name": "Alessio Sakara",
+    "checked": "2026-10-04"
+  },
+  "jairzinho-rozenstruik": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-01/5/ROZENSTRUIK_JAIRZINHO_L_08-17.png?itok=r4CRyJ4u",
+    "source": "https://www.ufc.com/athlete/jairzinho-rozenstruik",
+    "name": "Jairzinho Rozenstruik",
+    "checked": "2026-10-04"
+  },
+  "chase-sherman": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2022-04/76e26b86-126c-4ae7-a5be-4738fd6493e7%252FSHERMAN_CHASE_L_04-23.png?itok=0qdF1MRO",
+    "source": "https://www.ufc.com/athlete/chase-sherman",
+    "name": "Chase Sherman",
+    "checked": "2026-10-04"
+  },
+  "mike-swick": {
+    "url": "https://ufc.com/images/image/ufc-fighter-container/68829/profile-galery/profile-picture/MikeSwick_Headshot.png?VersionId=efYsCru9ZIerbg5pHhk5cXHW_1aYvbET",
+    "source": "https://www.ufc.com/athlete/mike-swick",
+    "name": "Mike Swick",
+    "checked": "2026-10-04"
+  },
+  "evan-tanner": {
+    "url": "https://ufc.com/images/styles/event_results_athlete_headshot/s3/image/fighter_images/Kendall_Grove/Kendall_Grove_500x325.png?VersionId=5PH0G0dA6ef0SGhThP5FDp9L1rONZY3p&amp;itok=4IIwJUe4",
+    "source": "https://www.ufc.com/athlete/evan-tanner",
+    "name": "Evan Tanner",
+    "checked": "2026-10-04"
+  },
+  "serghei-spivac": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-08/SPIVAC_SERGHEI_L_08-22.png?itok=4Bn2kGKb",
+    "source": "https://www.ufc.com/athlete/serghei-spivac",
+    "name": "Serghei Spivac",
+    "checked": "2026-10-04"
+  },
+  "erick-silva": {
+    "url": "https://ufc.com/images/2022-03/998bcbba-78d2-4b4e-a20c-98d53f3e027b%252FErikSilva_Headshot.png",
+    "source": "https://www.ufc.com/athlete/erick-silva",
+    "name": "Erick Silva",
+    "checked": "2026-10-04"
+  },
+  "cody-stamann": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-11/STAMANN_CODY_L_11-09.png?itok=5V0xnfsZ",
+    "source": "https://www.ufc.com/athlete/cody-stamann",
+    "name": "Cody Stamann",
+    "checked": "2026-10-04"
+  },
+  "makwan-amirkhani": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2022-07/aeac1376-60de-48f9-983f-c13d3d58d52e%252FAMIRKHANI_MAKWAN_L_03-19.png?itok=CSaPxXWQ",
+    "source": "https://www.ufc.com/athlete/makwan-amirkhani",
+    "name": "Makwan Amirkhani",
+    "checked": "2026-10-04"
+  },
+  "abdul-razak-alhassan": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-01/13/ALHASSAN_ABDUL_L_10-12.png?itok=UGOhdUBa",
+    "source": "https://www.ufc.com/athlete/abdul-razak-alhassan",
+    "name": "Abdul Razak Alhassan",
+    "checked": "2026-10-04"
+  },
+  "danny-castillo": {
+    "url": "https://ufc.com/images/2022-03/ea1a9b13-8fcb-4c36-9090-3bb6cf594938%252FDannyCastillo_Headshot151.png",
+    "source": "https://www.ufc.com/athlete/danny-castillo",
+    "name": "Danny Castillo",
+    "checked": "2026-10-04"
+  },
+  "jake-collier": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2022-09/fe8aadbd-65cb-469e-b339-fc14fff68528%252FCOLLIER_JAKE_L_04-30.png?itok=qS9ddqUZ",
+    "source": "https://www.ufc.com/athlete/jake-collier",
+    "name": "Jake Collier",
+    "checked": "2026-10-04"
+  },
+  "satsuku-kaminkusu": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2023-04/CUMMINGS_ZAK_L_04-15.png?itok=NdC2v-v2",
+    "source": "https://www.ufc.com/athlete/satsuku-kaminkusu",
+    "name": "Zak Cummings",
+    "checked": "2026-10-04"
+  },
+  "mario-bautista": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-02/BAUTISTA_MARIO_L_02-07.png?itok=Wpsbk8fU",
+    "source": "https://www.ufc.com/athlete/mario-bautista",
+    "name": "Mario Bautista",
+    "checked": "2026-10-04"
+  },
+  "marcus-davis": {
+    "url": "https://ufc.com/images/styles/event_results_athlete_headshot/s3/2026-05/STEPHENS_JEREMY_05-09.png?itok=xdJ_Cd7G",
+    "source": "https://www.ufc.com/athlete/marcus-davis",
+    "name": "Marcus Davis",
+    "checked": "2026-10-04"
+  },
+  "roman-dolidze": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-03/DOLIDZE_ROMAN_L_03-21.png?itok=LBWQed7d",
+    "source": "https://www.ufc.com/athlete/roman-dolidze",
+    "name": "Roman Dolidze",
+    "checked": "2026-10-04"
+  },
+  "christos-giagos": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-04/GIAGOS_CHRISTOS_L_09-16.png?itok=LaB8_ukA",
+    "source": "https://www.ufc.com/athlete/christos-giagos",
+    "name": "Christos Giagos",
+    "checked": "2026-10-04"
+  },
+  "trevin-giles": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-05/GILES_TREVIN_L_05-31.png?itok=_LwDaE9H",
+    "source": "https://www.ufc.com/athlete/trevin-giles",
+    "name": "Trevin Giles",
+    "checked": "2026-10-04"
+  },
+  "matt-hamill": {
+    "url": "https://ufc.com/images/image/fighter_images/Matt_Hamill/MattHamill_Headshot.png?VersionId=1F4Lo9UyVvgILHZ3MP_GTAanaqU2QH9T",
+    "source": "https://www.ufc.com/athlete/matt-hamill",
+    "name": "Matt Hamill",
+    "checked": "2026-10-04"
+  },
+  "john-howard": {
+    "url": "https://ufc.com/images/2022-03/615d903f-a079-471b-8b09-90a4215a5817%252FJohnHoward_Headshot.png",
+    "source": "https://www.ufc.com/athlete/john-howard",
+    "name": "John Howard",
+    "checked": "2026-10-04"
+  },
+  "tyson-griffin": {
+    "url": "https://ufc.com/images/styles/event_results_athlete_headshot/s3/image/fighter_images/Tyson_Griffin/Tyson_Griffin_500x325.png?VersionId=YW3CSXB7eaGa8VD7OuOWdt0q2ADIdFa4&amp;itok=ILma_gh1",
+    "source": "https://www.ufc.com/athlete/tyson-griffin",
+    "name": "Tyson Griffin",
+    "checked": "2026-10-04"
+  },
+  "damon-jackson": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-10/13/JACKSON_DAMON_L_08-10.png?itok=BlSBbqxG",
+    "source": "https://www.ufc.com/athlete/damon-jackson",
+    "name": "Damon Jackson",
+    "checked": "2026-10-04"
+  },
+  "kyung-ho-kang": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-01/1/KANG_KYUNG_HO_L_06-22.png?itok=kogvd3Uo",
+    "source": "https://www.ufc.com/athlete/kyung-ho-kang",
+    "name": "Kyung Ho Kang",
+    "checked": "2026-10-04"
+  },
+  "chad-mendes": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/image/fighter_images/Chad_Mendes/MENDES_CHAD_L.png?itok=h4gilC0B",
+    "source": "https://www.ufc.com/athlete/chad-mendes",
+    "name": "Chad Mendes",
+    "checked": "2026-10-04"
+  },
+  "matt-mitrione": {
+    "url": "https://ufc.com/images/2022-03/4d1b3135-e8bb-4b2e-b29e-cc89d9b911ab%252FMattMitrione_Headshot.png",
+    "source": "https://www.ufc.com/athlete/matt-mitrione",
+    "name": "Matt Mitrione",
+    "checked": "2026-10-04"
+  },
+  "takeya-mizugaki": {
+    "url": "https://ufc.com/images/2022-03/3db9b639-f10a-44be-ac60-8716e473f645%252FTakeyaMizugaki_Headshot151.png",
+    "source": "https://www.ufc.com/athlete/takeya-mizugaki",
+    "name": "Takeya Mizugaki",
+    "checked": "2026-10-04"
+  },
+  "sergio-moraes": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2018-10/MORAES_SERGIO_L.png?VersionId=Wv_QG3jG3jj0inI7zb1mFGITuS.zv4kr&amp;itok=B9NWBoGa",
+    "source": "https://www.ufc.com/athlete/sergio-moraes",
+    "name": "Sergio Moraes",
+    "checked": "2026-10-04"
+  },
+  "john-moraga": {
+    "url": "https://ufc.com/images/image/ufc-fighter-container/68298/profile-galery/profile-picture/JohnMoraga_Headshot.png?VersionId=367wy5Ok9WlDSf7gGjdRV8u5lz0z_757",
+    "source": "https://www.ufc.com/athlete/john-moraga",
+    "name": "John Moraga",
+    "checked": "2026-10-04"
+  },
+  "geoff-neal": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2026-02/NEAL_GEOFF_L_02-21.png?itok=h9m7my9H",
+    "source": "https://www.ufc.com/athlete/geoff-neal",
+    "name": "Geoff Neal",
+    "checked": "2026-10-04"
+  },
+  "brian-ortega": {
+    "url": "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-08/ORTEGA_BRIAN_L_08-23.png?itok=OQf_S2Es",
+    "source": "https://www.ufc.com/athlete/brian-ortega",
+    "name": "Brian Ortega",
+    "checked": "2026-10-04"
   }
 }
