@@ -3,10 +3,10 @@ INSERT INTO activity_rules VALUES ('daily','Daily check-in',40,1),('comment','Us
 CREATE TABLE activity_rewards(user TEXT NOT NULL REFERENCES auth_accounts(id) ON DELETE CASCADE,kind TEXT NOT NULL REFERENCES activity_rules(kind),reference TEXT NOT NULL,amount INTEGER NOT NULL,created INTEGER NOT NULL,PRIMARY KEY(user,kind,reference));
 CREATE INDEX activity_rewards_daily ON activity_rewards(user,kind,created);
 CREATE TRIGGER activity_reward_guard BEFORE INSERT ON activity_rewards BEGIN
- SELECT CASE WHEN NEW.amount!=(SELECT amount FROM activity_rules WHERE kind=NEW.kind) THEN RAISE(ABORT,'Invalid reward') END;
- SELECT CASE WHEN NEW.created<unixepoch()*1000-60000 OR NEW.created>unixepoch()*1000+60000 THEN RAISE(ABORT,'Invalid reward time') END;
- SELECT CASE WHEN EXISTS(SELECT 1 FROM activity_rewards WHERE user=NEW.user AND kind=NEW.kind AND reference=NEW.reference) THEN RAISE(IGNORE) END;
- SELECT CASE WHEN (SELECT COUNT(*) FROM activity_rewards WHERE user=NEW.user AND kind=NEW.kind AND created>=CAST(strftime('%s','now','start of day') AS INTEGER)*1000)>=(SELECT daily_limit FROM activity_rules WHERE kind=NEW.kind) THEN RAISE(IGNORE) END;
+ SELECT RAISE(ABORT,'Invalid reward') WHERE NEW.amount!=(SELECT amount FROM activity_rules WHERE kind=NEW.kind);
+ SELECT RAISE(ABORT,'Invalid reward time') WHERE NEW.created<unixepoch()*1000-60000 OR NEW.created>unixepoch()*1000+60000;
+ SELECT RAISE(IGNORE) WHERE EXISTS(SELECT 1 FROM activity_rewards WHERE user=NEW.user AND kind=NEW.kind AND reference=NEW.reference);
+ SELECT RAISE(IGNORE) WHERE (SELECT COUNT(*) FROM activity_rewards WHERE user=NEW.user AND kind=NEW.kind AND created>=CAST(strftime('%s','now','start of day') AS INTEGER)*1000)>=(SELECT daily_limit FROM activity_rules WHERE kind=NEW.kind);
 END;
 CREATE TRIGGER credit_activity_reward AFTER INSERT ON activity_rewards BEGIN
  UPDATE coin_wallets SET balance=balance+NEW.amount WHERE user=NEW.user;
