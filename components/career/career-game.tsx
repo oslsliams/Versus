@@ -1,17 +1,15 @@
 'use client';
 // VERSUS career mode: create a fighter, run their weeks, take fights, climb to a belt.
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {Dumbbell, Swords, BedDouble, Megaphone, Crown, Flame, HeartPulse, Zap, Wallet, ChevronRight, RotateCcw, Flag, Shield, X, Check} from 'lucide-react';
 import {
   ACTIONS, DIVISIONS, FIGHTER_COLORS, START_COUNTRIES, STAT_KEYS, STAT_LABEL, STYLES, TIERS,
-  acceptOffer, applyResult, createCareer, declineOffer, legacy, npc, overall, retire, rng, takeAction,
+  acceptOffer, applyResult, createCareer, declineOffer, legacy, npc, overall, retire, takeAction,
   type Career, type Division, type NPC, type Plan, type StatKey, type Style,
 } from '../../lib/career/engine';
-import {PLANS, aiPlan, fightRound, startFight, type FightState} from '../../lib/career/fight';
+import {PLANS, fightRound, startFight, type FightState} from '../../lib/career/fight';
 import {competitors} from '../../lib/competitors';
 import {StudioIntro} from './studio-intro';
-import {QuickFight} from './quick-fight';
-import {LiveFightGame, type LiveResult} from '../fight3d/live-fight';
 
 const SAVE = 'versus-career-v1', FIGHT = 'versus-career-fight-v1';
 const load = <T,>(k: string): T | null => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) as T : null; } catch { return null; } };
@@ -28,60 +26,19 @@ function Avatar({name, color, size = 'md'}: {name: string; color: string; size?:
 export function CareerGame() {
   const [career, setCareer] = useState<Career | null>(null);
   const [fight, setFight] = useState<FightState | null>(null);
-  const [live, setLive] = useState(false);
-  const [mode, setMode] = useState<'career' | 'quick'>('career');
   const [ready, setReady] = useState(false);
-  useEffect(() => { setCareer(load<Career>(SAVE)); setFight(load<FightState>(FIGHT)); setReady(true); if (new URLSearchParams(location.search).get('watch') === '1') setMode('quick'); }, []);
+  useEffect(() => { setCareer(load<Career>(SAVE)); setFight(load<FightState>(FIGHT)); setReady(true); }, []);
   const update = (c: Career | null) => { setCareer(c); save(SAVE, c); };
   const updateFight = (f: FightState | null) => { setFight(f); save(FIGHT, f); };
-  const inFight = live || (!!fight && !!career?.camp);
 
-  return <><StudioIntro/>
-    {!inFight && <div className="cg-modes"><div className="bn-seg" role="group" aria-label="Game mode">
-      <button type="button" aria-pressed={mode === 'career'} onClick={() => setMode('career')}>Career</button>
-      <button type="button" aria-pressed={mode === 'quick'} onClick={() => setMode('quick')}>Quick fight</button>
-    </div></div>}
-    {mode === 'quick' && !inFight ? <QuickFight/>
-    : !ready ? <div className="cg-loading">Loading your career…</div>
+  return <><StudioIntro/>{!ready ? <div className="cg-loading">Loading your career…</div>
     : !career ? <CreateFighter onCreate={c => update(c)}/>
-    : live && career.camp ? <LiveFightNight career={career} onDone={out => { setLive(false); update(applyResult(career, out)); }}/>
     : fight && career.camp ? <FightNight career={career} fight={fight} setFight={updateFight} onDone={out => { updateFight(null); update(applyResult(career, out)); }}/>
     : career.retired ? <Retired career={career} onNew={() => { update(null); updateFight(null); }}/>
-    : <Hub career={career} update={update} startFightNight={() => setLive(true)}/>}</>;
-}
-
-/* ================================================== live career fight */
-function simulate(c: Career): FightState['outcome'] {
-  const o = npc(c, c.camp!.opponentId)!;
-  let f = startFight({name: c.name, stats: c.stats, style: c.style}, o, c.camp!.rounds, c.seed + c.week * 31);
-  const r = rng(c.seed + c.week);
-  while (!f.done) f = fightRound(f, aiPlan(f.you, f.opp, r));
-  return f.outcome;
-}
-
-function LiveFightNight({career: c, onDone}: {career: Career; onDone: (o: NonNullable<FightState['outcome']>) => void}) {
-  const opp = npc(c, c.camp!.opponentId)!;
-  const you = useMemo(() => ({name: c.name, color: c.color, style: c.style, stats: c.stats}), [c.name, c.color, c.style, c.stats]);
-  const them = useMemo(() => ({name: opp.name, color: opp.color, style: opp.style, stats: opp.stats}), [opp]);
-  const difficulty = Math.max(.2, Math.min(.95, .35 + (overall(opp.stats) - overall(c.stats)) / 60 + c.tier * .12));
-  const [result, setResult] = useState<LiveResult | null>(null);
-  const onEnd = useCallback((r: LiveResult) => setResult(r), []);
-  const sim = useCallback(() => { const o = simulate(c)!; setResult({...o, cards: []}); }, [c]);
-  if (!result) return <div className="bn-page cg">
-    <div className="cg-livehead"><span className="eyebrow">{c.camp!.title ? (c.champ ? 'Title defense' : 'Title fight') : TIERS[c.tier].name}</span><h1>{c.name} <span className="muted">vs</span> {opp.name}</h1></div>
-    <LiveFightGame you={you} opp={them} rounds={c.camp!.rounds} difficulty={difficulty} onEnd={onEnd} onSim={sim}/>
-  </div>;
-  const purse = c.camp!.purse + (result.winner === 'you' ? c.camp!.winBonus : 0);
-  return <div className="bn-page cg"><section className={`panel cg-result ${result.winner}`}>
-    <img src={result.winner === 'you' ? '/art/trophy.webp' : '/art/gem.webp'} alt="" width={130} height={130}/>
-    <div>
-      <span className="eyebrow">{result.winner === 'you' ? 'Victory' : result.winner === 'opp' ? 'Defeat' : 'Draw'}</span>
-      <h2>{result.winner === 'you' ? `You win by ${result.method}` : result.winner === 'opp' ? `${opp.name} wins by ${result.method}` : 'Scored a draw'} · R{result.round}</h2>
-      {result.cards.length > 0 && ['DEC', 'SPLIT DEC', 'DRAW'].includes(result.method) && <p className="muted">Scorecards: {result.cards.map(([a, b]) => `${a}–${b}`).join(', ')}</p>}
-      <p className="muted">Purse: {money(purse)}</p>
-      <button className="button primary" onClick={() => onDone({winner: result.winner, method: result.method, round: result.round, damageTaken: result.damageTaken})}>Back to camp <ChevronRight size={18} aria-hidden="true"/></button>
-    </div>
-  </section></div>;
+    : <Hub career={career} update={update} startFightNight={() => {
+      const o = npc(career, career.camp!.opponentId)!;
+      updateFight(startFight({name: career.name, stats: career.stats, style: career.style}, o, career.camp!.rounds, career.seed + career.week * 31));
+    }}/>}</>;
 }
 
 /* ======================================================= create fighter */
