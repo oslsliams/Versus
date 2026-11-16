@@ -17,6 +17,7 @@ import "./bubble-pages.css";
 import "./bubble-features.css";
 import "./bubble-account.css";
 import "./career.css";
+import "./live-fight.css";
 
 export const metadata: Metadata = {
   title: "VERSUS — MMA Career Game",
