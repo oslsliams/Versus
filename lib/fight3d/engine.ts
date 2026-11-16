@@ -10,10 +10,10 @@ export const NO_INPUT: Input = {left: false, right: false, block: false, jab: fa
 export const DT = 1 / 60;
 
 const MOVES: Record<MoveId, {start: number; active: number; rec: number; range: number; dmg: number; cost: number; push: number; heavy: boolean}> = {
-  jab: {start: .07, active: .06, rec: .14, range: 1.18, dmg: 1.7, cost: 3, push: .15, heavy: false},
-  cross: {start: .13, active: .07, rec: .24, range: 1.28, dmg: 3.6, cost: 6, push: .3, heavy: true},
-  kick: {start: .2, active: .09, rec: .32, range: 1.55, dmg: 4.4, cost: 9, push: .45, heavy: true},
-  upper: {start: .16, active: .07, rec: .3, range: .95, dmg: 5, cost: 8, push: .35, heavy: true},
+  jab: {start: .15, active: .06, rec: .2, range: 1.18, dmg: 1.7, cost: 3, push: .15, heavy: false},
+  cross: {start: .18, active: .07, rec: .28, range: 1.28, dmg: 3.6, cost: 6, push: .3, heavy: true},
+  kick: {start: .3, active: .09, rec: .38, range: 1.55, dmg: 4.4, cost: 9, push: .45, heavy: true},
+  upper: {start: .17, active: .07, rec: .3, range: .95, dmg: 5, cost: 8, push: .35, heavy: true},
 };
 const SHOOT = {start: .26, active: .16, rec: .45, range: 1.35, cost: 14};
 export const ROUND_SECONDS = 75;

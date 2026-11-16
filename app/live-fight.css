@@ -1,55 +1,69 @@
-/* VERSUS · live fight screen (components/fight3d/live-fight.tsx) */
-.lf{display:grid;gap:10px}
-.lf-hud{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:14px;align-items:center;padding:12px 16px;border-radius:var(--r-lg);background:var(--glass);border:1px solid var(--glass-line);box-shadow:var(--glass-shadow)}
-.lf-corner{display:grid;gap:6px;min-width:0}
-.lf-corner strong{font-family:var(--font-display);font-size:clamp(16px,2vw,22px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lf-corner.blue{text-align:right;order:3}
-.lf-corner.blue .lf-bar{transform:scaleX(-1)}
-.lf-bar{display:block;height:14px;border-radius:999px;background:#00000060;overflow:hidden;box-shadow:inset 0 2px 0 #00000050}
-.lf-bar.st{height:7px}
-.lf-bar i{display:block;height:100%;width:100%;border-radius:999px;transition:width .12s linear}
-.lf-corner.red .hp i{background:linear-gradient(90deg,var(--pink),#ffb3d0)}
-.lf-corner.blue .hp i{background:linear-gradient(90deg,var(--sky),#c4ecff)}
-.lf-bar.st i{background:var(--sun)}
-.lf-center{display:grid;justify-items:center;gap:2px}
-.lf-clock{font-family:var(--font-display);font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
-.lf-round{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
-.lf-stage{position:relative;height:min(62vh,620px);min-height:320px;border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--glass-line);background:#07060f;touch-action:none;user-select:none}
-.lf-stage canvas{display:block;width:100%;height:100%}
-.lf-callout{position:absolute;top:18%;left:50%;transform:translateX(-50%);font-family:var(--font-display);font-weight:800;font-size:clamp(28px,5vw,56px);letter-spacing:-.03em;padding:4px 22px 8px;border-radius:20px;pointer-events:none;white-space:nowrap;
-  background:var(--ink);color:var(--bg);box-shadow:0 8px 0 #00000066;animation:lf-pop 1.1s var(--spring) forwards}
-.lf-callout.you{background:var(--pink);color:var(--pink-ink)}
-.lf-callout.opp{background:var(--sky);color:var(--sky-ink)}
-.lf-callout.big{background:var(--sun);color:var(--sun-ink);font-size:clamp(40px,8vw,90px)}
-@keyframes lf-pop{0%{opacity:0;transform:translateX(-50%) scale(.6) rotate(-6deg)}15%{opacity:1;transform:translateX(-50%) scale(1.08) rotate(-3deg)}30%{transform:translateX(-50%) scale(1) rotate(-3deg)}80%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-14px) rotate(-3deg)}}
-.lf-ground{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:grid;gap:6px;width:min(92%,460px);padding:10px 14px;border-radius:18px;background:#0b0a18d9;border:1px solid var(--glass-line);font-size:13px;font-weight:700;color:var(--muted)}
+/* VERSUS · full-screen live fight (components/fight3d/live-fight.tsx) */
+html.lf-lock,html.lf-lock body{overflow:hidden}
+.lf{position:fixed;inset:0;z-index:200;background:#05070f;color:#fff;font-family:var(--font-body);user-select:none;touch-action:none}
+.lf canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.lf-loading{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:14px;background:#05070f;z-index:5;color:#a9b3c9;font-weight:700}
+.lf-loadbar{width:260px;height:6px;border-radius:999px;background:#ffffff1a;overflow:hidden}
+.lf-loadbar i{display:block;height:100%;background:#fff;transition:width .2s}
+
+/* top corner plates, broadcast style */
+.lf-top{position:absolute;top:max(14px,env(safe-area-inset-top,0px));left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));display:flex;justify-content:space-between;gap:20px;pointer-events:none}
+.lf-plate{display:grid;gap:4px;width:min(40vw,440px)}
+.lf-plate.blue{text-align:right}
+.lf-bars{display:grid;gap:4px;padding:6px;background:#0a0d16d9;clip-path:polygon(0 0,100% 0,96% 100%,0 100%)}
+.lf-plate.blue .lf-bars{clip-path:polygon(0 0,100% 0,100% 100%,4% 100%)}
+.lf-hp,.lf-st{display:block;height:14px;background:#ffffff14;overflow:hidden}
+.lf-st{height:6px}
+.lf-plate.blue .lf-hp i,.lf-plate.blue .lf-st i{margin-left:auto}
+.lf-hp i,.lf-st i{display:block;height:100%;transition:width .12s linear}
+.lf-hp i{background:linear-gradient(180deg,#3df2b0,#1fc98d)}
+.lf-hp i[data-low="1"]{background:linear-gradient(180deg,#ff7b6b,#e5413a)}
+.lf-st i{background:linear-gradient(90deg,#f7c84a,#ffe08a)}
+.lf-name{display:block;padding:4px 12px;font-family:var(--font-display);font-weight:800;font-size:clamp(12px,1.4vw,16px);letter-spacing:.06em}
+.lf-plate.red .lf-name{background:linear-gradient(90deg,#d32a3a,#d32a3a00);clip-path:polygon(0 0,100% 0,94% 100%,0 100%)}
+.lf-plate.blue .lf-name{background:linear-gradient(270deg,#2459d6,#2459d600);clip-path:polygon(6% 0,100% 0,100% 100%,0 100%)}
+
+/* bottom scoreboard */
+.lf-score{position:absolute;left:50%;bottom:max(18px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;align-items:stretch;height:38px;background:#0a0d16e6;box-shadow:0 10px 30px #0008;font-weight:800;letter-spacing:.06em;font-size:14px;pointer-events:none;white-space:nowrap}
+.lf-score>span{display:grid;place-items:center;padding:0 14px}
+.lf-sname{min-width:110px;color:#e9edf7}
+.lf-chip{width:8px;padding:0!important}
+.lf-chip.red{background:#d32a3a}.lf-chip.blue{background:#2459d6}
+.lf-logo{background:#fff;color:#0a0d16;font-family:var(--font-display);font-size:18px}
+.lf-clock{font-family:var(--font-display);font-size:20px;font-variant-numeric:tabular-nums;min-width:74px}
+.lf-round{background:#f7c84a;color:#1d1500;font-size:13px}
+
+.lf-callout{position:absolute;top:22%;left:50%;transform:translateX(-50%);font-family:var(--font-display);font-weight:800;font-size:clamp(28px,5vw,64px);letter-spacing:-.02em;padding:4px 26px 8px;pointer-events:none;white-space:nowrap;
+  background:#fff;color:#0a0d16;box-shadow:0 10px 0 #0006;animation:lf-pop 1.1s cubic-bezier(.34,1.56,.64,1) forwards}
+.lf-callout.you{background:#d32a3a;color:#fff}
+.lf-callout.opp{background:#2459d6;color:#fff}
+.lf-callout.big{background:#f7c84a;color:#1d1500;font-size:clamp(44px,9vw,110px)}
+@keyframes lf-pop{0%{opacity:0;transform:translateX(-50%) scale(.6) skewX(-8deg)}15%{opacity:1;transform:translateX(-50%) scale(1.06) skewX(-8deg)}30%{transform:translateX(-50%) scale(1) skewX(-8deg)}80%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-14px) skewX(-8deg)}}
+
+.lf-ground{position:absolute;left:50%;bottom:76px;transform:translateX(-50%);display:grid;gap:6px;width:min(92%,460px);padding:10px 14px;background:#0a0d16e0;font-size:13px;font-weight:700;color:#c9d1e4}
 .lf-meter{display:grid;grid-template-columns:90px 1fr;gap:8px;align-items:center}
-.lf-meter b{color:var(--ink)}
-.lf-ground .lf-bar{height:10px}
-.lf-ground i.esc{background:var(--lime);width:0}
-.lf-ground i.sub{background:var(--violet);width:0}
-.lf-pause{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:12px;background:#07060fcc;text-align:center;padding:20px}
-.lf-pause h2{font-size:40px;margin:0}
-.lf-pause p{color:var(--muted);max-width:42ch;margin:0}
-.lf-pausebtn{position:absolute;top:12px;right:12px;width:40px;height:40px;border-radius:50%;border:1px solid var(--glass-line);background:#0b0a18b0;color:var(--ink);display:grid;place-items:center;cursor:pointer}
-.lf-keys{margin:0;text-align:center;color:var(--muted);font-size:13px}
-.lf-keys kbd{display:inline-block;min-width:22px;padding:2px 6px;margin:0 2px;border-radius:7px;background:var(--glass-strong);border:1px solid var(--glass-line);border-bottom-width:3px;color:var(--ink);font-family:var(--font-body);font-size:12px;font-weight:800}
+.lf-mbar{display:block;height:10px;background:#ffffff1a}
+.lf-mbar i{display:block;height:100%;width:0}
+.lf-mbar i.esc{background:#3df2b0}.lf-mbar i.sub{background:#b48cff}
+
+.lf-tools{position:absolute;top:max(84px,calc(env(safe-area-inset-top,0px) + 84px));right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:8px}
+.lf-tools button{width:40px;height:40px;border-radius:10px;border:1px solid #ffffff2a;background:#0a0d16b3;color:#fff;display:grid;place-items:center;cursor:pointer}
+.lf-pause{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:12px;background:#05070fd9;text-align:center;padding:20px;z-index:6}
+.lf-pause h2{font-size:44px;margin:0}
+.lf-pause p{color:#a9b3c9;max-width:52ch;margin:0}
+.lf-keys kbd,.lf-hint kbd{display:inline-block;min-width:20px;padding:1px 6px;margin:0 2px;border-radius:5px;background:#ffffff14;border:1px solid #ffffff30;border-bottom-width:3px;color:#fff;font-family:var(--font-body);font-size:11px;font-weight:800}
+.lf-hint{position:absolute;left:16px;bottom:max(24px,env(safe-area-inset-bottom,0px));margin:0;color:#a9b3c9;font-size:12px;max-width:260px;line-height:2;pointer-events:none;opacity:.85}
 .lf-pad{display:none}
 @media (pointer:coarse){
-  .lf-keys{display:none}
-  .lf-pad{display:flex;justify-content:space-between;gap:10px;align-items:flex-end;user-select:none;touch-action:none}
-  .lf-pad button{border:1px solid var(--glass-line);background:var(--glass-strong);color:var(--ink);font:inherit;font-weight:800;border-radius:18px;min-width:54px;min-height:54px;box-shadow:inset 0 -4px 0 #00000050;touch-action:none}
-  .lf-pad button:active{transform:scale(.92)}
+  .lf-hint{display:none}
+  .lf-score{bottom:auto;top:calc(max(14px,env(safe-area-inset-top,0px)) + 64px);height:30px;font-size:11px}
+  .lf-sname{min-width:70px}
+  .lf-pad{position:absolute;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+  .lf-pad button{border:1px solid #ffffff30;background:#0a0d16a6;color:#fff;font:inherit;font-weight:800;border-radius:16px;min-width:56px;min-height:56px;touch-action:none}
+  .lf-pad button:active{transform:scale(.92);background:#ffffff26}
   .lf-dpad{display:flex;gap:6px}
   .lf-btns{display:grid;grid-template-columns:repeat(3,58px);gap:6px}
-  .lf-btns .jab{background:color-mix(in srgb,var(--pink) 30%,transparent)}
-  .lf-btns .cross{background:color-mix(in srgb,var(--pink) 50%,transparent)}
-  .lf-btns .kick{background:color-mix(in srgb,var(--sky) 40%,transparent)}
-  .lf-btns .upper{background:color-mix(in srgb,var(--sun) 35%,transparent)}
-  .lf-btns .shoot{background:color-mix(in srgb,var(--lime) 35%,transparent);grid-column:span 2}
-  .lf-stage{height:52vh}
+  .lf-btns .shoot{grid-column:span 2}
+  .lf-ground{bottom:150px}
 }
-@media (max-width:640px){
-  .lf-hud{padding:10px;gap:8px}
-  .lf-clock{font-size:22px}
-}
+@media (max-width:640px){.lf-plate{width:44vw}.lf-name{font-size:11px}}

@@ -32,7 +32,7 @@ export function QuickFight() {
   const onEnd = useCallback((r: LiveResult) => setResult(r), []);
 
   if (fighting) return <div className="bn-page cg">
-    {!result ? <LiveFightGame key={fighting} you={you} opp={opp} rounds={rounds} difficulty={LEVELS[level].v} onEnd={onEnd} watch={watch}/>
+    {!result ? <LiveFightGame key={fighting} you={you} opp={opp} rounds={rounds} difficulty={LEVELS[level].v} onEnd={onEnd} watch={watch} onQuit={() => { setResult(null); setFighting(0); }}/>
       : <section className={`panel cg-result ${result.winner}`}>
         <img src={result.winner === 'you' ? '/art/trophy.webp' : '/art/gem.webp'} alt="" width={130} height={130}/>
         <div>
