@@ -86,7 +86,7 @@ export function FighterDatabase() {
 
     <div className="section-heading">
       <h2>{list.length} {list.length === 1 ? 'fighter' : 'fighters'}</h2>
-      <a className="button outline" href="/compare"><Swords size={16} aria-hidden="true"/>Build a matchup</a>
+      <a className="button outline" href="/"><Swords size={16} aria-hidden="true"/>Back to your career</a>
     </div>
 
     <div className="bn-roster">
@@ -123,7 +123,7 @@ export function FighterProfile({id}: {id: string}) {
   const fav = state?.me.favoriteFighter === id;
   const saveFav = () => state && act({action: 'profile', username: state.me.username, favorites: JSON.parse(state.me.favorites), bio: state.me.bio ?? '', location: state.me.location ?? '', avatar: state.me.avatar ?? 'initials', accent: state.me.accent ?? '#c5f74f', favoriteFighter: id}, 'Favorite fighter saved to your profile.');
   return <div className="bn-page">
-    <a className="text-link" href="/fighters">← Fighter database</a>
+    <a className="text-link" href="/legends">← Legends</a>
 
     <section className="panel bn-fhero" style={{'--fighter-color': c.color} as React.CSSProperties}>
       <div className="bn-fhero-art"><Portrait c={c} large/></div>
@@ -138,7 +138,6 @@ export function FighterProfile({id}: {id: string}) {
         <div className="bn-fhero-rec"><strong>{c.record.join('–')}</strong><span>career W–L–D{c.nc ? ` · ${c.nc} NC` : ''}</span></div>
         {rk && <div className="bn-pills">{rk.ranks.map(r => <span key={r.division} className="sticker lime" style={{'--tilt': '2deg'} as React.CSSProperties}>{rankLabel(r)}</span>)}</div>}
         <div className="bn-ctas">
-          <a className="button primary" href={`/compare?a=${id}&b=${other}`}><Swords size={16} aria-hidden="true"/>Compare {c.name.split(' ')[0]}</a>
           {state
             ? <button className="button outline" disabled={busy || fav} onClick={saveFav}><Heart size={16} aria-hidden="true"/>{fav ? 'Your favorite' : 'Set as favorite'}</button>
             : <a className="button outline" href={`/auth?return_to=${encodeURIComponent('/fighter/' + id)}`}><Heart size={16} aria-hidden="true"/>Sign in to favorite</a>}
@@ -183,11 +182,6 @@ export function FighterProfile({id}: {id: string}) {
         <h2>Moments</h2>
         {cards.length ? <div className="bn-mchips">{cards.map(m => <a key={m.id} className={`bn-mchip tier-${m.tier.toLowerCase()}`} href={`/moments?q=${encodeURIComponent(m.name)}`}><img src="/art/gem.webp" alt="" width={36} height={36}/><span><strong>{m.title.toLowerCase()}</strong><small>{m.event} · {m.tier}</small></span></a>)}</div>
           : <p className="muted">No Moments yet. <a className="text-link" href="/suggestions">Suggest one →</a></p>}
-        <div className="bn-compare-mini">
-          <label htmlFor="cmp-other">Compare with</label>
-          <div><select id="cmp-other" value={other} onChange={e => setOther(e.target.value)}>{competitors.filter(x => x.id !== id).map(x => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
-            <a className="button primary" href={`/compare?a=${id}&b=${other}`}>Go</a></div>
-        </div>
       </section>
     </div>
 

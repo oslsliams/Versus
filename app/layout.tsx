@@ -16,10 +16,11 @@ import "./bubble-home.css";
 import "./bubble-pages.css";
 import "./bubble-features.css";
 import "./bubble-account.css";
+import "./career.css";
 
 export const metadata: Metadata = {
-  title: "VERSUS — The UFC Fighter Archive",
-  description: "Explore UFC fighter careers, compare statistics, collect iconic Moments, and draft your fantasy fight team.",
+  title: "VERSUS — MMA Career Game",
+  description: "Create a fighter, train, take fights and climb from the basement leagues to a VERSUS Championship belt. A free MMA career game in your browser.",
   other: {
     "codex-preview": "development",
   },
