@@ -1,6 +1,6 @@
 'use client';
 import {useRef, useState} from 'react';
-import {Search, Swords, Sparkles, Trophy, Lightbulb, ArrowRight} from 'lucide-react';
+import {Search, Lightbulb, ArrowRight} from 'lucide-react';
 import {competitors} from '../lib/competitors';
 import type {Competitor} from '../lib/domain';
 import {moments} from '../lib/moments';
@@ -11,10 +11,10 @@ const featured = moments.find(m => m.id === 'holloway-last-second') ?? moments[0
 const tierSticker: Record<string, string> = {Legendary: 'sun', Iconic: 'violet', Classic: 'sky'};
 
 const paths = [
-  {href: '/fighters', icon: Search, tone: 'lime', title: 'Fighter database', body: `${competitors.length} careers with records, reach, striking and grappling stats.`},
-  {href: '/compare', icon: Swords, tone: 'pink', title: 'Head to head', body: 'Put any two fighters side by side and settle the argument.'},
-  {href: '/moments', icon: Sparkles, tone: 'sun', title: `${moments.length} Moments`, body: 'Collect the finishes and title nights that made UFC history.'},
-  {href: '/fantasy', icon: Trophy, tone: 'sky', title: 'Fight night', body: 'Draft five fighters from a real card and score on real results.'},
+  {href: '/fighters', tone: 'lime', art: '/art/octagon.webp', title: 'Fighter database', body: `${competitors.length} careers with records, reach, striking and grappling stats.`},
+  {href: '/compare', tone: 'pink', art: '/art/vs-badge.webp', title: 'Head to head', body: 'Put any two fighters side by side and settle the argument.'},
+  {href: '/moments', tone: 'sun', art: '/art/gem.webp', title: `${moments.length} Moments`, body: 'Collect the finishes and title nights that made UFC history.'},
+  {href: '/fantasy', tone: 'sky', art: '/art/trophy.webp', title: 'Fight night', body: 'Draft five fighters from a real card and score on real results.'},
 ];
 
 function HoloMoment() {
@@ -38,7 +38,7 @@ function HoloMoment() {
   return <div className="holo-stage">
     <a ref={card} className="holo-moment" href={`/moments?q=${encodeURIComponent(featured.name)}`} onPointerMove={move} onPointerLeave={leave} aria-label={`${featured.title} — ${featured.name}, ${featured.event}. View in Moments`}>
       <span className={`sticker ${tierSticker[featured.tier] ?? 'sun'}`}>{featured.tier}</span>
-      <span className="holo-art" aria-hidden="true">VS</span>
+      <span className="holo-art" aria-hidden="true"><img src="/art/trophy.webp" alt="" width={240} height={240}/></span>
       <span className="holo-foil" aria-hidden="true"/>
       <span className="holo-glare" aria-hidden="true"/>
       <span className="holo-meta">
@@ -74,13 +74,23 @@ export function ArchiveHome() {
     </section>
 
     <section className="bn-paths" aria-label="Explore VERSUS">
-      {paths.map(({href, icon: Icon, tone, title, body}) => <a key={href} href={href} className={`panel bn-path tone-${tone}`}>
-        <span className="bn-path-icon" aria-hidden="true"><Icon size={22}/></span>
+      {paths.map(({href, tone, art, title, body}) => <a key={href} href={href} className={`panel bn-path tone-${tone}`}>
+        <img className="bn-path-art" src={art} alt="" width={96} height={96} loading="lazy"/>
         <h2>{title}</h2>
         <p>{body}</p>
         <span className="bn-path-go" aria-hidden="true"><ArrowRight size={18}/></span>
       </a>)}
     </section>
+
+    <a className="panel bn-grid-promo" href="/grid">
+      <img src="/art/octagon.webp" alt="" width={150} height={150} loading="lazy"/>
+      <span>
+        <span className="eyebrow">New · daily puzzle</span>
+        <h2>Octagon Grid</h2>
+        <p>Nine squares, nine guesses. Name a fighter who fits both the row and the column. A new grid every day.</p>
+      </span>
+      <span className="button primary">Play today’s grid</span>
+    </a>
 
     <section className="bn-legends">
       <div className="section-heading">

@@ -1,13 +1,13 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
-import {BarChart3,ChevronDown,Coins,Crown,Flame,Menu,MessagesSquare,Search,Settings,ShoppingBag,Trophy,Users,UserRound,X} from 'lucide-react';
+import {BarChart3,ChevronDown,Coins,Crown,Flame,Grid3x3,Menu,MessagesSquare,Search,Settings,ShoppingBag,Trophy,Users,UserRound,X} from 'lucide-react';
 import type {AppState} from '../lib/domain';
 import {CoinChip} from './arena-coins';
 import UserAvatar from './user-avatar';
 import SignOut from './sign-out';
 
-const primary=[['fighters','Fighters',Users],['compare','Compare',BarChart3],['fantasy','Fight Night',Trophy],['live','News & live',Flame],['moments','Moments',ShoppingBag]] as const;
-const secondary=[['community','Community',MessagesSquare],['suggestions','Suggestions',MessagesSquare],['shop','Shop',ShoppingBag],['rankings','Rankings',Trophy],['leaderboard','Coin leaderboard',Trophy],['rewards','Earn coins',Trophy],['discover','Find everything',Search]] as const;
+const primary=[['fighters','Fighters',Users],['compare','Compare',BarChart3],['fantasy','Fight Night',Trophy],['moments','Moments',ShoppingBag],['grid','Daily grid',Grid3x3]] as const;
+const secondary=[['live','News & live',Flame],['community','Community',MessagesSquare],['suggestions','Suggestions',MessagesSquare],['shop','Shop',ShoppingBag],['rankings','Rankings',Trophy],['leaderboard','Coin leaderboard',Trophy],['rewards','Earn coins',Trophy],['discover','Find everything',Search]] as const;
 
 export default function SiteHeader({route,signedIn,signIn,accountMode,me,requests,onSearch}:{route:string;signedIn:boolean;signIn:string;accountMode:boolean;me:AppState['me']|undefined;requests:number;onSearch:()=>void}){
   const[menu,setMenu]=useState(false),[more,setMore]=useState(false),[account,setAccount]=useState(false);

@@ -1,0 +1,107 @@
+/* VERSUS · Bubble Night features: holo Moment cards, Octagon Grid, 3D art accents */
+
+/* ---------- holo Moment cards (components/holo.tsx) ---------- */
+.moment-art.holo{
+  --rx:0deg;--ry:0deg;--mx:50%;--my:50%;--shine:0;
+  transform:perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));transition:transform .55s var(--spring);
+  border-radius:var(--r-md);isolation:isolate;
+}
+.moment-art.holo.is-live{transition:transform .08s linear}
+.moment-art .holo-foil,.moment-art .holo-glare{position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:inherit}
+.moment-art .holo-foil{mix-blend-mode:color-dodge;opacity:calc(var(--shine)*.55);transition:opacity .3s;
+  background:repeating-linear-gradient(115deg,var(--pink) 0%,var(--sun) 8%,var(--lime) 16%,var(--sky) 24%,var(--violet) 32%,var(--pink) 40%);background-size:300% 300%;background-position:var(--mx) var(--my)}
+.moment-art .holo-glare{mix-blend-mode:overlay;opacity:calc(var(--shine)*.9);transition:opacity .3s;background:radial-gradient(circle at var(--mx) var(--my),#ffffffaa,transparent 45%)}
+.moment-art.tier-legendary .holo-foil{opacity:calc(.12 + var(--shine)*.7)}
+.moment-art.tier-classic .holo-foil{opacity:calc(var(--shine)*.3)}
+.moment-art .moment-tier{z-index:4;border-radius:12px;border:2px solid #fff;font-family:var(--font-display);font-weight:800;box-shadow:0 3px 0 #00000066;transform:rotate(-4deg)}
+.moment-art.tier-legendary .moment-tier{background:var(--sun);color:var(--sun-ink)}
+.moment-art.tier-iconic .moment-tier{background:var(--violet);color:var(--violet-ink)}
+.moment-art.tier-classic .moment-tier{background:var(--sky);color:var(--sky-ink)}
+.collectible-moment{border-radius:var(--r-md);transition:transform .5s var(--spring)}
+.collectible-moment:hover{transform:translateY(-6px)}
+
+/* ---------- 3D art accents across existing pages ---------- */
+.shop-hero,.coin-board-hero,.moments-hero{position:relative}
+.shop-wallet{position:relative;overflow:hidden}
+.shop-wallet::after{content:"";position:absolute;right:-30px;bottom:-40px;width:180px;height:180px;background:url(/art/coin.webp) center/contain no-repeat;opacity:.9;transform:rotate(-14deg);pointer-events:none;filter:drop-shadow(0 20px 30px #0008)}
+.coin-board-hero::after{content:"";position:absolute;right:4%;top:50%;width:min(26vw,240px);aspect-ratio:1;transform:translateY(-50%);background:url(/art/trophy.webp) center/contain no-repeat;pointer-events:none;filter:drop-shadow(0 30px 40px #0009);animation:bn-float 6s ease-in-out infinite}
+.empty::before{content:"";display:block;width:140px;height:140px;margin:0 auto 10px;background:url(/art/gem.webp) center/contain no-repeat;filter:drop-shadow(0 20px 30px #0008)}
+
+/* ---------- Octagon Grid ---------- */
+.og-status{display:flex;flex-wrap:wrap;gap:8px}
+.bn-pill.warn{background:color-mix(in srgb,var(--pink) 16%,transparent);border-color:color-mix(in srgb,var(--pink) 40%,transparent);color:var(--pink)}
+.og-board{display:grid;grid-template-columns:minmax(90px,.8fr) repeat(3,minmax(0,1fr));gap:10px;max-width:760px;width:100%;margin:0 auto}
+.og-corner{display:grid;place-items:center}
+.og-corner img{width:80%;max-width:110px;height:auto;filter:drop-shadow(0 12px 20px #0008)}
+.og-head{display:grid;place-items:center;text-align:center;padding:10px;border-radius:var(--r-sm);font-family:var(--font-display);font-weight:800;font-size:clamp(13px,1.6vw,16px);line-height:1.15;text-wrap:balance}
+.og-head.col{background:color-mix(in srgb,var(--sky) 16%,transparent);color:var(--sky);border:1px solid color-mix(in srgb,var(--sky) 35%,transparent)}
+.og-head.row{background:color-mix(in srgb,var(--pink) 16%,transparent);color:var(--pink);border:1px solid color-mix(in srgb,var(--pink) 35%,transparent)}
+.og-cell{position:relative;aspect-ratio:1;border-radius:var(--r-md);border:1px solid var(--glass-line);background:var(--glass);box-shadow:inset 0 1px 0 #ffffff22,inset 0 -6px 0 #00000045;color:var(--ink);cursor:pointer;overflow:hidden;display:grid;place-items:center;padding:0;
+  transition:transform .45s var(--spring),border-color .2s,background .2s}
+.og-cell:hover:not(:disabled){transform:scale(1.04) rotate(-1deg);border-color:#ffffff45;background:#ffffff14}
+.og-cell:active:not(:disabled){transform:scale(.94,.9)}
+.og-cell.active{border-color:var(--lime);box-shadow:0 0 0 4px color-mix(in srgb,var(--lime) 22%,transparent),inset 0 -6px 0 #00000045}
+.og-cell:disabled{cursor:default}
+.og-plus{font-family:var(--font-display);font-weight:800;font-size:40px;color:var(--muted);opacity:.6}
+.og-cell .portrait{position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:0;background:radial-gradient(ellipse at 50% 100%,color-mix(in srgb,var(--lime) 30%,transparent),transparent 70%)}
+.og-cell .portrait img{object-fit:contain;object-position:center bottom}
+.og-cell.solved{border-color:color-mix(in srgb,var(--lime) 55%,transparent);animation:og-pop .6s var(--spring)}
+.og-cell.revealed{opacity:.6;border-style:dashed}
+.og-cell.revealed .portrait{filter:grayscale(.6)}
+.og-name{position:absolute;left:6px;right:6px;bottom:6px;padding:4px 8px;border-radius:10px;background:#000000b0;font-size:12px;font-weight:800;line-height:1.2;text-align:center}
+.og-miss{position:absolute;bottom:8px;font-size:11px;font-weight:700;color:var(--pink)}
+.og-cell.shake{animation:og-shake .45s}
+@keyframes og-pop{0%{transform:scale(.85)}60%{transform:scale(1.06)}100%{transform:scale(1)}}
+@keyframes og-shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.app .og-picker{max-width:560px;width:100%;margin:0 auto;display:grid;gap:12px;border-radius:var(--r-lg);animation:og-pop .45s var(--spring)}
+.og-picker-head{display:flex;justify-content:space-between;align-items:center;gap:10px;color:var(--muted)}
+.og-picker-head b{color:var(--ink)}
+.og-results{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.og-results button{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;border-radius:var(--r-sm);border:1px solid var(--glass-line);background:#00000030;color:var(--ink);font:inherit;font-weight:700;cursor:pointer;transition:background .2s,transform .4s var(--spring)}
+.og-results button:hover:not(:disabled){background:#ffffff14;transform:translateX(4px)}
+.og-results button:disabled{opacity:.45;cursor:not-allowed}
+.og-results small{color:var(--muted);font-weight:600}
+.app .og-done{display:flex;flex-wrap:wrap;align-items:center;gap:20px;max-width:760px;width:100%;margin:0 auto;border-radius:var(--r-lg)}
+.og-done img{width:120px;height:auto;filter:drop-shadow(0 16px 24px #0008)}
+.og-done h2{font-size:34px;margin:0 0 6px}
+.og-done p{color:var(--muted);margin:0 0 14px}
+
+/* home promo for the grid */
+.app .bn-grid-promo{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:24px;padding:clamp(18px,2.6vw,30px);margin:0;border-radius:var(--r-lg);text-decoration:none;color:var(--ink);
+  background:radial-gradient(70% 120% at 0% 50%,color-mix(in srgb,var(--sky) 14%,transparent),transparent 60%),var(--glass)}
+.bn-grid-promo img{width:clamp(90px,12vw,150px);height:auto;filter:drop-shadow(0 20px 30px #0009)}
+.bn-grid-promo h2{font-size:clamp(26px,3.2vw,38px);margin:6px 0}
+.bn-grid-promo p{color:var(--muted);margin:0}
+.bn-path-art{width:84px;height:84px;object-fit:contain;margin:-8px 0 -4px -8px;transform:rotate(-6deg);transition:transform .6s var(--spring);pointer-events:none;filter:drop-shadow(0 12px 16px #0009)}
+.bn-path:hover .bn-path-art{transform:rotate(6deg) scale(1.12)}
+
+/* holo hero card holds a 3D trophy */
+.holo-art img{width:62%;height:auto;filter:drop-shadow(0 20px 30px #000a);transform:rotate(-4deg)}
+
+/* Fight Night: event picker as a row of glass cards, quick links as pills */
+.fantasy-event-tabs{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 10px;scroll-snap-type:x mandatory}
+.fantasy-event-tabs button{flex:0 0 auto;scroll-snap-align:start;border-radius:var(--r-md);border:1px solid var(--glass-line);background:var(--glass);box-shadow:var(--glass-shadow);transition:transform .45s var(--spring),border-color .2s}
+.fantasy-event-tabs button:hover{transform:translateY(-4px)}
+.fantasy-event-tabs button.selected{border-color:var(--lime);background:color-mix(in srgb,var(--lime) 10%,var(--glass));box-shadow:0 0 0 3px color-mix(in srgb,var(--lime) 18%,transparent)}
+.hub-links{display:flex;flex-wrap:wrap;gap:10px}
+.hub-links a{border-radius:var(--r-pill);padding:9px 16px;background:var(--glass-strong);border:1px solid var(--glass-line);color:var(--ink);font-weight:700;text-decoration:none;box-shadow:inset 0 1px 0 #ffffff26,inset 0 -3px 0 #00000040;transition:transform .45s var(--spring),background .2s}
+.hub-links a:hover{transform:scale(1.05) rotate(-1deg);background:#ffffff20}
+
+/* search fields: beat the global field style so the inner input has no second box */
+.moment-search,.people-search{border-radius:var(--r-pill)}
+.app :is(.moment-search,.people-search) input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]){background:transparent;border:0;box-shadow:none;border-radius:0;min-height:40px}
+.app :is(.bn-search,.bn-searchfield) input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]){
+  flex:1;min-width:0;background:transparent;border:0;box-shadow:none;border-radius:0;padding:10px 12px 10px 0;
+}
+.app :is(.bn-search,.bn-searchfield) input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):focus{box-shadow:none;outline:none}
+.bn-searchfield:focus-within{border-color:var(--lime);box-shadow:0 0 0 4px color-mix(in srgb,var(--lime) 18%,transparent)}
+
+@media (max-width:640px){
+  .og-board{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .og-corner{display:none}
+  .og-head.col{grid-row:1}
+  .og-head.row{grid-column:1/-1;padding:8px;place-items:start;text-align:left}
+  .app .bn-grid-promo{grid-template-columns:auto minmax(0,1fr)}
+  .bn-grid-promo .button{grid-column:1/-1;justify-content:center}
+  .coin-board-hero::after{display:none}
+}

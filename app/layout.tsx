@@ -13,6 +13,8 @@ import "./archive.css";
 import "./qol.css";
 import "./bubble.css";
 import "./bubble-home.css";
+import "./bubble-pages.css";
+import "./bubble-features.css";
 
 export const metadata: Metadata = {
   title: "VERSUS — The UFC Fighter Archive",
