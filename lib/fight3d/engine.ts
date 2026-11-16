@@ -113,7 +113,7 @@ function standUp(g: LiveFight, f: Fighter, o: Fighter, inp: Input, prs: Input, d
         const dist = Math.abs(o.x - f.x);
         if (dist <= SHOOT.range && !['down', 'ko', 'getup'].includes(o.state)) {
           const defending = o.state === 'block' || o.state === 'sprawl';
-          const chance = .55 + (f.stats.wrestling - o.stats.wrestling) / 140 - (defending ? .28 : 0) + (100 - o.stamina) / 400 + (o.state === 'attack' ? .15 : 0);
+          const chance = .42 + (f.stats.wrestling - o.stats.wrestling) / 140 - (defending ? .28 : 0) + (100 - o.stamina) / 400 + (o.state === 'attack' ? .15 : 0);
           if (rand() < chance) { takedown(g, f, o); return; }
           setState(o, 'sprawl'); g.events.push({type: 'sprawl', side: o.side, x: o.x, power: .4, text: 'Sprawl!'});
           o.points += 1.5;
@@ -144,11 +144,11 @@ function resolveHit(g: LiveFight, f: Fighter, o: Fighter, m: MoveId) {
     return;
   }
   const counter = o.state === 'attack' ? 1.3 : 1;
-  dmg *= counter * (1 + f.combo * .08);
+  dmg *= counter * (1 + f.combo * .05) * .62;
   o.hp -= dmg; o.x += f.facing * d.push * (d.heavy ? 1.6 : 1); f.landed += 1; f.points += dmg;
   g.hitstop = d.heavy ? .085 : .045;
   g.events.push({type: 'hit', side: f.side, x: hx, power: dmg / 10, text: counter > 1 ? 'Counter!' : undefined});
-  const kdChance = d.heavy ? .022 + (f.stats.power - o.stats.chin) / 700 + Math.max(0, 55 - o.hp) / 260 + (counter > 1 ? .08 : 0) + (m === 'upper' ? .04 : 0) : .0;
+  const kdChance = d.heavy ? .008 + (f.stats.power - o.stats.chin) / 700 + Math.max(0, 45 - o.hp) / 320 + (counter > 1 ? .08 : 0) + (m === 'upper' ? .04 : 0) : .0;
   if (o.hp <= 0 || rand() < kdChance) {
     o.kdRound += 1; f.knockdowns += 1; f.points += 12;
     setState(o, 'down'); o.move = null;
@@ -177,7 +177,7 @@ function ground(g: LiveFight, inputs: [Input, Input], pressed: [Input, Input], d
   bot.escape -= dt * (.02 + top.stats.wrestling / 2500);
   if (top.sub > 0) {
     // submission attempt in progress
-    top.sub += dt * (.37 + (top.stats.grappling - bot.stats.grappling) / 250) * (.6 + .4 * (1 - bot.stamina / 100));
+    top.sub += dt * (.3 + (top.stats.grappling - bot.stats.grappling) / 250) * (.6 + .4 * (1 - bot.stamina / 100));
     if (mash) top.sub -= .009 + bot.stats.grappling / 6000;
     if (top.sub >= 1) { g.events.push({type: 'tap', side: top.side, x: bot.x, power: 2, text: 'TAP OUT!'}); return finish(g, top, 'SUB'); }
     top.subClock += dt;
@@ -246,12 +246,12 @@ export function aiInput(g: LiveFight, me: Fighter, them: Fighter, brain: AIBrain
   const lvl = brain.level; // 0..1
   if (me.state === 'bottom') { if (rand() < .06 + lvl * .1) pressed.jab = true; return {held, pressed}; }
   if (me.state === 'top') {
-    if (me.sub === 0 && brain.plan <= 0) { brain.plan = .5; if (me.stats.grappling > 55 && rand() < .25 + lvl * .2) pressed.kick = true; }
+    if (me.sub === 0 && brain.plan <= 0) { brain.plan = 1.2; if (me.stats.grappling > 55 && them.hp < 85 && rand() < .15 + lvl * .15) pressed.kick = true; }
     if (rand() < .12 + lvl * .1) pressed.jab = true;
     return {held, pressed};
   }
   const dist = Math.abs(them.x - me.x), toward = them.x > me.x ? 'right' : 'left', away = toward === 'right' ? 'left' : 'right';
-  const ideal = me.style === 'Wrestler' || me.style === 'Grappler' ? 1.15 : me.style === 'Striker' ? 1.3 : 1.22;
+  const ideal = me.style === 'Striker' ? 1.28 : 1.2;
   // defend: react to an incoming attack
   if (them.state === 'attack' || them.state === 'shoot') {
     if (brain.react <= 0) { brain.react = .35 - lvl * .2; brain.want = rand() < (them.state === 'shoot' ? .45 : .25) + lvl * .5 ? {block: true} : rand() < .3 ? {[away]: true} : {}; }
@@ -260,11 +260,11 @@ export function aiInput(g: LiveFight, me: Fighter, them: Fighter, brain: AIBrain
     brain.want = {};
     if (me.stamina < 25) brain.want = {[away]: true, block: rand() < .5};
     else if (dist > ideal + .25) brain.want = {[toward]: true};
-    else if (dist < ideal - .45 && me.style === 'Striker') brain.want = {[away]: true};
+    else if (dist < ideal - .5 && me.style === 'Striker' && rand() < .35) brain.want = {[away]: true};
     else {
       const r = rand();
       const grappler = me.style === 'Wrestler' || me.style === 'Grappler';
-      if (grappler && r < .28 && dist < 1.35) brain.want = {shoot: true};
+      if (grappler && r < .1 + (them.stamina < 50 ? .08 : 0) && dist < 1.35 && g.clock < 70) brain.want = {shoot: true};
       else if (r < .45) brain.want = {jab: true};
       else if (r < .65) brain.want = {cross: true};
       else if (r < .76) brain.want = {kick: true};

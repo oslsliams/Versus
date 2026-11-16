@@ -25,7 +25,32 @@ const SEGMENTS: Record<string, {clip: string; from: number; to: number; speed: n
   kick_feint: {clip: 'kick_feint', from: 14, to: 46, speed: 1.35},
   kick_lead: {clip: 'kick_lead', from: 5, to: 34, speed: 1.3},
 };
-const MOVE_ANIMS: Record<MoveId, string[]> = {jab: ['jab'], cross: ['cross', 'hook'], kick: ['kick_high', 'kick_lead', 'kick_feint'], upper: ['elbow']};
+// Move library: each engine move picks from several real animations by range and combo position.
+// 'u:' = upper-body only (legs keep their stance and footwork underneath); others are full-body.
+type Pick = {anim: string; range: 'close' | 'mid' | 'long' | 'any'; weight: number; body?: boolean; leg?: boolean};
+const MOVE_ANIMS: Record<MoveId, Pick[]> = {
+  jab: [{anim: 'u:jab_head', range: 'any', weight: 4}, {anim: 'jab', range: 'mid', weight: 2}, {anim: 'jab_body', range: 'any', weight: 1.5, body: true}],
+  cross: [{anim: 'u:cross_head', range: 'any', weight: 3}, {anim: 'cross', range: 'mid', weight: 2}, {anim: 'cross_body', range: 'close', weight: 1.5, body: true},
+          {anim: 'u:rear_hook', range: 'close', weight: 2}, {anim: 'u:lead_hook', range: 'close', weight: 2}, {anim: 'hook', range: 'close', weight: 1.5},
+          {anim: 'overhand', range: 'mid', weight: 1}, {anim: 'superman', range: 'long', weight: .6}],
+  upper: [{anim: 'u:rear_uppercut', range: 'close', weight: 2}, {anim: 'u:lead_uppercut', range: 'close', weight: 2}, {anim: 'lead_body_hook', range: 'close', weight: 1.5, body: true},
+          {anim: 'u:lead_elbow', range: 'close', weight: 1.2}, {anim: 'elbow', range: 'close', weight: 1}],
+  kick: [{anim: 'rear_low_kick', range: 'any', weight: 2.5, leg: true}, {anim: 'calf_kick', range: 'any', weight: 2, leg: true}, {anim: 'body_kick', range: 'mid', weight: 2, body: true},
+         {anim: 'teep', range: 'long', weight: 2, body: true}, {anim: 'kick_high', range: 'mid', weight: 1.4}, {anim: 'kick_lead', range: 'mid', weight: 1.2},
+         {anim: 'kick_feint', range: 'mid', weight: .8}, {anim: 'rear_knee', range: 'close', weight: 2.5, body: true}],
+};
+const ONE_SHOT = ['jab_head', 'jab_body', 'cross_head', 'cross_body', 'lead_hook', 'lead_body_hook', 'rear_hook', 'lead_uppercut', 'rear_uppercut', 'overhand', 'lead_elbow', 'superman',
+  'rear_low_kick', 'calf_kick', 'body_kick', 'teep', 'rear_knee', 'slip_out', 'slip_in', 'roll', 'block_high', 'block_body', 'check',
+  'hit_head', 'hit_head_l', 'hit_head_r', 'hit_body', 'hit_leg', 'stagger', 'victory', 'ground_back', 'knocked', 'shoot', 'sprawl'];
+const UPPER_ONLY = ['jab_head', 'cross_head', 'lead_hook', 'rear_hook', 'lead_uppercut', 'rear_uppercut', 'lead_elbow', 'block_high', 'hit_head', 'hit_head_l', 'hit_head_r', 'idle'];
+const isUpperTrack = (t: THREE.KeyframeTrack) => /(Spine|Neck|Head|Shoulder|Arm|Hand)/.test(t.name.split('.')[0]);
+function pickMove(m: MoveId, dist: number, combo: number): Pick {
+  const range = dist < 1.0 ? 'close' : dist > 1.35 ? 'long' : 'mid';
+  const opts = MOVE_ANIMS[m].map(p => ({p, w: p.weight * (p.range === 'any' || p.range === range ? 1 : .15) * (combo > 0 && /hook|body|upper/.test(p.anim) ? 1.6 : 1)}));
+  let r = Math.random() * opts.reduce((a, o) => a + o.w, 0);
+  for (const o of opts) { r -= o.w; if (r <= 0) return o.p; }
+  return opts[0].p;
+}
 
 type Src = {scene: THREE.Group; clips: THREE.AnimationClip[]};
 type Assets = {arena: THREE.Group; red: Src; blue: Src};
@@ -72,10 +97,21 @@ function inPlace(clip: THREE.AnimationClip) {
 class FighterRig {
   root = new THREE.Group(); body: THREE.Object3D; mixer: THREE.AnimationMixer;
   actions = new Map<string, THREE.AnimationAction>(); current: THREE.AnimationAction | null = null; currentKey = '';
+  // layered playback: legs run 'idle' underneath while the upper body plays strikes/blocks/reactions
+  lower: THREE.AnimationAction | null = null; upperCur: THREE.AnimationAction | null = null; upperKey = ''; split = true;
   bones: Record<string, THREE.Bone | undefined> = {};
-  stunT = 0; flash = 0; hitSide = 1; stagger = 0; skinMats: THREE.MeshStandardMaterial[] = [];
-  hit(power: number) { this.stunT = Math.min(1, .55 + power * .5); this.hitSide = Math.random() < .5 ? -1 : 1; this.stagger = Math.min(1, power); }
-  lastState = ''; lastMove: MoveId | null = null;
+  flash = 0; skinMats: THREE.MeshStandardMaterial[] = [];
+  lastPick: Pick | null = null; lastState = ''; lastMove: MoveId | null = null;
+  /** react to a landed strike, choosing the reaction from what hit us */
+  hit(power: number, by: Pick | null) {
+    if (['down', 'ko', 'bottom', 'top'].includes(this.lastState)) return;
+    if (power > 1.1) this.play('stagger', .05);
+    else if (by?.leg) this.play('hit_leg', .05);
+    else if (by?.body) this.play('hit_body', .05);
+    else this.playUpper(['hit_head', 'hit_head_l', 'hit_head_r'][Math.floor(Math.random() * 3)], .04);
+  }
+  dodge() { if (['idle', 'walk'].includes(this.lastState)) this.play(['slip_out', 'slip_in', 'roll'][Math.floor(Math.random() * 3)], .06); }
+  blocked(by: Pick | null) { if (by?.leg) this.play('check', .05); else if (by?.body) this.play('block_body', .05); else this.playUpper('block_high', .05); }
   constructor(src: Src) {
     this.body = cloneSkinned(src.scene);
     this.body.traverse(o => {
@@ -107,44 +143,77 @@ class FighterRig {
       const a = this.mixer.clipAction(sub); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.timeScale = seg.speed;
       this.actions.set(key, a);
     }
-    for (const pose of ['ground_back', 'knocked', 'shoot', 'sprawl']) {
-      const c = byName.get(pose); if (!c) continue;
-      const a = this.mixer.clipAction(c); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; this.actions.set(pose, a);
+    for (const name of ONE_SHOT) {
+      const c = byName.get(name); if (!c) continue;
+      const a = this.mixer.clipAction(c); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; this.actions.set(name, a);
     }
-    this.play('idle', 0);
+    // split versions: upper-body-only strikes/reactions, and a lower-body-only idle that keeps the stance alive
+    for (const name of UPPER_ONLY) {
+      const c = byName.get(name); if (!c) continue;
+      const up = new THREE.AnimationClip('u:' + name, c.duration, c.tracks.filter(isUpperTrack));
+      const a = this.mixer.clipAction(up);
+      if (name === 'idle') a.setLoop(THREE.LoopRepeat, Infinity); else { a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; }
+      this.actions.set('u:' + name, a);
+    }
+    const idle = byName.get('idle');
+    if (idle) { this.lower = this.mixer.clipAction(new THREE.AnimationClip('lower:idle', idle.duration, idle.tracks.filter(t => !isUpperTrack(t)))); this.lower.setLoop(THREE.LoopRepeat, Infinity); }
+    this.toSplit(0);
     this.mixer.update(Math.random() * 2);
   }
+  /** whole-body action (kicks, knees, shots, slips, ground game) */
   play(key: string, fade = .12) {
-    const next = this.actions.get(key); if (!next || (this.currentKey === key && next.isRunning())) return;
+    const next = this.actions.get(key); if (!next) return;
+    if (!this.split && this.currentKey === key && next.isRunning()) return;
     next.reset(); next.enabled = true; next.setEffectiveWeight(1);
-    if (this.current && this.current !== next) next.crossFadeFrom(this.current, fade, false); else next.fadeIn(fade);
+    if (this.split) { this.lower?.fadeOut(fade); this.upperCur?.fadeOut(fade); next.fadeIn(fade); this.split = false; this.upperCur = null; this.upperKey = ''; }
+    else if (this.current && this.current !== next) next.crossFadeFrom(this.current, fade, false); else next.fadeIn(fade);
     next.play(); this.current = next; this.currentKey = key;
   }
-  sync(f: Fighter, dt: number) {
+  /** back to layered mode: legs on the stance loop, upper body on 'key' */
+  private toSplit(fade: number) {
+    if (this.split && this.upperCur) return;
+    this.current?.fadeOut(fade); this.current = null; this.currentKey = '';
+    if (this.lower) { this.lower.reset(); this.lower.enabled = true; this.lower.setEffectiveWeight(1); this.lower.fadeIn(fade); this.lower.play(); }
+    this.split = true; this.upperCur = null; this.upperKey = '';
+    this.playUpper('u:idle', fade);
+  }
+  playUpper(key: string, fade = .1) {
+    const k = key.startsWith('u:') ? key : 'u:' + key;
+    const next = this.actions.get(k); if (!next) return;
+    if (!this.split) { this.toSplit(fade); }
+    if (this.upperKey === k && next.isRunning() && k === 'u:idle') return;
+    next.reset(); next.enabled = true; next.setEffectiveWeight(1);
+    if (this.upperCur && this.upperCur !== next) next.crossFadeFrom(this.upperCur, fade, false); else next.fadeIn(fade);
+    next.play(); this.upperCur = next; this.upperKey = k;
+  }
+  private settle(fade: number) { if (this.split) this.playUpper('u:idle', fade); else this.toSplit(fade); }
+  sync(f: Fighter, opp: Fighter, dt: number) {
     const st = f.state;
-    if (st === 'attack' && (this.lastState !== 'attack' || this.lastMove !== f.move)) {
-      const opts = MOVE_ANIMS[f.move!]; this.play(opts[Math.floor(Math.random() * opts.length)], .06);
+    if (st === 'attack' && (this.lastState !== 'attack' || this.lastMove !== f.move || f.t < .02)) {
+      const pick = pickMove(f.move!, Math.abs(opp.x - f.x), f.combo);
+      this.lastPick = pick;
+      const key = pick.anim;
+      if (this.actions.has(key)) { if (key.startsWith('u:')) this.playUpper(key, .05); else this.play(key, .06); }
+      else this.play(MOVE_ANIMS[f.move!].find(p => this.actions.has(p.anim))?.anim ?? 'jab', .06);
     } else if (st !== 'attack' && st !== this.lastState) {
-      // every state maps to a real animation or an authored full-body pose (no procedural limb twisting)
-      const map: Partial<Record<string, [string, number]>> = {
-        block: ['idle_box', .1], win: ['idle_box', .3], down: ['knocked', .28], ko: ['knocked', .22], bottom: ['ground_back', .3],
-        top: ['ground_top', .3], shoot: ['shoot', .14], sprawl: ['sprawl', .14], getup: ['idle', .45], stun: ['idle', .1],
+      const full: Partial<Record<string, [string, number]>> = {
+        win: ['victory', .3], down: ['knocked', .25], ko: ['knocked', .2], bottom: ['ground_back', .3],
+        top: ['ground_top', .3], shoot: ['shoot', .1], sprawl: ['sprawl', .12],
       };
-      const [key, fade] = map[st] ?? ['idle', st === 'idle' || st === 'walk' ? .2 : .12];
-      this.play(this.actions.has(key) ? key : 'idle', fade);
+      const hit = full[st];
+      if (hit) this.play(this.actions.has(hit[0]) ? hit[0] : 'idle', hit[1]);
+      else if (st === 'block') this.playUpper('block_high', .08);
+      else if (st === 'stun') { /* the reaction was already chosen from the landed strike */ }
+      else this.settle(st === 'getup' ? .45 : .18);
+    }
+    // a finished one-shot (strike, slip, reaction) settles back into the stance
+    if (st === 'idle' || st === 'walk') {
+      const done = (a: THREE.AnimationAction | null) => !!a && a.getClip().duration - a.time < .02;
+      if ((!this.split && done(this.current)) || (this.split && this.upperKey !== 'u:idle' && done(this.upperCur))) this.settle(.15);
     }
     this.lastState = st; this.lastMove = f.move;
     this.mixer.timeScale = st === 'walk' ? 1.35 : st === 'top' ? 1.6 : 1;
     this.mixer.update(dt);
-    this.stunT = Math.max(0, this.stunT - dt * 3.2);
-    const head = this.bones.Head, spine = this.bones.Spine2, neck = this.bones.Neck;
-    // hit reaction: sharp snap that eases out, plus a sideways twist that varies per hit
-    const snap = this.stunT * this.stunT;
-    if (head && snap > 0) { head.rotateX(-.75 * snap); head.rotateY(this.hitSide * .5 * snap); head.rotateZ(this.hitSide * .25 * snap); }
-    if (neck && snap > 0) neck.rotateX(-.3 * snap);
-    if (spine && snap > 0) { spine.rotateX(-.35 * snap); spine.rotateY(this.hitSide * .2 * snap); }
-    this.body.position.x = -this.stagger * .12;
-    this.stagger = Math.max(0, this.stagger - dt * 3);
     this.flash = Math.max(0, this.flash - dt * 4);
     for (const m of this.skinMats) m.emissive?.setRGB(this.flash * .5, this.flash * .05, this.flash * .05);
   }
@@ -224,11 +293,15 @@ export class FightView {
 
   events(evts: FightEvent[]) {
     for (const e of evts) {
+      if (e.type === 'whiff' && Math.random() < .55) { this.rigs[e.side === 0 ? 1 : 0].dodge(); continue; }
       if (!['hit', 'block', 'ko', 'kd', 'td'].includes(e.type)) continue;
       const n = e.type === 'block' ? 5 : Math.min(16, 5 + Math.round(e.power * 7));
       this.burst(e.x * X_SCALE, PLAT + (e.type === 'td' ? .3 : 1.5), n, e.type === 'block' ? '#9fc4ff' : e.type === 'ko' || e.type === 'kd' ? '#ffd27a' : '#fff3c4');
       this.shake = Math.max(this.shake, e.type === 'ko' ? .3 : e.type === 'kd' ? .18 : e.type === 'block' ? .02 : Math.min(.1, e.power * .07));
-      if (e.type !== 'block' && e.type !== 'td') { const v = this.rigs[e.side === 0 ? 1 : 0]; v.flash = 1; v.hit(e.power); }
+      const attacker = this.rigs[e.side], defender = this.rigs[e.side === 0 ? 1 : 0];
+      if (e.type === 'hit') { defender.flash = 1; defender.hit(e.power, attacker.lastPick); }
+      else if (e.type === 'kd' || e.type === 'ko') defender.flash = 1;
+      else if (e.type === 'block') this.rigs[e.side].blocked(this.rigs[e.side === 0 ? 1 : 0].lastPick);
     }
   }
   private burst(x: number, y: number, n: number, color: string) {
@@ -251,7 +324,7 @@ export class FightView {
       r.root.position.y = PLAT; r.root.position.z = i === 0 ? .08 : -.08;
       const face = f.facing > 0 ? Math.PI / 2 : -Math.PI / 2;
       r.root.rotation.y += (face - r.root.rotation.y) * (1 - Math.exp(-10 * dt));
-      r.sync(f, dt);
+      r.sync(f, g.f[i === 0 ? 1 : 0], dt);
     });
     for (const s of this.sparks) {
       if (s.life <= 0) continue;

@@ -264,17 +264,17 @@ def knocked():      # out cold: limbs loose, arms flung out
     limbs({'L:UpLeg': (.2, -.15, -.97), 'R:UpLeg': (.12, -.45, -.88), 'L:Leg': (.1, .05, -1), 'R:Leg': (.05, .4, -.92),
            'L:Arm': (.92, .05, .38), 'R:Arm': (.85, -.2, .1), 'L:ForeArm': (.6, .1, .8), 'R:ForeArm': (.95, -.1, -.3), 'Head': (.25, .15, .95)})
     tip_body(LIE); drop_to_floor(.06)
-def top_base(punch):  # kneeling over the opponent, left hand posted, right hand cocked/extended
-    limbs({'UpLeg': (.32, -.45, -.83), 'Leg': (.02, .98, -.15),
-           'Spine': (0, -.45, .9), 'Spine1': (0, -.65, .76), 'Spine2': (0, -.75, .66), 'Head': (0, -.8, .6),
-           'L:Arm': (.25, -.55, -.8), 'L:ForeArm': (.05, -.35, -.94)})
-    if punch: limbs({'R:Arm': (.1, -.6, -.79), 'R:ForeArm': (.02, -.55, -.83)})
-    else: limbs({'R:Arm': (.35, .35, .2), 'R:ForeArm': (-.1, -.7, .7)})
+def top_base(punch):  # low, chest-to-chest top control (like UFC half guard / side control), right hand ground-and-pound
+    limbs({'UpLeg': (.45, -.15, -.88), 'Leg': (.05, .99, -.1),
+           'Spine': (0, -.85, .52), 'Spine1': (0, -.95, .3), 'Spine2': (0, -.98, .18), 'Head': (0, -.9, .42),
+           'L:Arm': (.55, -.55, -.62), 'L:ForeArm': (-.15, -.3, -.94)})
+    if punch: limbs({'R:Arm': (.05, -.55, -.83), 'R:ForeArm': (.15, -.45, -.88)})
+    else: limbs({'R:Arm': (.4, .3, .5), 'R:ForeArm': (-.15, -.75, .65)})
     drop_to_floor(.05)
-def shoot():        # level change into a double-leg
-    limbs({'L:UpLeg': (.25, -.75, -.62), 'L:Leg': (0, .35, -.94), 'R:UpLeg': (.2, .55, -.8), 'R:Leg': (0, .97, -.25),
-           'Spine': (0, -.6, .8), 'Spine1': (0, -.75, .66), 'Spine2': (0, -.85, .53), 'Head': (0, -.9, .44),
-           'Arm': (.3, -.85, -.42), 'ForeArm': (-.05, -.95, -.3)})
+def shoot(phase=1.0):   # level change, penetration step, arms wrapping the legs (double leg)
+    limbs({'L:UpLeg': (.2, -.8, -.56), 'L:Leg': (0, .45 * phase, -.9), 'R:UpLeg': (.2, .5, -.85), 'R:Leg': (0, .97, -.25 * phase),
+           'Spine': (0, -.6, .8), 'Spine1': (0, -.78, .62), 'Spine2': (0, -.88, .47), 'Head': (.25, -.85, .45),
+           'Arm': (.45 - .3 * phase, -.85, -.3), 'ForeArm': (-.55 * phase, -.8, -.25)})
     drop_to_floor(.03)
 def sprawl():       # hips down, legs kicked back
     limbs({'UpLeg': (.25, .85, -.45), 'Leg': (.05, .99, .05),
@@ -284,8 +284,125 @@ def sprawl():       # hips down, legs kicked back
 make_action('ground_back', [(1, guard_back)])
 make_action('knocked', [(1, knocked)])
 make_action('ground_top', [(1, lambda: top_base(False)), (7, lambda: top_base(True)), (13, lambda: top_base(False))])
-make_action('shoot', [(1, shoot)])
+make_action('shoot', [(1, lambda: shoot(.4)), (8, lambda: shoot(1.0))])
 make_action('sprawl', [(1, sprawl)])
+
+# ===================== MOVE LIBRARY (authored from the Mixamo fighting stance) =====================
+# References: UFC 6 striking/grapple clips + standard MMA technique. Lead side = Left (orthodox).
+# Each move starts and ends in the real captured guard so it blends with motion capture.
+idle_act = bpy.data.actions['idle']
+rig.animation_data.action = idle_act
+if hasattr(rig.animation_data, 'action_slot') and idle_act.slots: rig.animation_data.action_slot = idle_act.slots[0]
+bpy.context.scene.frame_set(1); bpy.context.view_layer.update()
+GUARD = {pb.name: (pb.rotation_quaternion.copy(), pb.location.copy()) for pb in rig.pose.bones}
+rig.animation_data.action = None
+def guard():
+    for pb in rig.pose.bones:
+        q, l = GUARD[pb.name]; pb.rotation_quaternion = q; pb.location = l
+    bpy.context.view_layer.update()
+def wpos(name, tail=False):
+    pb = rig.pose.bones['mixamorig:' + name]
+    return rig.matrix_world @ (pb.tail if tail else pb.head)
+def turn(name, axis, ang):
+    pb = rig.pose.bones['mixamorig:' + name]
+    wm = rig.matrix_world @ pb.matrix; h = wm.translation.copy()
+    r = Quaternion(axis, ang).to_matrix().to_4x4()
+    pb.matrix = rig.matrix_world.inverted() @ (Matrix.Translation(h) @ r @ Matrix.Translation(-h) @ wm)
+    bpy.context.view_layer.update()
+def torso(twist=0., lean_fwd=0., lean_side=0., hips=0.):
+    if hips: turn('Hips', (0, 0, 1), hips)
+    for b, k in (('Spine', .4), ('Spine1', .3), ('Spine2', .3)):
+        if twist: turn(b, (0, 0, 1), twist * k)
+        if lean_fwd: turn(b, (1, 0, 0), lean_fwd * k)
+        if lean_side: turn(b, (0, 1, 0), lean_side * k)
+def level(dz):  # bend the knees: lower the hips (feet stay roughly planted)
+    pb = rig.pose.bones['mixamorig:Hips']; wm = rig.matrix_world @ pb.matrix; wm.translation.z -= dz
+    pb.matrix = rig.matrix_world.inverted() @ wm; bpy.context.view_layer.update()
+REACH = .62
+def target(height='head', side_off=0.):
+    h = wpos('Head'); c = wpos('Spine1')
+    z = h.z - .02 if height == 'head' else c.z - .05
+    return Vector((h.x * .3 + side_off, h.y - REACH, z))
+def straight(side, tgt, ext=1.0):
+    sh = wpos(side + 'Arm'); d = (tgt - sh)
+    aim(side + 'Arm', d); aim(side + 'ForeArm', d.lerp(Vector((0, -.2, 1)), 1 - ext) if ext < 1 else d)
+SX = {'Left': 1, 'Right': -1}
+def hook(side, low=False):
+    s = SX[side]
+    aim(side + 'Arm', (s * .75, -.6, -.25 if low else .12)); aim(side + 'ForeArm', (-s * .85, -.5, -.1 if low else .02))
+def upper(side):
+    s = SX[side]
+    aim(side + 'Arm', (s * .1, -.85, -.35)); aim(side + 'ForeArm', (-s * .1, -.2, .98))
+def elbow(side):
+    s = SX[side]
+    aim(side + 'Arm', (s * .55, -.7, .45)); aim(side + 'ForeArm', (-s * .95, .1, -.1))
+def chamber(side):  # pull the hand back by the chin (loading / recovering)
+    s = SX[side]; aim(side + 'Arm', (s * .3, -.35, -.88)); aim(side + 'ForeArm', (-s * .2, -.45, .87))
+def guard_hands():
+    chamber('Left'); chamber('Right')
+def F(*steps):      # build a key: apply each step function in order, starting from the guard
+    def build():
+        guard()
+        for st in steps: st()
+    return build
+def move(name, keys):
+    make_action(name, [(fr, F(*steps)) for fr, steps in keys])
+
+# ---- punches (lead = Left, rear = Right) ----
+move('jab_head', [(1, []), (4, [lambda: torso(-.18), lambda: straight('Left', target())]), (9, [])])
+move('jab_body', [(1, []), (3, [lambda: level(.12)]), (6, [lambda: level(.16), lambda: torso(-.2, .25), lambda: straight('Left', target('body'))]), (12, [])])
+move('cross_head', [(1, []), (5, [lambda: torso(.55, .05, 0, .2), lambda: straight('Right', target()), lambda: chamber('Left')]), (12, [])])
+move('cross_body', [(1, []), (4, [lambda: level(.1)]), (7, [lambda: level(.17), lambda: torso(.5, .3, 0, .18), lambda: straight('Right', target('body'))]), (14, [])])
+move('lead_hook', [(1, []), (3, [lambda: torso(.18)]), (7, [lambda: torso(-.6, 0, 0, -.22), lambda: hook('Left'), lambda: chamber('Right')]), (13, [])])
+move('lead_body_hook', [(1, []), (4, [lambda: level(.12), lambda: torso(.2, .1)]), (8, [lambda: level(.16), lambda: torso(-.55, .2, .15, -.2), lambda: hook('Left', True)]), (15, [])])
+move('rear_hook', [(1, []), (4, [lambda: torso(-.15)]), (8, [lambda: torso(.65, 0, 0, .25), lambda: hook('Right'), lambda: chamber('Left')]), (14, [])])
+move('lead_uppercut', [(1, []), (4, [lambda: level(.1), lambda: torso(.15, .1, .15)]), (8, [lambda: torso(-.35, -.1, -.1), lambda: upper('Left')]), (14, [])])
+move('rear_uppercut', [(1, []), (4, [lambda: level(.12), lambda: torso(-.1, .1, -.15)]), (8, [lambda: torso(.45, -.1, .1, .15), lambda: upper('Right')]), (14, [])])
+move('overhand', [(1, []), (5, [lambda: torso(-.2, -.1)]), (10, [lambda: level(.08), lambda: torso(.7, .3, .2, .25), lambda: aim('RightArm', (-.1, -.7, .7)), lambda: aim('RightForeArm', (.15, -.75, -.4))]), (17, [])])
+move('lead_elbow', [(1, []), (6, [lambda: torso(-.55, .1, 0, -.2), lambda: elbow('Left')]), (12, [])])
+move('superman', [(1, []), (6, [lambda: aim('RightUpLeg', (0, .75, -.66)), lambda: aim('RightLeg', (0, .9, .2)), lambda: torso(.2, -.1)]),
+                  (11, [lambda: torso(.6, .15, 0, .25), lambda: straight('Right', target()), lambda: aim('RightUpLeg', (0, .3, -.95))]), (19, [])])
+
+# ---- kicks and knees ----
+def rkick(height):  # rear roundhouse: pivot, hips turn over, shin through the target
+    z = {'low': -.35, 'body': .15, 'calf': -.6}[height]
+    torso(.75, -.25, -.25, .55)
+    aim('RightUpLeg', (.45, -.8, z * .6 + .05)); aim('RightLeg', (.55, -.8, z))
+    aim('RightArm', (-.6, .5, -.4)); aim('RightForeArm', (-.3, .2, -.9)); chamber('Left')
+move('rear_low_kick', [(1, []), (5, [lambda: torso(.35, 0, 0, .25), lambda: level(.05)]), (10, [lambda: rkick('low')]), (18, [])])
+move('calf_kick', [(1, []), (4, [lambda: torso(.3, 0, 0, .2)]), (9, [lambda: rkick('calf')]), (16, [])])
+move('body_kick', [(1, []), (5, [lambda: torso(.4, 0, 0, .3)]), (11, [lambda: rkick('body')]), (20, [])])
+move('teep', [(1, []), (5, [lambda: aim('LeftUpLeg', (.1, -.95, .25)), lambda: aim('LeftLeg', (0, -.15, -.99)), lambda: torso(0, -.15)]),
+              (9, [lambda: aim('LeftUpLeg', (.1, -.97, .15)), lambda: aim('LeftLeg', (.05, -.98, .2)), lambda: torso(0, -.3)]), (16, [])])
+move('rear_knee', [(1, []), (4, [lambda: straight('Left', target('head', .1), .7), lambda: straight('Right', target('head', -.1), .7)]),
+                   (8, [lambda: torso(0, -.25), lambda: aim('RightUpLeg', (.15, -.72, .66)), lambda: aim('RightLeg', (0, .35, -.94)),
+                        lambda: aim('LeftForeArm', (-.3, -.6, -.75)), lambda: aim('RightForeArm', (.3, -.6, -.75))]), (15, [])])
+
+# ---- defense ----
+move('slip_out', [(1, []), (4, [lambda: level(.06), lambda: torso(-.15, .1, .35)]), (10, [])])
+move('slip_in', [(1, []), (4, [lambda: level(.06), lambda: torso(.2, .1, -.35)]), (10, [])])
+move('roll', [(1, []), (4, [lambda: level(.12), lambda: torso(.1, .35, .3)]), (8, [lambda: level(.18), lambda: torso(0, .5, 0)]), (12, [lambda: level(.12), lambda: torso(-.1, .35, -.3)]), (17, [])])
+def high_guard():
+    for side, s in SX.items(): aim(side + 'Arm', (s * .3, -.75, -.25)); aim(side + 'ForeArm', (-s * .2, -.15, .97))
+    turn('Head', (1, 0, 0), .25)
+move('block_high', [(1, []), (3, [high_guard, lambda: level(.04)])])
+def body_guard():
+    for side, s in SX.items(): aim(side + 'Arm', (s * .15, -.25, -.95)); aim(side + 'ForeArm', (-s * .25, -.6, .75))
+    torso(0, .25)
+move('block_body', [(1, []), (3, [body_guard, lambda: level(.08)])])
+move('check', [(1, []), (4, [lambda: aim('LeftUpLeg', (.55, -.7, .45)), lambda: aim('LeftLeg', (.2, -.25, -.95)), lambda: torso(0, .05)]), (11, [])])
+
+# ---- reactions ----
+move('hit_head', [(1, []), (3, [lambda: torso(.1, -.2), guard_hands, lambda: turn('Head', (1, 0, 0), -.6), lambda: level(.03)]), (11, [])])
+move('hit_head_l', [(1, []), (3, [lambda: turn('Head', (0, 0, 1), .7), lambda: turn('Head', (0, 1, 0), .3), lambda: torso(.3, -.1, .25)]), (11, [])])
+move('hit_head_r', [(1, []), (3, [lambda: turn('Head', (0, 0, 1), -.7), lambda: turn('Head', (0, 1, 0), -.3), lambda: torso(-.3, -.1, -.25)]), (11, [])])
+move('hit_body', [(1, []), (3, [lambda: level(.08), lambda: torso(0, .45), body_guard]), (13, [])])
+move('hit_leg', [(1, []), (3, [lambda: aim('LeftLeg', (0, .55, -.83)), lambda: level(.1), lambda: torso(0, .1, .2)]), (12, [])])
+move('stagger', [(1, []), (4, [lambda: turn('Head', (1, 0, 0), -.7), lambda: torso(.4, -.45, .3), lambda: aim('LeftArm', (.8, .2, -.55)), lambda: aim('RightArm', (-.8, .3, -.5))]),
+                 (10, [lambda: level(.1), lambda: torso(-.3, -.2, -.25)]), (18, [])])
+move('victory', [(1, []), (8, [lambda: aim('LeftArm', (.35, 0, .94)), lambda: aim('LeftForeArm', (.25, -.1, .96)), lambda: aim('RightArm', (-.35, 0, .94)),
+                               lambda: aim('RightForeArm', (-.25, -.1, .96)), lambda: turn('Head', (1, 0, 0), -.35), lambda: torso(0, -.15)])])
+print('MOVES', len([t for t in rig.animation_data.nla_tracks]))
 print('POSES', [t.name for t in rig.animation_data.nla_tracks])
 
 if PREVIEW:
@@ -294,9 +411,10 @@ if PREVIEW:
     sc.render.engine = 'BLENDER_WORKBENCH'; sc.display.shading.light = 'STUDIO'; sc.display.shading.color_type = 'MATERIAL'
     sc.render.resolution_x, sc.render.resolution_y = 640, 480
     pcd = bpy.data.cameras.new('pc'); pcd.lens = 35; pcam = bpy.data.objects.new('pc', pcd); sc.collection.objects.link(pcam); sc.camera = pcam
-    pcam.location = (3.2, -1.2, 1.1); pcam.rotation_euler = (Vector((0, 0, .45)) - pcam.location).to_track_quat('-Z', 'Y').to_euler()
-    for pose_name in ('ground_back', 'ground_top', 'knocked', 'shoot', 'sprawl'):
-        rig.animation_data.nla_tracks[pose_name].mute = False; sc.frame_set(7 if pose_name == 'ground_top' else 1); bpy.context.view_layer.update()
+    pcam.location = (3.4, -2.2, 1.2); pcam.rotation_euler = (Vector((0, 0, .45)) - pcam.location).to_track_quat('-Z', 'Y').to_euler()
+    PF = {'ground_top': 7, 'shoot': 8, 'jab_head': 4, 'cross_head': 5, 'lead_hook': 7, 'rear_uppercut': 8, 'body_kick': 11, 'teep': 9, 'rear_knee': 8, 'roll': 8, 'hit_head': 3, 'stagger': 4, 'check': 4}
+    for pose_name in ('ground_back', 'ground_top', 'knocked', 'shoot', 'jab_head', 'cross_head', 'lead_hook', 'rear_uppercut', 'body_kick', 'teep', 'rear_knee', 'roll', 'hit_head', 'stagger', 'check'):
+        rig.animation_data.nla_tracks[pose_name].mute = False; sc.frame_set(PF.get(pose_name, 1)); bpy.context.view_layer.update()
         hz = (rig.matrix_world @ rig.pose.bones['mixamorig:Hips'].head).z
         print('POSEHIP', pose_name, round(hz, 3))
         sc.render.filepath = PREVIEW.replace('.png', f'-pose-{pose_name}.png'); bpy.ops.render.render(write_still=True)
