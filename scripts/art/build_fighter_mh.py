@@ -50,7 +50,7 @@ for kind, name, at in [('eyes', 'high-poly', 'Eyes'), ('eyebrows', V['brow'], 'E
     f = asset(kind, name)
     if f: HS.add_mhclo_asset(f, body, asset_type=at, subdiv_levels=0, material_type='MAKESKIN')
     print('ASSET', at, os.path.basename(f) if f else 'MISSING ' + name)
-parts = [o for o in bpy.data.objects if o.type == 'MESH']
+parts = [o for o in bpy.data.objects if o.type == 'MESH' and o.parent == rig]
 print('PARTS', [(o.name, len(o.data.vertices), [m.name for m in o.data.materials if m]) for o in parts])
 print('BODYGROUP', bool(body.vertex_groups.get('body')))
 
@@ -77,28 +77,51 @@ for f in body.data.polygons:
     if lo < z < hi:
         f.material_index = i_tr if (z > hi - .035 or z < lo + .02) else i_sh
 
-# ---- gloves skinned to the hand bones ------------------------------------------
+# ---- gloves painted into the hand skin --------------------------------------------
+# The glove is part of the body surface: hand faces get the glove material and are puffed
+# outwards slightly, so it deforms exactly with the fist and can never separate.
+import bmesh
 gloves = []
-m_gl, m_gt = material('glove', V['glove'], .38, .35), material('glove_trim', V['glove_trim'], .45)
-for side in ('Left', 'Right'):
-    hb = rig.data.bones[f'mixamorig:{side}Hand']
-    head = rig.matrix_world @ hb.head_local
-    knuckle = rig.matrix_world @ rig.data.bones[f'mixamorig:{side}HandMiddle1'].head_local
-    tip = rig.matrix_world @ rig.data.bones[f'mixamorig:{side}HandMiddle3'].head_local
-    d = knuckle - head; L = d.length
-    rot = d.to_track_quat('Y', 'Z').to_matrix().to_4x4()
-    print('HAND', side, round(L, 3), round((tip - knuckle).length, 3))
-    for (name, size, off, m, bev) in [(f'Glove{side}', (.1, L * 1.6, .085), .68, m_gl, .034), (f'Strap{side}', (.078, .055, .07), .02, m_gt, .02)]:
-        bpy.ops.mesh.primitive_cube_add(size=1); o = bpy.context.object; o.name = name; o.scale = size
-        bpy.ops.object.transform_apply(scale=True)
-        b = o.modifiers.new('bv', 'BEVEL'); b.width = bev; b.segments = 5; bpy.ops.object.modifier_apply(modifier='bv')
-        o.matrix_world = Matrix.Translation(head + d.normalized() * L * off) @ rot
-        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-        for p in o.data.polygons: p.use_smooth = True
-        o.data.materials.append(m)
-        vg = o.vertex_groups.new(name=hb.name); vg.add([v.index for v in o.data.vertices], 1.0, 'REPLACE')
-        o.parent = rig; am = o.modifiers.new('Armature', 'ARMATURE'); am.object = rig
-        gloves.append(o)
+m_gl, m_gt = material('glove', V['glove'], .42, .3), material('glove_trim', V['glove_trim'], .45)
+bpy.context.view_layer.objects.active = body
+body.select_set(True)
+if body.data.shape_keys:
+    bpy.ops.object.shape_key_remove(all=True, apply_mix=True)   # bake the MakeHuman shape
+body.data.materials.append(m_gl); body.data.materials.append(m_gt)
+i_gl, i_gt = len(body.data.materials) - 2, len(body.data.materials) - 1
+hand_ids = {g.index for g in body.vertex_groups if g.name.endswith('Hand') or ('Hand' in g.name and g.name[-1] in '12' and 'Thumb' not in g.name)}
+thumb_ids = {g.index for g in body.vertex_groups if 'Thumb1' in g.name}
+arm_ids = {g.index for g in body.vertex_groups if g.name.endswith('ForeArm') or g.name.endswith('Hand')}
+wrist = [rig.matrix_world @ rig.data.bones[f'mixamorig:{s}Hand'].head_local for s in ('Left', 'Right')]
+all_hand = {g.index for g in body.vertex_groups if 'Hand' in g.name}
+hand_segs = [(lambda h, k: (h + (k - h) * .12, k))(rig.matrix_world @ rig.data.bones[f'mixamorig:{s}Hand'].head_local, rig.matrix_world @ rig.data.bones[f'mixamorig:{s}HandMiddle1'].head_local) for s in ('Left', 'Right')]
+def seg_dist(p, a, b):
+    ab = b - a; t = max(0.0, min(1.0, (p - a).dot(ab) / ab.length_squared))
+    return (p - (a + ab * t)).length
+mw = body.matrix_world
+bm = bmesh.new(); bm.from_mesh(body.data)
+dl = bm.verts.layers.deform.active
+gw, sw = {}, {}
+for v in bm.verts:
+    d = v[dl]
+    gw[v.index] = sum(w for g, w in d.items() if g in hand_ids) + .6 * sum(w for g, w in d.items() if g in thumb_ids)
+    if True:  # rest pose: hands are far from the body, so distance alone is safe
+        pw = mw @ v.co
+        dist = min(seg_dist(pw, a, b) for a, b in hand_segs)
+        if dist < .085: gw[v.index] = max(gw[v.index], 1.0 if dist < .072 else .6)
+    p = mw @ v.co
+    near = min((p - c).length for c in wrist)
+    sw[v.index] = 1.0 if (sum(w for g, w in d.items() if g in arm_ids) > .5 and near < .05) else 0.0
+bm.normal_update()
+for v in bm.verts:
+    g = min(1.0, gw[v.index]); s = sw[v.index]
+    if g > .05: v.co += v.normal * .009 * g
+    elif s: v.co += v.normal * .005
+for f in bm.faces:
+    vs = [v.index for v in f.verts]
+    if sorted(gw[i] for i in vs)[len(vs) // 2] > .45: f.material_index = i_gl
+    elif sum(sw[i] for i in vs) / len(vs) > .5: f.material_index = i_gt
+bm.to_mesh(body.data); bm.free()
 
 # ---- animations from the Mixamo clips ---------------------------------------------
 for pb in rig.pose.bones: pb.rotation_mode = 'QUATERNION'
@@ -121,6 +144,55 @@ for fn, name in ANIMS:
     tr.mute = True
 rig.animation_data.action = None
 
+# ---- fists: find which way each finger joint curls toward the palm, then lock a fist ----
+from mathutils import Quaternion
+def tip_of(side, finger):
+    b = rig.pose.bones.get(f'mixamorig:{side}Hand{finger}4') or rig.pose.bones[f'mixamorig:{side}Hand{finger}3']
+    return rig.matrix_world @ (b.tail if b.name.endswith('3') else b.head)
+FINGERS = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky']
+fist = {}
+bpy.context.scene.frame_set(1)
+for pb in rig.pose.bones: pb.rotation_quaternion = (1, 0, 0, 0)
+bpy.context.view_layer.update()
+for side in ('Left', 'Right'):
+    h = rig.matrix_world @ rig.pose.bones[f'mixamorig:{side}Hand'].head
+    m1 = rig.matrix_world @ rig.pose.bones[f'mixamorig:{side}HandMiddle1'].head
+    i1 = rig.matrix_world @ rig.pose.bones[f'mixamorig:{side}HandIndex1'].head
+    p1 = rig.matrix_world @ rig.pose.bones[f'mixamorig:{side}HandPinky1'].head
+    # rest pose: palms face down; take world -Z, made perpendicular to the finger direction
+    fdir = (m1 - h).normalized(); normal = Vector((0, 0, -1)); normal = (normal - fdir * normal.dot(fdir)).normalized()
+    print('PALM', side, [round(x, 2) for x in (i1 - h).cross(p1 - h).normalized()], [round(x, 2) for x in normal])
+
+    for finger in FINGERS:
+        angles = [.7, .8, .6] if finger == 'Thumb' else [1.6, 1.85, 1.45]
+        for seg, ang in zip((1, 2, 3), angles):
+            pb = rig.pose.bones.get(f'mixamorig:{side}Hand{finger}{seg}')
+            if not pb: continue
+            best = None
+            for axis in ((1, 0, 0), (-1, 0, 0), (0, 0, 1), (0, 0, -1)):
+                q = Quaternion(axis, ang)
+                pb.rotation_quaternion = q; bpy.context.view_layer.update()
+                t = tip_of(side, finger)
+                palm = (h + m1) / 2 + normal * .03 if finger != 'Thumb' else (i1 + m1) / 2 + normal * .03
+                d = (t - palm).length
+                if best is None or d < best[0]: best = (d, q.copy())
+            pb.rotation_quaternion = best[1]; bpy.context.view_layer.update()
+            fist[pb.name] = best[1]
+print('FIST', len(fist), 'finger joints')
+
+def channelbags(act):
+    return [cb for l in act.layers for s in l.strips for cb in s.channelbags]
+for act in [a for a in bpy.data.actions]:
+    for cb in channelbags(act):
+        for fc in list(cb.fcurves):
+            if any(f'"{n}"' in fc.data_path for n in fist): cb.fcurves.remove(fc)
+        f0 = act.frame_range[0]
+        for name, q in fist.items():
+            for i in range(4):
+                fc = cb.fcurves.new(f'pose.bones["{name}"].rotation_quaternion', index=i, group_name=name)
+                fc.keyframe_points.insert(f0, q[i])
+for pb in rig.pose.bones: pb.rotation_quaternion = (1, 0, 0, 0)
+
 # ---- textures: keep the download small ----------------------------------------------
 for img in bpy.data.images:
     if img.size[0] > 1024: img.scale(1024, int(1024 * img.size[1] / img.size[0]))
@@ -140,7 +212,13 @@ if PREVIEW:
         lo_ = bpy.data.objects.new('l', ld); sc.collection.objects.link(lo_); lo_.location = loc
         lo_.rotation_euler = (Vector((0, 0, 1)) - Vector(loc)).to_track_quat('-Z', 'Y').to_euler()
     sc.render.filepath = PREVIEW; bpy.ops.render.render(write_still=True)
-    rig.animation_data.nla_tracks['idle'].mute = True
+    for t in rig.animation_data.nla_tracks: t.mute = t.name != 'combo'
+    sc.frame_set(25); bpy.context.view_layer.update()
+    hp = rig.matrix_world @ rig.pose.bones['mixamorig:LeftHand'].head
+    cam.location = hp + Vector((.25, -.55, .12)); cam.rotation_euler = (hp - cam.location).to_track_quat('-Z', 'Y').to_euler(); cd.lens = 60
+    sc.render.resolution_x, sc.render.resolution_y = 700, 700
+    sc.render.filepath = PREVIEW.replace('.png', '-hand.png'); bpy.ops.render.render(write_still=True)
+    for t in rig.animation_data.nla_tracks: t.mute = True
 
 bpy.ops.object.select_all(action='DESELECT')
 for o in [rig] + parts + gloves: o.select_set(True)

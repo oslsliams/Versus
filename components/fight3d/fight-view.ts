@@ -58,7 +58,8 @@ class FighterRig {
   root = new THREE.Group(); body: THREE.Object3D; mixer: THREE.AnimationMixer;
   actions = new Map<string, THREE.AnimationAction>(); current: THREE.AnimationAction | null = null; currentKey = '';
   bones: Record<string, THREE.Bone | undefined> = {};
-  fall = 0; kneel = 0; lean = 0; stunT = 0; flash = 0; skinMats: THREE.MeshStandardMaterial[] = [];
+  fall = 0; kneel = 0; lean = 0; stunT = 0; flash = 0; hitSide = 1; stagger = 0; skinMats: THREE.MeshStandardMaterial[] = [];
+  hit(power: number) { this.stunT = Math.min(1, .55 + power * .5); this.hitSide = Math.random() < .5 ? -1 : 1; this.stagger = Math.min(1, power); }
   lastState = ''; lastMove: MoveId | null = null;
   constructor(src: Src) {
     this.body = cloneSkinned(src.scene);
@@ -107,7 +108,6 @@ class FighterRig {
     } else if (st !== 'attack' && st !== this.lastState) {
       this.play(st === 'block' || st === 'win' ? 'idle_box' : 'idle', st === 'idle' || st === 'walk' ? .2 : .1);
     }
-    if (st === 'stun' && this.lastState !== 'stun') this.stunT = 1;
     this.lastState = st; this.lastMove = f.move;
     this.mixer.timeScale = st === 'walk' ? 1.35 : st === 'ko' ? 0 : 1;
     this.mixer.update(dt);
@@ -120,10 +120,15 @@ class FighterRig {
     this.body.rotation.x = -this.fall * 1.5 + this.lean * .55;
     this.body.position.y = -this.kneel * .42 - this.fall * .05;
     this.body.position.z = -this.fall * .35;
-    this.stunT = Math.max(0, this.stunT - dt * 2.6);
-    const head = this.bones.Head, spine = this.bones.Spine2;
-    if (head && this.stunT > 0) head.rotateX(-.55 * this.stunT);
-    if (spine && this.stunT > 0) spine.rotateX(-.25 * this.stunT);
+    this.stunT = Math.max(0, this.stunT - dt * 3.2);
+    const head = this.bones.Head, spine = this.bones.Spine2, neck = this.bones.Neck;
+    // hit reaction: sharp snap that eases out, plus a sideways twist that varies per hit
+    const snap = this.stunT * this.stunT;
+    if (head && snap > 0) { head.rotateX(-.75 * snap); head.rotateY(this.hitSide * .5 * snap); head.rotateZ(this.hitSide * .25 * snap); }
+    if (neck && snap > 0) neck.rotateX(-.3 * snap);
+    if (spine && snap > 0) { spine.rotateX(-.35 * snap); spine.rotateY(this.hitSide * .2 * snap); }
+    this.body.position.x = -this.stagger * .12;
+    this.stagger = Math.max(0, this.stagger - dt * 3);
     if (st === 'top' && this.bones.RightArm) this.bones.RightArm.rotateX(-Math.max(0, Math.sin(time * 13)) * .9);
     this.flash = Math.max(0, this.flash - dt * 4);
     for (const m of this.skinMats) m.emissive?.setRGB(this.flash * .5, this.flash * .05, this.flash * .05);
@@ -135,7 +140,7 @@ export class FightView {
   composer: EffectComposer; bloom: UnrealBloomPass;
   rigs: [FighterRig, FighterRig]; sparks: {mesh: THREE.Mesh; life: number; v: THREE.Vector3}[] = [];
   shake = 0; time = 0; camX = 0; camDist = 3.6; private disposed = false;
-  debugCam = typeof location !== 'undefined' && new URLSearchParams(location.search).get('fightcam') === 'face';
+  debugCam = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('fightcam') : null;
 
   constructor(canvas: HTMLCanvasElement, g: LiveFight, assets: Assets) {
     this.renderer = new THREE.WebGLRenderer({canvas, antialias: true, powerPreference: 'high-performance'});
@@ -208,7 +213,7 @@ export class FightView {
       const n = e.type === 'block' ? 5 : Math.min(16, 5 + Math.round(e.power * 7));
       this.burst(e.x * X_SCALE, PLAT + (e.type === 'td' ? .3 : 1.5), n, e.type === 'block' ? '#9fc4ff' : e.type === 'ko' || e.type === 'kd' ? '#ffd27a' : '#fff3c4');
       this.shake = Math.max(this.shake, e.type === 'ko' ? .3 : e.type === 'kd' ? .18 : e.type === 'block' ? .02 : Math.min(.1, e.power * .07));
-      if (e.type !== 'block' && e.type !== 'td') this.rigs[e.side === 0 ? 1 : 0].flash = 1;
+      if (e.type !== 'block' && e.type !== 'td') { const v = this.rigs[e.side === 0 ? 1 : 0]; v.flash = 1; v.hit(e.power); }
     }
   }
   private burst(x: number, y: number, n: number, color: string) {
@@ -246,7 +251,7 @@ export class FightView {
     this.camDist += ((narrow ? 5.2 : 3.3) + gap * (narrow ? .9 : .55) - this.camDist) * (1 - Math.exp(-2.5 * dt));
     this.shake = Math.max(0, this.shake - dt * 1.2);
     const sx = (Math.random() - .5) * this.shake, sy = (Math.random() - .5) * this.shake;
-    if (this.debugCam) { const h = this.rigs[0].bones.Head; if (h) { const p = new THREE.Vector3(); h.getWorldPosition(p); this.camera.position.set(p.x + .5, p.y + .05, p.z + .55); this.camera.lookAt(p); } }
+    if (this.debugCam) { const h = this.debugCam === 'hand' ? this.rigs[0].bones.LeftHand : this.rigs[0].bones.Head; if (h) { const p = new THREE.Vector3(); h.getWorldPosition(p); const k = this.debugCam === 'hand' ? .55 : 1; this.camera.position.set(p.x + .5 * k, p.y + .05, p.z + .55 * k); this.camera.lookAt(p); } }
     else { this.camera.position.set(this.camX + .35 + sx, PLAT + 1.42 + sy, this.camDist); this.camera.lookAt(this.camX, PLAT + 1.05, 0); }
     this.composer.render(dt);
   }

@@ -21,7 +21,7 @@ export const ROUND_SECONDS = 75;
 export type Fighter = {
   name: string; color: string; style: Style; stats: Stats; side: 0 | 1;
   x: number; facing: 1 | -1; state: FState; t: number; move: MoveId | null; hitDone: boolean;
-  hp: number; stamina: number; kdRound: number; invuln: number;
+  hp: number; stamina: number; kdRound: number; invuln: number; queued: MoveId | null; combo: number;
   escape: number; sub: number; subClock: number; gnpCd: number; mashCd: number;
   landed: number; points: number; takedowns: number; knockdowns: number;
 };
@@ -29,7 +29,7 @@ export type FightEvent = {type: 'hit' | 'block' | 'whiff' | 'kd' | 'ko' | 'td' |
 export type Phase = 'intro' | 'fight' | 'break' | 'over';
 export type LiveFight = {
   f: [Fighter, Fighter]; round: number; rounds: number; clock: number; phase: Phase; phaseT: number;
-  slowmo: number; events: FightEvent[]; cards: [number, number][]; seed: number;
+  slowmo: number; hitstop: number; events: FightEvent[]; cards: [number, number][]; seed: number;
   result: null | {winner: 0 | 1 | -1; method: 'KO/TKO' | 'SUB' | 'DEC' | 'SPLIT DEC' | 'DRAW'; round: number};
 };
 
@@ -38,8 +38,8 @@ const rand = () => { seedState = (seedState * 1664525 + 1013904223) >>> 0; retur
 
 export function createFight(a: {name: string; color: string; style: Style; stats: Stats}, b: {name: string; color: string; style: Style; stats: Stats}, rounds: number, seed = Date.now()): LiveFight {
   seedState = seed >>> 0 || 1;
-  const mk = (p: typeof a, side: 0 | 1, x: number): Fighter => ({...p, side, x, facing: side === 0 ? 1 : -1, state: 'idle', t: 0, move: null, hitDone: false, hp: 100, stamina: 100, kdRound: 0, invuln: 0, escape: 0, sub: 0, subClock: 0, gnpCd: 0, mashCd: 0, landed: 0, points: 0, takedowns: 0, knockdowns: 0});
-  return {f: [mk(a, 0, -1.6), mk(b, 1, 1.6)], round: 1, rounds, clock: ROUND_SECONDS, phase: 'intro', phaseT: 0, slowmo: 0, events: [], cards: [[0, 0], [0, 0], [0, 0]], seed, result: null};
+  const mk = (p: typeof a, side: 0 | 1, x: number): Fighter => ({...p, side, x, facing: side === 0 ? 1 : -1, state: 'idle', t: 0, move: null, hitDone: false, hp: 100, stamina: 100, kdRound: 0, invuln: 0, queued: null, combo: 0, escape: 0, sub: 0, subClock: 0, gnpCd: 0, mashCd: 0, landed: 0, points: 0, takedowns: 0, knockdowns: 0});
+  return {f: [mk(a, 0, -1.6), mk(b, 1, 1.6)], round: 1, rounds, clock: ROUND_SECONDS, phase: 'intro', phaseT: 0, slowmo: 0, hitstop: 0, events: [], cards: [[0, 0], [0, 0], [0, 0]], seed, result: null};
 }
 
 const spd = (f: Fighter) => (.78 + f.stats.speed / 220) * (.75 + .25 * f.stamina / 100);
@@ -50,6 +50,7 @@ export const moveTiming = (f: Fighter, m: MoveId) => { const k = 1 / spd(f); con
 /* ------------------------------------------------------------------ step */
 export function step(g: LiveFight, inputs: [Input, Input], pressed: [Input, Input]) {
   g.events = [];
+  if (g.hitstop > 0) { g.hitstop -= DT; return; }
   const dt = g.slowmo > 0 ? DT * .3 : DT;
   if (g.slowmo > 0) g.slowmo -= DT;
   g.phaseT += DT;
@@ -93,8 +94,15 @@ function standUp(g: LiveFight, f: Fighter, o: Fighter, inp: Input, prs: Input, d
     }
     case 'attack': {
       const tm = moveTiming(f, f.move!);
+      const q: MoveId | null = prs.jab ? 'jab' : prs.cross ? 'cross' : prs.kick ? 'kick' : prs.upper ? 'upper' : null;
+      if (q && f.t > tm.start * .5) f.queued = q;
       if (!f.hitDone && f.t >= tm.start) { f.hitDone = true; resolveHit(g, f, o, f.move!); }
-      if (f.t >= tm.start + tm.active + tm.rec) { setState(f, 'idle'); f.move = null; }
+      // combo: a strike pressed during this one chains in early, before full recovery
+      if (f.queued && f.hitDone && f.t >= tm.start + tm.active + tm.rec * .35 && f.stamina > MOVES[f.queued].cost) {
+        const m = f.queued; f.queued = null; f.combo = Math.min(4, f.combo + 1);
+        setState(f, 'attack'); f.move = m; f.hitDone = false; f.stamina -= MOVES[m].cost; return;
+      }
+      if (f.t >= tm.start + tm.active + tm.rec) { setState(f, 'idle'); f.move = null; f.combo = 0; f.queued = null; }
       return;
     }
     case 'shoot': {
@@ -115,7 +123,7 @@ function standUp(g: LiveFight, f: Fighter, o: Fighter, inp: Input, prs: Input, d
       return;
     }
     case 'sprawl': if (f.t > .45) setState(f, 'idle'); return;
-    case 'stun': if (f.t > .32) setState(f, 'idle'); return;
+    case 'stun': if (f.t > .38) setState(f, 'idle'); return;
     case 'down': if (f.t > 1.7) { if (f.hp <= 0) return finish(g, o, 'KO/TKO'); setState(f, 'getup'); } return;
     case 'getup': if (f.t > .5) { setState(f, 'idle'); f.invuln = .5; } return;
     default: return;
@@ -130,14 +138,15 @@ function resolveHit(g: LiveFight, f: Fighter, o: Fighter, m: MoveId) {
   let dmg = d.dmg * (.55 + f.stats.power / 100) * (1.25 - o.stats.chin / 200) * tired * (.85 + rand() * .3);
   const hx = (f.x + o.x) / 2;
   if (o.state === 'block' && (f.x - o.x) * o.facing > 0) {
-    o.stamina = Math.max(0, o.stamina - dmg * .9); o.hp -= dmg * .12; o.x += f.facing * d.push * .6;
+    o.stamina = Math.max(0, o.stamina - dmg * .9); o.hp -= dmg * .12; o.x += f.facing * d.push * .6; g.hitstop = .03;
     g.events.push({type: 'block', side: o.side, x: hx, power: dmg / 10});
     if (o.stamina <= 0) setState(o, 'stun');
     return;
   }
   const counter = o.state === 'attack' ? 1.3 : 1;
-  dmg *= counter;
-  o.hp -= dmg; o.x += f.facing * d.push; f.landed += 1; f.points += dmg;
+  dmg *= counter * (1 + f.combo * .08);
+  o.hp -= dmg; o.x += f.facing * d.push * (d.heavy ? 1.6 : 1); f.landed += 1; f.points += dmg;
+  g.hitstop = d.heavy ? .085 : .045;
   g.events.push({type: 'hit', side: f.side, x: hx, power: dmg / 10, text: counter > 1 ? 'Counter!' : undefined});
   const kdChance = d.heavy ? .022 + (f.stats.power - o.stats.chin) / 700 + Math.max(0, 55 - o.hp) / 260 + (counter > 1 ? .08 : 0) + (m === 'upper' ? .04 : 0) : .0;
   if (o.hp <= 0 || rand() < kdChance) {
@@ -227,8 +236,8 @@ function nextRound(g: LiveFight) {
 }
 
 /* -------------------------------------------------------------------- AI */
-export type AIBrain = {react: number; plan: number; want: Partial<Input>; level: number};
-export const makeBrain = (level: number): AIBrain => ({react: 0, plan: 0, want: {}, level});
+export type AIBrain = {react: number; plan: number; want: Partial<Input>; level: number; chain: MoveId | null};
+export const makeBrain = (level: number): AIBrain => ({react: 0, plan: 0, want: {}, level, chain: null});
 
 export function aiInput(g: LiveFight, me: Fighter, them: Fighter, brain: AIBrain): {held: Input; pressed: Input} {
   const held = {...NO_INPUT}, pressed = {...NO_INPUT};
@@ -247,7 +256,7 @@ export function aiInput(g: LiveFight, me: Fighter, them: Fighter, brain: AIBrain
   if (them.state === 'attack' || them.state === 'shoot') {
     if (brain.react <= 0) { brain.react = .35 - lvl * .2; brain.want = rand() < (them.state === 'shoot' ? .45 : .25) + lvl * .5 ? {block: true} : rand() < .3 ? {[away]: true} : {}; }
   } else if (brain.plan <= 0) {
-    brain.plan = .25 + rand() * (.5 - lvl * .25);
+    brain.plan = .18 + rand() * (.4 - lvl * .22);
     brain.want = {};
     if (me.stamina < 25) brain.want = {[away]: true, block: rand() < .5};
     else if (dist > ideal + .25) brain.want = {[toward]: true};
@@ -264,6 +273,9 @@ export function aiInput(g: LiveFight, me: Fighter, them: Fighter, brain: AIBrain
       else brain.want = {[away]: true};
     }
     for (const k of ['jab', 'cross', 'kick', 'upper', 'shoot'] as const) if (brain.want[k]) { pressed[k] = true; brain.want[k] = false; }
+    if ((pressed.jab || pressed.cross) && rand() < .35 + lvl * .35) brain.chain = rand() < .5 ? 'cross' : rand() < .5 ? 'kick' : 'upper';
+  }
+  if (brain.chain && me.state === 'attack' && me.hitDone) { pressed[brain.chain] = true; brain.chain = null;
   }
   held.block = !!brain.want.block; held.left = !!brain.want.left; held.right = !!brain.want.right;
   return {held, pressed};
