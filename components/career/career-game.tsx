@@ -9,6 +9,7 @@ import {
 } from '../../lib/career/engine';
 import {PLANS, fightRound, startFight, type FightState} from '../../lib/career/fight';
 import {competitors} from '../../lib/competitors';
+import {StudioIntro} from './studio-intro';
 
 const SAVE = 'versus-career-v1', FIGHT = 'versus-career-fight-v1';
 const load = <T,>(k: string): T | null => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) as T : null; } catch { return null; } };
@@ -30,14 +31,14 @@ export function CareerGame() {
   const update = (c: Career | null) => { setCareer(c); save(SAVE, c); };
   const updateFight = (f: FightState | null) => { setFight(f); save(FIGHT, f); };
 
-  if (!ready) return <div className="cg-loading">Loading your career…</div>;
-  if (!career) return <CreateFighter onCreate={c => update(c)}/>;
-  if (fight && career.camp) return <FightNight career={career} fight={fight} setFight={updateFight} onDone={out => { updateFight(null); update(applyResult(career, out)); }}/>;
-  if (career.retired) return <Retired career={career} onNew={() => { update(null); updateFight(null); }}/>;
-  return <Hub career={career} update={update} startFightNight={() => {
-    const o = npc(career, career.camp!.opponentId)!;
-    updateFight(startFight({name: career.name, stats: career.stats, style: career.style}, o, career.camp!.rounds, career.seed + career.week * 31));
-  }}/>;
+  return <><StudioIntro/>{!ready ? <div className="cg-loading">Loading your career…</div>
+    : !career ? <CreateFighter onCreate={c => update(c)}/>
+    : fight && career.camp ? <FightNight career={career} fight={fight} setFight={updateFight} onDone={out => { updateFight(null); update(applyResult(career, out)); }}/>
+    : career.retired ? <Retired career={career} onNew={() => { update(null); updateFight(null); }}/>
+    : <Hub career={career} update={update} startFightNight={() => {
+      const o = npc(career, career.camp!.opponentId)!;
+      updateFight(startFight({name: career.name, stats: career.stats, style: career.style}, o, career.camp!.rounds, career.seed + career.week * 31));
+    }}/>}</>;
 }
 
 /* ======================================================= create fighter */
@@ -58,7 +59,7 @@ function CreateFighter({onCreate}: {onCreate: (c: Career) => void}) {
   return <div className="bn-page cg">
     <header className="bn-pagehead with-art">
       <div>
-        <span className="eyebrow">VERSUS career mode</span>
+        <span className="ui-credit"><img src="/brand/unseen-interactive-logo-light.svg" alt="Unseen Interactive" width={123} height={30}/>presents</span>
         <h1>Build a <em>legend.</em></h1>
         <p>Start in the basement leagues at 21. Train, take fights, build hype and climb to the VERSUS Championship. Every choice is yours.</p>
       </div>
