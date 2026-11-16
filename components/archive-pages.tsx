@@ -9,6 +9,7 @@ import rankings from '../lib/ufc-rankings.json';
 import {moments} from '../lib/moments';
 import {useArena} from './arena-context';
 import FighterGallery, {fighterScenes} from './fighter-gallery';
+import {SHOW_UFC_PHOTOS} from '../lib/photo-policy';
 
 const url = (id: string) => `/fighter/${id}`;
 const fmt = (v: number | null | undefined, unit = '') => v == null ? '—' : `${v}${unit}`;
@@ -168,7 +169,7 @@ export function FighterProfile({id}: {id: string}) {
       </div>
     </section>
 
-    {fighterScenes[c.id]?.length > 0 && <FighterGallery key={c.id} c={c}/>}
+    {SHOW_UFC_PHOTOS && fighterScenes[c.id]?.length > 0 && <FighterGallery key={c.id} c={c}/>}
 
     <div className="bn-two">
       <section className="panel bn-fights">

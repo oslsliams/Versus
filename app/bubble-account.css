@@ -1,0 +1,50 @@
+/* VERSUS · Bubble Night account pages: profile, settings, people, sign-in */
+
+/* ---------- profile ---------- */
+.app .profile-cover{border-radius:var(--r-lg);border:1px solid var(--glass-line);box-shadow:var(--glass-shadow);overflow:hidden;
+  background:radial-gradient(70% 120% at 0% 100%,color-mix(in srgb,var(--profile-accent,var(--lime)) 18%,transparent),transparent 60%),radial-gradient(60% 100% at 100% 0%,color-mix(in srgb,var(--violet) 22%,transparent),transparent 60%),var(--glass)}
+.app .profile-cover-art{color:#ffffff08!important;-webkit-text-stroke:1px #ffffff14;font-family:var(--font-display)}
+.app .profile-cover h1{font-family:var(--font-display)}
+.app .early-supporter-badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-display);font-weight:800;font-size:13px;letter-spacing:0;text-transform:none;
+  padding:4px 11px;border-radius:12px;border:2.5px solid #fff;background:var(--sun);color:var(--sun-ink);box-shadow:0 4px 0 #00000066;transform:rotate(-3deg)}
+.app .early-supporter-badge svg{color:var(--sun-ink)}
+.app .profile-cover .avatar.giant{box-shadow:0 18px 30px -12px #000a}
+
+.app .profile-jump-links{display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:6px;border-radius:var(--r-pill);background:var(--glass);border:1px solid var(--glass-line);box-shadow:var(--glass-shadow)}
+.app .profile-jump-links>a,.app .profile-jump-links>button{border:0;border-radius:var(--r-pill);padding:8px 14px;background:transparent;color:var(--muted);font:inherit;font-weight:700;font-size:14px;text-decoration:none;cursor:pointer;transition:background .2s,color .2s}
+.app .profile-jump-links>a:hover,.app .profile-jump-links>button:hover{background:#ffffff12;color:var(--ink)}
+.app .profile-jump-links>button{margin-left:auto;background:var(--glass-strong);color:var(--ink);box-shadow:inset 0 1px 0 #ffffff26}
+.app .profile-social-tools{display:inline-flex;flex-wrap:wrap;gap:10px;margin:0 10px 0 0;vertical-align:middle}
+.app main>.profile-social-tools~a.button{vertical-align:middle;margin:0 10px 0 0}
+.app .profile-shop-link{display:inline-flex;align-items:center;gap:6px;vertical-align:middle;padding:10px 16px;border-radius:var(--r-pill);background:color-mix(in srgb,var(--sun) 14%,transparent);border:1px solid color-mix(in srgb,var(--sun) 40%,transparent);color:var(--sun);font-weight:800;text-decoration:none;transition:transform .45s var(--spring)}
+.app .profile-shop-link:hover{transform:scale(1.05) rotate(-1deg);text-decoration:none}
+.app .profile-stats-grid .panel strong,.app .profile-stats-grid .panel b{font-family:var(--font-display)}
+.app .favorite-tags span,.app .favorite-tags a{border-radius:var(--r-pill)}
+
+/* ---------- settings ---------- */
+.app .settings-grid .panel{border-radius:var(--r-lg)}
+.app .settings-grid h2{font-size:clamp(26px,2.6vw,32px)}
+.app .settings-grid h3{margin:22px 0 4px;font-size:20px}
+.app .settings-grid label:not(.settings-toggle){display:grid;gap:8px;margin-top:14px}
+.app .settings-grid form .button,.app .settings-grid .panel>.button{margin-top:16px}
+.app .settings-toggle{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--glass-line);cursor:pointer}
+.app .settings-toggle input[type=checkbox]{appearance:none;-webkit-appearance:none;flex:none;width:50px;height:30px;border-radius:var(--r-pill);background:#00000060;border:1px solid var(--glass-line);position:relative;cursor:pointer;transition:background .25s;box-shadow:inset 0 2px 0 #00000050}
+.app .settings-toggle input[type=checkbox]::before{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--ink);box-shadow:0 2px 4px #0006;transition:transform .45s var(--spring)}
+.app .settings-toggle input[type=checkbox]:checked{background:var(--lime);border-color:transparent}
+.app .settings-toggle input[type=checkbox]:checked::before{transform:translateX(20px);background:var(--lime-ink)}
+
+/* ---------- people ---------- */
+.app .people-page .section-heading h1,.app .people-page h1{font-family:var(--font-display)}
+.app .person-card{border-radius:var(--r-md);transition:transform .5s var(--spring)}
+.app .person-card:hover{transform:translateY(-5px) rotate(-.5deg)}
+.app .people-search{display:flex;align-items:center;gap:10px;padding-left:16px;background:#00000045;border:1px solid var(--glass-line)}
+
+/* ---------- sign-in / sign-up / recovery ---------- */
+.account-scene .account-panel,.account-scene .account-story{border-radius:var(--r-lg)}
+.account-story{position:relative;overflow:hidden}
+.account-story::after{content:"";position:absolute;right:-40px;bottom:-30px;width:min(48%,280px);aspect-ratio:1;background:url(/art/coin.webp) center/contain no-repeat;transform:rotate(-12deg);filter:drop-shadow(0 30px 40px #000a);pointer-events:none;animation:bn-float 6s ease-in-out infinite}
+.account-story h2 em,.account-story h2 span{color:var(--lime)}
+.auth-mode-tabs{border-radius:var(--r-pill)!important;padding:4px}
+.auth-mode-tabs button{border-radius:var(--r-pill)!important}
+.auth-mode-tabs .selected{background:var(--lime)!important;color:var(--lime-ink)!important}
+@media (max-width:760px){.account-story::after{width:140px;right:-20px;bottom:-20px;opacity:.8}}

@@ -27,6 +27,31 @@
 .coin-board-hero::after{content:"";position:absolute;right:4%;top:50%;width:min(26vw,240px);aspect-ratio:1;transform:translateY(-50%);background:url(/art/trophy.webp) center/contain no-repeat;pointer-events:none;filter:drop-shadow(0 30px 40px #0009);animation:bn-float 6s ease-in-out infinite}
 .empty::before{content:"";display:block;width:140px;height:140px;margin:0 auto 10px;background:url(/art/gem.webp) center/contain no-repeat;filter:drop-shadow(0 20px 30px #0008)}
 
+/* ---------- original fighter portraits (used when UFC photos are off) ---------- */
+.app .portrait:not(.has-photo){
+  container-type:size;position:relative;overflow:hidden;display:grid;place-items:center;
+  background:
+    radial-gradient(circle at 28% 18%,color-mix(in srgb,var(--fighter-color,var(--violet)) 50%,transparent),transparent 58%),
+    radial-gradient(circle at 85% 105%,color-mix(in srgb,var(--violet) 45%,transparent),transparent 60%),
+    repeating-linear-gradient(135deg,#ffffff06 0 10px,transparent 10px 20px),
+    #17142e;
+}
+.app .portrait:not(.has-photo)>svg{position:absolute;bottom:-6%;left:50%;width:78%;height:78%;transform:translateX(-50%);color:var(--ink);opacity:.1;stroke-width:1}
+.app .portrait:not(.has-photo) .portrait-initials{
+  position:relative;z-index:1;font-family:var(--font-display);font-weight:800;letter-spacing:-.05em;line-height:1;
+  font-size:clamp(28px,34cqmin,140px);color:var(--ink);text-shadow:0 6px 0 #00000055;transform:rotate(-4deg);
+}
+.app .portrait:not(.has-photo) .portrait-label{z-index:2}
+.og-cell .portrait:not(.has-photo) .portrait-initials{font-size:clamp(20px,30cqmin,60px)}
+
+/* Moments without photos: giant tilted initials watermark */
+.moment-art .moment-initials{
+  position:absolute;inset:0;display:grid;place-items:center;padding-bottom:28%;pointer-events:none;
+  font-family:var(--font-display);font-weight:800;letter-spacing:-.06em;font-size:clamp(70px,9vw,130px);
+  color:color-mix(in srgb,var(--moment-color,var(--violet)) 55%,#ffffff);opacity:.32;transform:rotate(-8deg);
+}
+.moment-art:not(:has(img)){background:radial-gradient(circle at 30% 20%,color-mix(in srgb,var(--moment-color,var(--violet)) 40%,transparent),transparent 60%),radial-gradient(circle at 90% 100%,color-mix(in srgb,var(--violet) 35%,transparent),transparent 60%),#17142e}
+
 /* ---------- Octagon Grid ---------- */
 .og-status{display:flex;flex-wrap:wrap;gap:8px}
 .bn-pill.warn{background:color-mix(in srgb,var(--pink) 16%,transparent);border-color:color-mix(in srgb,var(--pink) 40%,transparent);color:var(--pink)}
