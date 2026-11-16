@@ -1,0 +1,214 @@
+/* ==========================================================================
+   VERSUS · Bubble Night design system
+   Night glass base + squishy candy personality.
+   Loaded last in app/layout.tsx, so it sets the look for every page.
+   ========================================================================== */
+:root{
+  /* surfaces */
+  --bg:#07060f;
+  --surface:#13112a;
+  --surface-2:#1b1838;
+  --glass:#ffffff0d;
+  --glass-strong:#ffffff16;
+  --glass-line:#ffffff24;
+  --line:#2b2748;
+  /* text */
+  --ink:#f6f4ff;
+  --muted:#a9a4c6;
+  /* candy, toned down: softer and less saturated than pure neon */
+  --lime:#bfe36b;--lime-ink:#1c2709;--lime-deep:#7c9a3c;
+  --pink:#e58fb6;--pink-ink:#3b1326;
+  --sky:#86c4dc;--sky-ink:#0d2b38;
+  --sun:#e9c873;--sun-ink:#3a2c0b;
+  --violet:#968fd6;--violet-ink:#1b1840;
+  /* legacy names still used by older rules */
+  --panel:var(--surface);--purple:var(--violet);--border:var(--glass-line);
+  /* type */
+  --font-display:'Bricolage Grotesque','Arial Rounded MT Bold',Impact,sans-serif;
+  --font-body:Figtree,system-ui,-apple-system,'Segoe UI',sans-serif;
+  /* shape + motion */
+  --r-sm:14px;--r-md:22px;--r-lg:30px;--r-pill:999px;
+  --spring:cubic-bezier(.34,1.56,.64,1);
+  --glass-shadow:inset 0 1px 0 #ffffff2e,0 24px 50px -30px #000;
+  color-scheme:dark;
+}
+
+/* ---------- base ---------- */
+html{background:var(--bg)}
+body,.app{
+  background:
+    radial-gradient(70% 45% at 88% -5%,#968fd61c,transparent 70%),
+    radial-gradient(55% 40% at -5% 30%,#e58fb60f,transparent 70%),
+    radial-gradient(60% 45% at 105% 75%,#86c4dc0d,transparent 70%),
+    var(--bg);
+  background-attachment:fixed;
+  color:var(--ink);font-family:var(--font-body);
+}
+h1,h2,h3{font-family:var(--font-display);font-weight:800;letter-spacing:-.02em;text-wrap:balance}
+h1{letter-spacing:-.035em;line-height:.95}
+h3{font-weight:700}
+::selection{background:var(--pink);color:var(--pink-ink)}
+.app :is(button,a,input,select,textarea,summary):focus-visible{outline:3px solid var(--lime);outline-offset:3px;border-radius:12px}
+.muted{color:var(--muted)}
+.eyebrow{color:var(--lime);font-weight:800;letter-spacing:.14em}
+.text-link{color:var(--lime);font-weight:700;text-decoration:none}
+.text-link:hover{text-decoration:underline;text-underline-offset:4px}
+
+/* ---------- glass panels ---------- */
+.panel,.app .panel{
+  background:var(--glass);border:1px solid var(--glass-line);border-radius:var(--r-md);
+  backdrop-filter:blur(16px) saturate(150%);-webkit-backdrop-filter:blur(16px) saturate(150%);
+  box-shadow:var(--glass-shadow);
+}
+a.panel{color:inherit;text-decoration:none;transition:transform .5s var(--spring),border-color .3s}
+a.panel:hover{transform:translateY(-6px) rotate(-.6deg);border-color:#ffffff45}
+
+/* ---------- buttons: squish ---------- */
+.button,.app .button{
+  font-family:var(--font-display);font-weight:800;letter-spacing:.005em;
+  border-radius:var(--r-pill);padding:12px 22px;min-height:46px;
+  transition:transform .45s var(--spring),box-shadow .2s,background .2s;
+}
+.button:hover:not(:disabled){transform:scale(1.05) rotate(-1.2deg)}
+.button:active:not(:disabled){transform:scale(.93,.87) translateY(3px);transition-duration:.08s}
+.button.primary,.app .button.primary{
+  background:var(--lime);color:var(--lime-ink);border-color:transparent;
+  box-shadow:inset 0 -5px 0 #00000026,inset 0 3px 0 #ffffff55,0 6px 0 -1px var(--lime-deep),0 12px 26px -14px color-mix(in srgb,var(--lime) 40%,transparent);
+}
+.button.primary:active:not(:disabled){box-shadow:inset 0 -2px 0 #00000030,inset 0 2px 0 #ffffff70,0 2px 0 -1px var(--lime-deep)}
+.button.outline,.button.ghost,.button.glass,.app .button.outline,.app .button.ghost{
+  background:var(--glass-strong);color:var(--ink);border:1px solid var(--glass-line);
+  box-shadow:inset 0 1px 0 #ffffff30,inset 0 -4px 0 #00000040;backdrop-filter:blur(12px);
+}
+.button.outline:hover:not(:disabled),.button.ghost:hover:not(:disabled){background:#ffffff22}
+.button.outline[aria-pressed="true"]{background:var(--lime);color:var(--lime-ink);border-color:transparent}
+.button:disabled{opacity:.5;cursor:not-allowed}
+
+/* ---------- form fields ---------- */
+.app :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea){
+  background:#00000045;border:1px solid var(--glass-line);color:var(--ink);
+  border-radius:var(--r-sm);padding:12px 16px;min-height:46px;
+  box-shadow:inset 0 2px 0 #00000040;transition:border-color .2s,box-shadow .2s;
+}
+.app :is(input,select,textarea):focus{outline:none;border-color:var(--lime);box-shadow:inset 0 2px 0 #00000040,0 0 0 4px color-mix(in srgb,var(--lime) 18%,transparent)}
+.app input::placeholder,.app textarea::placeholder{color:#8a85a8}
+.app :is(input[type=checkbox],input[type=radio],input[type=range]){accent-color:var(--lime)}
+.app label{color:var(--muted);font-weight:600}
+
+/* ---------- tags and chips ---------- */
+.tag{border-radius:var(--r-pill);padding:4px 10px;background:var(--glass-strong);border:1px solid var(--glass-line);color:var(--muted);font-weight:800;letter-spacing:.04em}
+.tag.lime{background:color-mix(in srgb,var(--lime) 12%,transparent);color:var(--lime);border-color:color-mix(in srgb,var(--lime) 35%,transparent)}
+
+/* ---------- notice bar ---------- */
+.app .notice{border-radius:var(--r-pill);background:var(--glass);border:1px solid var(--glass-line);color:var(--muted);padding:12px 20px;box-shadow:var(--glass-shadow)}
+.app .notice a{color:var(--lime);font-weight:700}
+
+/* ---------- footer ---------- */
+.app footer{max-width:1320px;margin:40px auto 24px;width:calc(100% - 24px);display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;padding:24px;border-radius:var(--r-lg);background:var(--glass);border:1px solid var(--glass-line);box-shadow:var(--glass-shadow);color:var(--muted);font-size:14px}
+.app footer>a{color:var(--muted);text-decoration:none;font-weight:600}
+.app footer>a:hover{color:var(--ink)}
+.app footer .footer-contact{flex-basis:100%;display:grid;gap:6px;padding:0 0 18px;margin:0 0 6px;border:0;border-bottom:1px solid var(--glass-line);border-radius:0;background:none}
+.app footer .footer-contact h2{font-size:24px;color:var(--ink);margin:0}
+.app footer .footer-contact a{color:var(--lime);font-weight:700}
+.app footer .logo{font-size:22px}
+.app footer .source-note{font-size:12px}
+
+/* ---------- header: floating glass pill ---------- */
+.app .header,.app .polished-header{
+  position:sticky;top:max(10px,env(safe-area-inset-top,0px));z-index:30;
+  width:calc(100% - 24px);max-width:1320px;height:68px;margin:12px auto 0;
+  padding:0 10px 0 22px;gap:18px;border-radius:var(--r-pill);
+  background:#0e0c1fc7;border:1px solid var(--glass-line);
+  backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);
+  box-shadow:var(--glass-shadow);
+}
+.app .header>.logo,.logo{font-family:var(--font-display);font-style:normal;font-weight:800;font-size:27px;letter-spacing:-.04em;color:var(--ink);text-decoration:none;text-transform:lowercase}
+.logo .logo-mark,.logo-mark{display:inline-block;background:var(--lime);color:var(--lime-ink);border-radius:10px;padding:0 7px;margin-left:4px;transform:rotate(-6deg);transition:transform .45s var(--spring)}
+.logo:hover .logo-mark{transform:rotate(6deg) scale(1.15)}
+.nav{gap:4px}
+.nav>a,.nav-more-button{
+  border:0;border-radius:var(--r-pill);padding:8px 14px;height:auto;align-self:center;
+  color:var(--muted);font-weight:700;font-size:14px;background:transparent;transition:background .25s,color .25s,transform .4s var(--spring);
+}
+.nav>a:hover,.nav-more-button:hover{color:var(--ink);background:#ffffff10}
+.nav>a.active,.nav>a[aria-current=page],.nav-more-button.active{color:var(--ink);background:#ffffff1c;box-shadow:inset 0 1px 0 #ffffff30}
+.nav>a.active svg,.nav>a[aria-current=page] svg{color:var(--lime)}
+.nav-more-button{display:inline-flex;align-items:center;gap:4px;cursor:pointer;font-family:inherit}
+.nav-dropdown,.account-dropdown{
+  background:#14112bf2;border:1px solid var(--glass-line);border-radius:var(--r-md);padding:8px;
+  backdrop-filter:blur(20px);box-shadow:0 30px 60px -20px #000,inset 0 1px 0 #ffffff22;
+}
+.nav-dropdown a,.account-dropdown a,.account-dropdown button{border-radius:12px}
+.nav-dropdown a:hover,.account-dropdown a:hover{background:#ffffff12}
+.header-actions .icon-button,.menu-toggle{border-radius:50%;color:var(--ink);transition:background .2s,transform .4s var(--spring)}
+.header-actions .icon-button:hover{background:#ffffff14;transform:scale(1.08)}
+.profile-chip.account-toggle{border-radius:var(--r-pill);padding:4px 10px 4px 4px;background:var(--glass-strong);border:1px solid var(--glass-line);color:var(--ink)}
+.auth-links .button{min-height:40px;padding:8px 16px}
+
+/* coin chip: sunshine */
+.app .coin-chip,.app .header .coin-chip{
+  background:var(--sun);color:var(--sun-ink);border:0;border-radius:var(--r-pill);font-weight:800;
+  box-shadow:inset 0 -3px 0 #00000026,inset 0 2px 0 #fff8;font-variant-numeric:tabular-nums;
+}
+.app .coin-chip svg{color:var(--sun-ink)}
+
+/* mobile nav sheet */
+@media (max-width:800px){
+  .app .header,.app .polished-header{height:60px;border-radius:24px;padding:0 6px 0 18px}
+  .app .nav.open{
+    top:calc(100% + 8px);left:0;right:0;border-radius:var(--r-md);padding:10px;
+    background:#14112bf5;border:1px solid var(--glass-line);backdrop-filter:blur(20px);
+    box-shadow:0 30px 60px -20px #000;
+  }
+  .app .nav.open>a{border-bottom:0;padding:12px 14px}
+}
+
+/* mobile bottom tab bar: floating glass pill */
+.app .mobile-bottom-nav{
+  left:12px;right:12px;bottom:max(10px,env(safe-area-inset-bottom,0px));width:auto;
+  border-radius:var(--r-pill);padding:6px;gap:4px;
+  background:#110f24e6;border:1px solid var(--glass-line);
+  backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);
+  box-shadow:0 20px 40px -18px #000,inset 0 1px 0 #ffffff22;
+}
+.app .mobile-bottom-nav a{border-radius:var(--r-pill);color:var(--muted);font-weight:700;transition:background .25s,color .25s}
+.app .mobile-bottom-nav a[aria-current=page],.app .mobile-bottom-nav a.active{background:var(--lime);color:var(--lime-ink)}
+
+/* ---------- section headings ---------- */
+.section-heading h2{font-size:clamp(26px,3.4vw,38px)}
+.section-heading>a:not(.button){color:var(--lime);font-weight:700;text-decoration:none}
+.page-head h1,.archive-hero h1,.fantasy-intro h1,.moments-hero h1,.coin-board-hero h1,.shop-hero h1{font-family:var(--font-display);font-weight:800}
+
+/* highlighted words inside big headlines become tilted candy stickers */
+.archive-hero h1 em,.fantasy-intro h1 em,.moments-hero h1 em,.coin-board-hero h1 em,.shop-hero h1 em{
+  display:inline-block;font-style:normal;background:var(--pink);color:var(--pink-ink);
+  border-radius:20px;padding:0 .22em .08em;transform:rotate(-2deg);margin-top:.1em;
+}
+.shop-hero h1 em,.coin-board-hero h1 em{background:var(--sun);color:var(--sun-ink)}
+.fantasy-intro h1 em{background:var(--sky);color:var(--sky-ink)}
+
+/* ---------- cards ---------- */
+.archive-card,.roster-card{border-radius:var(--r-md)}
+.archive-card .portrait,.archive-card .feature-portrait{border-radius:16px;background:radial-gradient(ellipse at 50% 100%,color-mix(in srgb,var(--fighter-color,var(--violet)) 35%,transparent),transparent 70%),#00000035}
+.archive-record{font-family:var(--font-display);font-weight:800;font-size:30px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+
+/* tables */
+.app table{border-collapse:separate;border-spacing:0}
+.app th{color:var(--muted)}
+.app tbody tr:hover{background:#ffffff08}
+
+/* dialogs, toasts */
+.toast{border-radius:var(--r-pill);background:#000;border:1px solid var(--glass-line);box-shadow:0 20px 40px -15px #000}
+
+/* stickers: reusable */
+.sticker{display:inline-block;font-family:var(--font-display);font-weight:800;font-size:13px;padding:4px 11px;border-radius:12px;border:2.5px solid #fff;transform:rotate(var(--tilt,-5deg));box-shadow:0 4px 0 #00000066;transition:transform .45s var(--spring);white-space:nowrap}
+.sticker:hover{transform:rotate(0) scale(1.1) translateY(-3px)}
+.sticker.sun{background:var(--sun);color:var(--sun-ink)}
+.sticker.pink{background:var(--pink);color:var(--pink-ink)}
+.sticker.sky{background:var(--sky);color:var(--sky-ink)}
+.sticker.lime{background:var(--lime);color:var(--lime-ink)}
+.sticker.violet{background:var(--violet);color:var(--violet-ink)}
+
+/* ---------- motion preferences ---------- */
+.reduce-motion *,.reduce-motion *::before,.reduce-motion *::after{animation:none!important;transition-duration:.01ms!important}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition-duration:.01ms!important}}
