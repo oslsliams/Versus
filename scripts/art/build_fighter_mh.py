@@ -21,6 +21,23 @@ VARIANTS = {
                 shorts='#1f6b3a', trim='#0c0d10', glove='#141416', glove_trim='#c2242f', muscle=1.0, weight=.62, height=.55, proportions=.85),
     'blue': dict(race={'caucasian': .25, 'african': .65, 'asian': .1}, skin='young_african_male', hair='short04', brow='eyebrow003',
                  shorts='#f1f1f3', trim='#16181d', glove='#141416', glove_trim='#2459d6', muscle=1.0, weight=.66, height=.6, proportions=.8),
+    # ---- roster: one original body per Quick Fight fighter ----
+    'okafor': dict(race={'african': .9, 'caucasian': .1, 'asian': 0}, skin='young_african_male', hair='short01', brow='eyebrow002',
+                   shorts='#c2242f', trim='#f1f1f3', glove='#141416', glove_trim='#f1f1f3', muscle=.95, weight=.45, height=.62, proportions=.85, age=.5),
+    'volkov': dict(race={'caucasian': 1, 'african': 0, 'asian': 0}, skin='young_caucasian_male', hair='short03', brow='eyebrow010',
+                   shorts='#1c2a4a', trim='#c9a227', glove='#141416', glove_trim='#c9a227', muscle=1.0, weight=.78, height=.5, proportions=.7, age=.6),
+    'takeda': dict(race={'asian': .95, 'caucasian': .05, 'african': 0}, skin='young_asian_male', hair='short02', brow='eyebrow005',
+                   shorts='#f1f1f3', trim='#c2242f', glove='#141416', glove_trim='#c2242f', muscle=.85, weight=.42, height=.42, proportions=.8, age=.55),
+    'ashford': dict(race={'caucasian': .85, 'african': .15, 'asian': 0}, skin='middleage_caucasian_male', hair='short04', brow='eyebrow011',
+                    shorts='#111216', trim='#e8722a', glove='#141416', glove_trim='#e8722a', muscle=.95, weight=.95, height=.72, proportions=.55, age=.7),
+    'kalani': dict(race={'african': .45, 'asian': .45, 'caucasian': .1}, skin='young_african_male', hair='afro01', brow='eyebrow004',
+                   shorts='#0f7a6c', trim='#f1f1f3', glove='#141416', glove_trim='#18b5a0', muscle=1.0, weight=.85, height=.68, proportions=.6, age=.55),
+    'bianchi': dict(race={'caucasian': .95, 'african': 0, 'asian': .05}, skin='young_caucasian_male2', hair='ponytail01', brow='eyebrow008',
+                    shorts='#e9c873', trim='#111216', glove='#141416', glove_trim='#e9c873', muscle=.8, weight=.35, height=.7, proportions=.9, age=.45),
+    'mwangi': dict(race={'african': 1, 'caucasian': 0, 'asian': 0}, skin='middleage_african_male', hair='short01', brow='eyebrow001',
+                   shorts='#5a2a86', trim='#f1f1f3', glove='#141416', glove_trim='#9b6bd6', muscle=1.0, weight=.72, height=.55, proportions=.7, age=.62),
+    'delacroix': dict(race={'caucasian': .7, 'african': .2, 'asian': .1}, skin='middleage_caucasian_male', hair='short03', brow='eyebrow012',
+                      shorts='#2f6b2f', trim='#111216', glove='#141416', glove_trim='#7fd16b', muscle=.9, weight=.58, height=.6, proportions=.75, age=.72),
 }
 V = VARIANTS[VARIANT]
 ANIMS = [('Mma Idle.fbx', 'idle'), ('Fighting Idle.fbx', 'idle_box'), ('Mma Kick.fbx', 'kick_high'), ('Mma Kick (1).fbx', 'kick_feint'),
@@ -41,7 +58,7 @@ bpy.ops.wm.read_factory_settings(use_empty=True)
 addon_utils.enable(MOD, default_set=True)
 
 # ---- body --------------------------------------------------------------
-macro = {'gender': 1.0, 'age': .62, 'muscle': V['muscle'], 'weight': V['weight'], 'proportions': V['proportions'], 'height': V['height'],
+macro = {'gender': 1.0, 'age': V.get('age', .62), 'muscle': V['muscle'], 'weight': V['weight'], 'proportions': V['proportions'], 'height': V['height'],
          'cupsize': .5, 'firmness': .5, 'race': V['race']}
 body = HS.create_human(macro_detail_dict=macro, feet_on_ground=True, scale=0.1)
 rig = HS.add_builtin_rig(body, 'mixamo')
@@ -53,6 +70,43 @@ for kind, name, at in [('eyes', 'high-poly', 'Eyes'), ('eyebrows', V['brow'], 'E
 parts = [o for o in bpy.data.objects if o.type == 'MESH' and o.parent == rig]
 print('PARTS', [(o.name, len(o.data.vertices), [m.name for m in o.data.materials if m]) for o in parts])
 print('BODYGROUP', bool(body.vertex_groups.get('body')))
+
+# ---- match Mixamo's rest pose, so the captured rotations play back exactly ----------
+# Re-pose every bone to the orientation it has in the Mixamo source skeleton (T-pose),
+# bake that into the meshes, then make it the new rest pose.
+from mathutils import Matrix
+before = set(bpy.data.objects)
+bpy.ops.import_scene.fbx(filepath=os.path.join(SRC, ANIMS[0][0]))
+src_new = [o for o in bpy.data.objects if o not in before]
+src = next(o for o in src_new if o.type == 'ARMATURE')
+src_rest = {b.name: (src.matrix_world @ b.matrix_local).to_quaternion() for b in src.data.bones}
+for o in src_new: bpy.data.objects.remove(o, do_unlink=True)
+for a in [a for a in bpy.data.actions if a.users == 0]: bpy.data.actions.remove(a)
+for pb in rig.pose.bones: pb.rotation_mode = 'QUATERNION'
+arm_inv = rig.matrix_world.to_quaternion().inverted()
+def depth(b): return 0 if not b.parent else 1 + depth(b.parent)
+for pb in sorted(rig.pose.bones, key=lambda p: depth(p.bone)):
+    q = src_rest.get(pb.name)
+    if q is None: continue
+    head = pb.matrix.translation.copy()
+    m = (arm_inv @ q).to_matrix().to_4x4(); m.translation = head
+    pb.matrix = m
+    bpy.context.view_layer.update()
+for o in parts:
+    bpy.context.view_layer.objects.active = o
+    if o.data.shape_keys: o.shape_key_clear() if o is not body else None
+    if o is body and o.data.shape_keys:
+        bpy.ops.object.select_all(action='DESELECT'); o.select_set(True)
+        bpy.ops.object.shape_key_remove(all=True, apply_mix=True)
+    for md in list(o.modifiers):
+        if md.type == 'ARMATURE':
+            name = md.name
+            bpy.ops.object.modifier_apply(modifier=name)
+            nm = o.modifiers.new('Armature', 'ARMATURE'); nm.object = rig
+bpy.context.view_layer.objects.active = rig
+bpy.ops.object.mode_set(mode='POSE'); bpy.ops.pose.select_all(action='SELECT'); bpy.ops.pose.armature_apply(selected=False)
+bpy.ops.object.mode_set(mode='OBJECT')
+print('REST', 'matched to Mixamo T-pose for', len(src_rest), 'bones')
 
 # ---- shorts: recolour body faces between mid-thigh and waist -------------------
 bpy.context.view_layer.update()
@@ -143,6 +197,111 @@ for fn, name in ANIMS:
     if hasattr(st, 'action_slot') and len(act.slots): st.action_slot = act.slots[0]
     tr.mute = True
 rig.animation_data.action = None
+
+# ---- authored poses for states without motion capture (ground game, shots, knockouts) ----
+# Each limb is aimed along a world direction in the standing frame (character faces -Y,
+# left side is +X); the whole body is then tipped from the hips and dropped onto the mat.
+from mathutils import Vector, Quaternion
+def reset_pose():
+    for pb in rig.pose.bones: pb.rotation_quaternion = (1, 0, 0, 0); pb.location = (0, 0, 0)
+    bpy.context.view_layer.update()
+def aim(name, d):
+    pb = rig.pose.bones['mixamorig:' + name]
+    wm = rig.matrix_world @ pb.matrix
+    cur = (rig.matrix_world @ pb.tail) - (rig.matrix_world @ pb.head)
+    rot = cur.normalized().rotation_difference(Vector(d).normalized())
+    head = wm.translation.copy()
+    new_w = Matrix.Translation(head) @ rot.to_matrix().to_4x4() @ Matrix.Translation(-head) @ wm
+    pb.matrix = rig.matrix_world.inverted() @ new_w
+    bpy.context.view_layer.update()
+def tip_body(axis_angle):
+    pb = rig.pose.bones['mixamorig:Hips']
+    wm = rig.matrix_world @ pb.matrix; head = wm.translation.copy()
+    r = Quaternion(*axis_angle).to_matrix().to_4x4()
+    pb.matrix = rig.matrix_world.inverted() @ (Matrix.Translation(head) @ r @ Matrix.Translation(-head) @ wm)
+    bpy.context.view_layer.update()
+def drop_to_floor(clear=.04):
+    pts = []
+    for pb in rig.pose.bones:
+        if 'Hand' in pb.name and pb.name[-1].isdigit(): continue
+        pts += [(rig.matrix_world @ pb.head).z, (rig.matrix_world @ pb.tail).z]
+    dz = min(pts) - clear
+    pb = rig.pose.bones['mixamorig:Hips']
+    wm = rig.matrix_world @ pb.matrix; wm.translation.z -= dz
+    pb.matrix = rig.matrix_world.inverted() @ wm
+    bpy.context.view_layer.update()
+def limbs(spec):
+    for side, s in (('Left', 1), ('Right', -1)):
+        for part, d in spec.items():
+            if part.startswith(('L:', 'R:')):
+                if part[0] != side[0]: continue
+                part = part[2:]
+            elif part in ('Spine', 'Spine1', 'Spine2', 'Neck', 'Head'):
+                if side == 'Right': continue
+                aim(part, d); continue
+            aim(side + part, (d[0] * s, d[1], d[2]))
+def key_pose(action, frame):
+    for pb in rig.pose.bones:
+        pb.keyframe_insert('rotation_quaternion', frame=frame)
+        if pb.name == 'mixamorig:Hips': pb.keyframe_insert('location', frame=frame)
+def make_action(name, frames):
+    act = bpy.data.actions.new(name); act.use_fake_user = True
+    rig.animation_data.action = act
+    for fr, build in frames:
+        reset_pose(); build(); key_pose(act, fr)
+    rig.animation_data.action = None
+    tr = rig.animation_data.nla_tracks.new(); tr.name = name
+    st = tr.strips.new(name, int(act.frame_range[0]), act)
+    if hasattr(st, 'action_slot') and len(act.slots): st.action_slot = act.slots[0]
+    tr.mute = True
+    reset_pose()
+
+LIE = ((1, 0, 0), -math.radians(88))      # tip backwards onto the back
+def guard_back():   # on your back, knees up, forearms covering the face
+    limbs({'UpLeg': (.28, -.8, -.5), 'Leg': (.05, .3, -.95), 'Arm': (.3, -.55, -.78), 'ForeArm': (-.15, -.5, .85), 'Spine2': (0, -.08, 1), 'Head': (0, -.35, .94)})
+    tip_body(LIE); drop_to_floor(.06)
+def knocked():      # out cold: limbs loose, arms flung out
+    limbs({'L:UpLeg': (.2, -.15, -.97), 'R:UpLeg': (.12, -.45, -.88), 'L:Leg': (.1, .05, -1), 'R:Leg': (.05, .4, -.92),
+           'L:Arm': (.92, .05, .38), 'R:Arm': (.85, -.2, .1), 'L:ForeArm': (.6, .1, .8), 'R:ForeArm': (.95, -.1, -.3), 'Head': (.25, .15, .95)})
+    tip_body(LIE); drop_to_floor(.06)
+def top_base(punch):  # kneeling over the opponent, left hand posted, right hand cocked/extended
+    limbs({'UpLeg': (.32, -.45, -.83), 'Leg': (.02, .98, -.15),
+           'Spine': (0, -.45, .9), 'Spine1': (0, -.65, .76), 'Spine2': (0, -.75, .66), 'Head': (0, -.8, .6),
+           'L:Arm': (.25, -.55, -.8), 'L:ForeArm': (.05, -.35, -.94)})
+    if punch: limbs({'R:Arm': (.1, -.6, -.79), 'R:ForeArm': (.02, -.55, -.83)})
+    else: limbs({'R:Arm': (.35, .35, .2), 'R:ForeArm': (-.1, -.7, .7)})
+    drop_to_floor(.05)
+def shoot():        # level change into a double-leg
+    limbs({'L:UpLeg': (.25, -.75, -.62), 'L:Leg': (0, .35, -.94), 'R:UpLeg': (.2, .55, -.8), 'R:Leg': (0, .97, -.25),
+           'Spine': (0, -.6, .8), 'Spine1': (0, -.75, .66), 'Spine2': (0, -.85, .53), 'Head': (0, -.9, .44),
+           'Arm': (.3, -.85, -.42), 'ForeArm': (-.05, -.95, -.3)})
+    drop_to_floor(.03)
+def sprawl():       # hips down, legs kicked back
+    limbs({'UpLeg': (.25, .85, -.45), 'Leg': (.05, .99, .05),
+           'Spine': (0, -.8, .6), 'Spine1': (0, -.85, .5), 'Spine2': (0, -.9, .42), 'Head': (0, -.85, .52),
+           'Arm': (.35, -.75, -.55), 'ForeArm': (-.05, -.6, -.8)})
+    drop_to_floor(.04)
+make_action('ground_back', [(1, guard_back)])
+make_action('knocked', [(1, knocked)])
+make_action('ground_top', [(1, lambda: top_base(False)), (7, lambda: top_base(True)), (13, lambda: top_base(False))])
+make_action('shoot', [(1, shoot)])
+make_action('sprawl', [(1, sprawl)])
+print('POSES', [t.name for t in rig.animation_data.nla_tracks])
+
+if PREVIEW:
+    sc = bpy.context.scene
+    for t in rig.animation_data.nla_tracks: t.mute = True
+    sc.render.engine = 'BLENDER_WORKBENCH'; sc.display.shading.light = 'STUDIO'; sc.display.shading.color_type = 'MATERIAL'
+    sc.render.resolution_x, sc.render.resolution_y = 640, 480
+    pcd = bpy.data.cameras.new('pc'); pcd.lens = 35; pcam = bpy.data.objects.new('pc', pcd); sc.collection.objects.link(pcam); sc.camera = pcam
+    pcam.location = (3.2, -1.2, 1.1); pcam.rotation_euler = (Vector((0, 0, .45)) - pcam.location).to_track_quat('-Z', 'Y').to_euler()
+    for pose_name in ('ground_back', 'ground_top', 'knocked', 'shoot', 'sprawl'):
+        rig.animation_data.nla_tracks[pose_name].mute = False; sc.frame_set(7 if pose_name == 'ground_top' else 1); bpy.context.view_layer.update()
+        hz = (rig.matrix_world @ rig.pose.bones['mixamorig:Hips'].head).z
+        print('POSEHIP', pose_name, round(hz, 3))
+        sc.render.filepath = PREVIEW.replace('.png', f'-pose-{pose_name}.png'); bpy.ops.render.render(write_still=True)
+        rig.animation_data.nla_tracks[pose_name].mute = True
+    bpy.data.objects.remove(pcam, do_unlink=True)
 
 # ---- fists: find which way each finger joint curls toward the palm, then lock a fist ----
 from mathutils import Quaternion

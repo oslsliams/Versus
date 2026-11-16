@@ -35,8 +35,10 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
     const g: Fight = createFight(you, opp, rounds);
     const brain = makeBrain(difficulty), autoBrain = makeBrain(.6);
     const resize = () => { if (view && shell.current) view.resize(shell.current.clientWidth, shell.current.clientHeight); };
-    import('./fight-view').then(async ({FightView, loadFightAssets}) => {
-      const assets = await loadFightAssets(p => alive && setLoading(p));
+    import('./fight-view').then(async ({FightView, loadFightAssets, modelFor}) => {
+      let red = modelFor(you.name), blue = modelFor(opp.name);
+      if (blue === red) blue = modelFor(opp.name + ' blue');
+      const assets = await loadFightAssets(red, blue, p => alive && setLoading(p));
       if (!alive || !canvas.current) return;
       try { view = new FightView(canvas.current, g, assets); } catch { setError('Your browser could not start 3D graphics (WebGL). Try another browser or simulate the fight.'); return; }
       resize(); setReady(true); last = performance.now();

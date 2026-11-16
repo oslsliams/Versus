@@ -29,18 +29,33 @@ const MOVE_ANIMS: Record<MoveId, string[]> = {jab: ['jab'], cross: ['cross', 'ho
 
 type Src = {scene: THREE.Group; clips: THREE.AnimationClip[]};
 type Assets = {arena: THREE.Group; red: Src; blue: Src};
-let cache: Promise<Assets> | null = null;
-export function loadFightAssets(onProgress?: (p: number) => void): Promise<Assets> {
-  if (cache) return cache;
-  const loader = new GLTFLoader();
-  const urls = ['/models/arena.glb', '/models/fighter-red.glb', '/models/fighter-blue.glb'];
+// original MakeHuman fighter bodies built by scripts/art/build_fighter_mh.py
+export const FIGHTER_MODELS = ['okafor', 'volkov', 'takeda', 'ashford', 'kalani', 'bianchi', 'mwangi', 'delacroix'] as const;
+export type FighterModel = typeof FIGHTER_MODELS[number];
+/** Pick a body for any fighter name: roster fighters get their own, everyone else a stable pick. */
+export function modelFor(name: string): FighterModel {
+  const last = name.trim().split(/\s+/).pop()!.toLowerCase();
+  const hit = FIGHTER_MODELS.find(m => m === last);
+  if (hit) return hit;
+  let h = 7; for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return FIGHTER_MODELS[h % FIGHTER_MODELS.length];
+}
+const loads = new Map<string, Promise<{scene: THREE.Group; animations: THREE.AnimationClip[]}>>();
+const loader = new GLTFLoader();
+function loadGlb(url: string, onProgress: (p: number) => void) {
+  let p = loads.get(url);
+  if (!p) {
+    p = new Promise((res, rej) => loader.load(url, res, e => { if (e.total) onProgress(Math.min(.99, e.loaded / e.total)); }, rej));
+    p.catch(() => loads.delete(url)); loads.set(url, p);
+  }
+  return p.then(g => { onProgress(1); return g; });
+}
+export function loadFightAssets(red: FighterModel, blue: FighterModel, onProgress?: (p: number) => void): Promise<Assets> {
+  const urls = ['/models/arena.glb', `/models/fighter-${red}.glb`, `/models/fighter-${blue}.glb`];
   const done = [0, 0, 0];
   const report = () => onProgress?.(done.reduce((a, b) => a + b, 0) / 3);
-  const one = (u: string, i: number) => new Promise<{scene: THREE.Group; animations: THREE.AnimationClip[]}>((res, rej) =>
-    loader.load(u, g => { done[i] = 1; report(); res(g); }, e => { if (e.total) { done[i] = Math.min(.99, e.loaded / e.total); report(); } }, rej));
-  cache = Promise.all(urls.map(one)).then(([a, r, b]) => ({arena: a.scene, red: {scene: r.scene, clips: r.animations}, blue: {scene: b.scene, clips: b.animations}}));
-  cache.catch(() => { cache = null; });
-  return cache;
+  return Promise.all(urls.map((u, i) => loadGlb(u, p => { done[i] = p; report(); })))
+    .then(([a, r, b]) => ({arena: a.scene, red: {scene: r.scene, clips: r.animations}, blue: {scene: b.scene, clips: b.animations}}));
 }
 
 function inPlace(clip: THREE.AnimationClip) {
@@ -58,7 +73,7 @@ class FighterRig {
   root = new THREE.Group(); body: THREE.Object3D; mixer: THREE.AnimationMixer;
   actions = new Map<string, THREE.AnimationAction>(); current: THREE.AnimationAction | null = null; currentKey = '';
   bones: Record<string, THREE.Bone | undefined> = {};
-  fall = 0; kneel = 0; lean = 0; stunT = 0; flash = 0; hitSide = 1; stagger = 0; skinMats: THREE.MeshStandardMaterial[] = [];
+  stunT = 0; flash = 0; hitSide = 1; stagger = 0; skinMats: THREE.MeshStandardMaterial[] = [];
   hit(power: number) { this.stunT = Math.min(1, .55 + power * .5); this.hitSide = Math.random() < .5 ? -1 : 1; this.stagger = Math.min(1, power); }
   lastState = ''; lastMove: MoveId | null = null;
   constructor(src: Src) {
@@ -82,7 +97,7 @@ class FighterRig {
     this.root.add(this.body);
     this.mixer = new THREE.AnimationMixer(this.body);
     const byName = new Map(src.clips.map(c => [c.name, inPlace(c)]));
-    for (const loop of ['idle', 'idle_box']) {
+    for (const loop of ['idle', 'idle_box', 'ground_top']) {
       const c = byName.get(loop); if (!c) continue;
       const a = this.mixer.clipAction(c); a.setLoop(THREE.LoopRepeat, Infinity); this.actions.set(loop, a);
     }
@@ -91,6 +106,10 @@ class FighterRig {
       const sub = THREE.AnimationUtils.subclip(c, key, seg.from, seg.to, FPS);
       const a = this.mixer.clipAction(sub); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; a.timeScale = seg.speed;
       this.actions.set(key, a);
+    }
+    for (const pose of ['ground_back', 'knocked', 'shoot', 'sprawl']) {
+      const c = byName.get(pose); if (!c) continue;
+      const a = this.mixer.clipAction(c); a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; this.actions.set(pose, a);
     }
     this.play('idle', 0);
     this.mixer.update(Math.random() * 2);
@@ -101,25 +120,22 @@ class FighterRig {
     if (this.current && this.current !== next) next.crossFadeFrom(this.current, fade, false); else next.fadeIn(fade);
     next.play(); this.current = next; this.currentKey = key;
   }
-  sync(f: Fighter, dt: number, time: number) {
+  sync(f: Fighter, dt: number) {
     const st = f.state;
     if (st === 'attack' && (this.lastState !== 'attack' || this.lastMove !== f.move)) {
       const opts = MOVE_ANIMS[f.move!]; this.play(opts[Math.floor(Math.random() * opts.length)], .06);
     } else if (st !== 'attack' && st !== this.lastState) {
-      this.play(st === 'block' || st === 'win' ? 'idle_box' : 'idle', st === 'idle' || st === 'walk' ? .2 : .1);
+      // every state maps to a real animation or an authored full-body pose (no procedural limb twisting)
+      const map: Partial<Record<string, [string, number]>> = {
+        block: ['idle_box', .1], win: ['idle_box', .3], down: ['knocked', .28], ko: ['knocked', .22], bottom: ['ground_back', .3],
+        top: ['ground_top', .3], shoot: ['shoot', .14], sprawl: ['sprawl', .14], getup: ['idle', .45], stun: ['idle', .1],
+      };
+      const [key, fade] = map[st] ?? ['idle', st === 'idle' || st === 'walk' ? .2 : .12];
+      this.play(this.actions.has(key) ? key : 'idle', fade);
     }
     this.lastState = st; this.lastMove = f.move;
-    this.mixer.timeScale = st === 'walk' ? 1.35 : st === 'ko' ? 0 : 1;
+    this.mixer.timeScale = st === 'walk' ? 1.35 : st === 'top' ? 1.6 : 1;
     this.mixer.update(dt);
-    // procedural layer for states that have no motion capture yet (falls, grappling, hit reactions)
-    const down = st === 'down' || st === 'ko' || st === 'bottom';
-    const k = 1 - Math.exp(-(down ? 7 : 10) * dt);
-    this.fall += ((down ? 1 : 0) - this.fall) * k;
-    this.kneel += ((st === 'top' || st === 'shoot' || st === 'sprawl' || st === 'getup' ? 1 : 0) - this.kneel) * k;
-    this.lean += ((st === 'shoot' ? 1 : st === 'top' ? .7 : st === 'sprawl' ? .9 : 0) - this.lean) * k;
-    this.body.rotation.x = -this.fall * 1.5 + this.lean * .55;
-    this.body.position.y = -this.kneel * .42 - this.fall * .05;
-    this.body.position.z = -this.fall * .35;
     this.stunT = Math.max(0, this.stunT - dt * 3.2);
     const head = this.bones.Head, spine = this.bones.Spine2, neck = this.bones.Neck;
     // hit reaction: sharp snap that eases out, plus a sideways twist that varies per hit
@@ -129,7 +145,6 @@ class FighterRig {
     if (spine && snap > 0) { spine.rotateX(-.35 * snap); spine.rotateY(this.hitSide * .2 * snap); }
     this.body.position.x = -this.stagger * .12;
     this.stagger = Math.max(0, this.stagger - dt * 3);
-    if (st === 'top' && this.bones.RightArm) this.bones.RightArm.rotateX(-Math.max(0, Math.sin(time * 13)) * .9);
     this.flash = Math.max(0, this.flash - dt * 4);
     for (const m of this.skinMats) m.emissive?.setRGB(this.flash * .5, this.flash * .05, this.flash * .05);
   }
@@ -236,7 +251,7 @@ export class FightView {
       r.root.position.y = PLAT; r.root.position.z = i === 0 ? .08 : -.08;
       const face = f.facing > 0 ? Math.PI / 2 : -Math.PI / 2;
       r.root.rotation.y += (face - r.root.rotation.y) * (1 - Math.exp(-10 * dt));
-      r.sync(f, dt, this.time);
+      r.sync(f, dt);
     });
     for (const s of this.sparks) {
       if (s.life <= 0) continue;
