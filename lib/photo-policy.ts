@@ -6,4 +6,4 @@
  *
  * Set to `true` only if you have permission to use the images.
  */
-export const SHOW_UFC_PHOTOS = false;
+export const SHOW_UFC_PHOTOS = true;

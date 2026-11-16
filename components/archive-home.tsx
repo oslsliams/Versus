@@ -5,9 +5,12 @@ import {competitors} from '../lib/competitors';
 import type {Competitor} from '../lib/domain';
 import {moments} from '../lib/moments';
 import {Portrait} from './ui';
+import {SHOW_UFC_PHOTOS} from '../lib/photo-policy';
+import {fighterScenes} from './fighter-gallery';
 
 const legends = ['jones', 'gsp', 'khabib', 'amanda-nunes'];
 const featured = moments.find(m => m.id === 'holloway-last-second') ?? moments[0];
+const featuredShot = SHOW_UFC_PHOTOS ? (fighterScenes[featured.portrait]?.find(s => s.event === featured.event) ?? fighterScenes[featured.portrait]?.[0])?.url : undefined;
 const tierSticker: Record<string, string> = {Legendary: 'sun', Iconic: 'violet', Classic: 'sky'};
 
 const paths = [
@@ -38,7 +41,9 @@ function HoloMoment() {
   return <div className="holo-stage">
     <a ref={card} className="holo-moment" href={`/moments?q=${encodeURIComponent(featured.name)}`} onPointerMove={move} onPointerLeave={leave} aria-label={`${featured.title} — ${featured.name}, ${featured.event}. View in Moments`}>
       <span className={`sticker ${tierSticker[featured.tier] ?? 'sun'}`}>{featured.tier}</span>
-      <span className="holo-art" aria-hidden="true"><img src="/art/trophy.webp" alt="" width={240} height={240}/></span>
+      <span className={`holo-art ${featuredShot ? 'has-photo' : ''}`} aria-hidden="true">
+        {featuredShot ? <img src={featuredShot} alt="" loading="eager"/> : <img src="/art/trophy.webp" alt="" width={240} height={240}/>}
+      </span>
       <span className="holo-foil" aria-hidden="true"/>
       <span className="holo-glare" aria-hidden="true"/>
       <span className="holo-meta">

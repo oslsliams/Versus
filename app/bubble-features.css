@@ -101,6 +101,9 @@
 .bn-path:hover .bn-path-art{transform:rotate(6deg) scale(1.12)}
 
 /* holo hero card holds a 3D trophy */
+.holo-art.has-photo{overflow:hidden}
+.holo-art.has-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 30%;filter:none;transform:none}
+.holo-art.has-photo::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 45%,#17142ecc)}
 .holo-art img{width:62%;height:auto;filter:drop-shadow(0 20px 30px #000a);transform:rotate(-4deg)}
 
 /* Fight Night: event picker as a row of glass cards, quick links as pills */
