@@ -13,7 +13,7 @@ const MOVES: Record<MoveId, {start: number; active: number; rec: number; range: 
   jab: {start: .15, active: .06, rec: .2, range: 1.18, dmg: 1.7, cost: 3, push: .15, heavy: false},
   cross: {start: .18, active: .07, rec: .28, range: 1.28, dmg: 3.6, cost: 6, push: .3, heavy: true},
   kick: {start: .3, active: .09, rec: .38, range: 1.55, dmg: 4.4, cost: 9, push: .45, heavy: true},
-  upper: {start: .17, active: .07, rec: .3, range: .95, dmg: 5, cost: 8, push: .35, heavy: true},
+  upper: {start: .17, active: .07, rec: .3, range: 1.08, dmg: 5, cost: 8, push: .35, heavy: true},
 };
 const SHOOT = {start: .26, active: .16, rec: .45, range: 1.35, cost: 14};
 export const ROUND_SECONDS = 90;
@@ -65,11 +65,15 @@ export function step(g: LiveFight, inputs: [Input, Input], pressed: [Input, Inpu
   for (const f of g.f) if (!['attack', 'shoot'].includes(f.state)) f.stamina = Math.min(100, f.stamina + dt * (4 + f.stats.cardio / 9) * (f.state === 'block' ? .5 : 1));
 
   if (a.state === 'top' || a.state === 'bottom') ground(g, inputs, pressed, dt);
-  else for (const f of g.f) standUp(g, f, f.side === 0 ? b : a, inputs[f.side], pressed[f.side], dt);
+  else {
+    // alternate who resolves first each frame so neither corner wins every simultaneous exchange
+    const order = Math.round(g.clock * 60) % 2 ? [a, b] : [b, a];
+    for (const f of order) standUp(g, f, f.side === 0 ? b : a, inputs[f.side], pressed[f.side], dt);
+  }
 
   // keep apart + face each other while standing
   if (a.state !== 'top' && a.state !== 'bottom') {
-    const minGap = .72; const gap = b.x - a.x;
+    const minGap = 1.0; const gap = b.x - a.x;   // bodies never overlap (was .72: chests clipped through each other)
     if (Math.abs(gap) < minGap) { const push = (minGap - Math.abs(gap)) / 2 * Math.sign(gap || 1); a.x -= push; b.x += push; }
     if (!busy(a)) a.facing = b.x > a.x ? 1 : -1;
     if (!busy(b)) b.facing = a.x > b.x ? 1 : -1;
@@ -137,29 +141,33 @@ function resolveHit(g: LiveFight, f: Fighter, o: Fighter, m: MoveId) {
   const tired = .65 + .35 * f.stamina / 100;
   let dmg = d.dmg * (.55 + f.stats.power / 100) * (1.25 - o.stats.chin / 200) * tired * (.85 + rand() * .3);
   const hx = (f.x + o.x) / 2;
-  if (o.state === 'block' && (f.x - o.x) * o.facing > 0) {
-    o.stamina = Math.max(0, o.stamina - dmg * .9); o.hp -= dmg * .12; o.x += f.facing * d.push * .6; g.hitstop = .03;
+  // a high guard doesn't stop low kicks: about half of kicks chop the legs under it
+  const underGuard = o.state === 'block' && (f.x - o.x) * o.facing > 0 && m === 'kick' && rand() < .35;
+  const guarded = o.state === 'block' && (f.x - o.x) * o.facing > 0 && !underGuard;
+  if (underGuard) dmg *= .55;   // a chopped leg, not a clean head shot
+  if (guarded) {
+    o.stamina = Math.max(0, o.stamina - dmg * 1.1); o.hp -= dmg * .16; o.x += f.facing * d.push * .6; g.hitstop = .03;
     g.events.push({type: 'block', side: o.side, x: hx, power: dmg / 10});
     if (o.stamina <= 0) setState(o, 'stun');
     return;
   }
-  const counter = o.state === 'attack' ? 1.3 : 1;
-  dmg *= counter * (1 + f.combo * .05) * .52;  // tuned for 1:30 rounds
+  const counter = o.state === 'attack' ? 1.2 : 1;
+  dmg *= counter * (1 + f.combo * .05) * .23;  // tuned for 1:30 rounds
   o.hp -= dmg; o.x += f.facing * d.push * (d.heavy ? 1.6 : 1); f.landed += 1; f.points += dmg;
   g.hitstop = d.heavy ? .085 : .045;
   g.events.push({type: 'hit', side: f.side, x: hx, power: dmg / 10, text: counter > 1 ? 'Counter!' : undefined});
-  const kdChance = d.heavy ? .008 + (f.stats.power - o.stats.chin) / 700 + Math.max(0, 45 - o.hp) / 320 + (counter > 1 ? .08 : 0) + (m === 'upper' ? .04 : 0) : .0;
+  const kdChance = d.heavy && !underGuard ? .005 + (f.stats.power - o.stats.chin) / 800 + Math.max(0, 40 - o.hp) / 520 + (counter > 1 ? .03 : 0) + (m === 'upper' ? .04 : 0) : .0;
   if (o.hp <= 0 || rand() < kdChance) {
     o.kdRound += 1; f.knockdowns += 1; f.points += 12;
     setState(o, 'down'); o.move = null;
-    const stoppage = o.hp <= 0 || o.kdRound >= 3 || (o.hp < 25 && rand() < .5);
+    const stoppage = o.hp <= 0 || o.kdRound >= 3 || (o.hp < 15 && rand() < .5);
     if (stoppage) { o.hp = Math.min(o.hp, 0); g.slowmo = 1.1; g.events.push({type: 'ko', side: f.side, x: o.x, power: 2, text: 'KNOCKOUT!'}); }
     else { o.hp = Math.max(o.hp, 6); g.events.push({type: 'kd', side: f.side, x: o.x, power: 1.4, text: 'Knockdown!'}); }
   } else setState(o, 'stun');
 }
 
 function takedown(g: LiveFight, f: Fighter, o: Fighter) {
-  f.takedowns += 1; f.points += 5;
+  f.takedowns += 1; f.points += 9;   // judges reward the takedown itself
   setState(f, 'top'); setState(o, 'bottom'); f.move = null; o.move = null;
   o.x = f.x + f.facing * .55; o.escape = 0; f.sub = 0;
   g.events.push({type: 'td', side: f.side, x: o.x, power: 1, text: 'Takedown!'});
@@ -193,7 +201,7 @@ function ground(g: LiveFight, inputs: [Input, Input], pressed: [Input, Input], d
     }
     if (tp.kick && top.stamina > 20) { top.sub = .18; top.subClock = 0; top.stamina -= 12; g.events.push({type: 'sub', side: top.side, x: bot.x, power: 1, text: ['Rear-naked choke!', 'Armbar!', 'Guillotine!', 'Kimura!'][Math.floor(rand() * 4)]}); }
   }
-  top.points += dt * 1.2;
+  top.points += dt * 2;   // and control on top
   if (bot.escape >= 1) {
     setState(top, 'idle'); setState(bot, 'getup'); top.sub = 0;
     bot.x = top.x + (bot.x > top.x ? 1 : -1) * .9;
@@ -236,8 +244,8 @@ function nextRound(g: LiveFight) {
 }
 
 /* -------------------------------------------------------------------- AI */
-export type AIBrain = {react: number; plan: number; want: Partial<Input>; level: number; chain: MoveId | null};
-export const makeBrain = (level: number): AIBrain => ({react: 0, plan: 0, want: {}, level, chain: null});
+export type AIBrain = {react: number; plan: number; want: Partial<Input>; level: number; chain: MoveId | null; jitter: number};
+export const makeBrain = (level: number): AIBrain => ({react: 0, plan: 0, want: {}, level, chain: null, jitter: 0});
 
 export function aiInput(g: LiveFight, me: Fighter, them: Fighter, brain: AIBrain): {held: Input; pressed: Input} {
   const held = {...NO_INPUT}, pressed = {...NO_INPUT};
@@ -251,27 +259,45 @@ export function aiInput(g: LiveFight, me: Fighter, them: Fighter, brain: AIBrain
     return {held, pressed};
   }
   const dist = Math.abs(them.x - me.x), toward = them.x > me.x ? 'right' : 'left', away = toward === 'right' ? 'left' : 'right';
-  const ideal = me.style === 'Striker' ? 1.28 : 1.2;
+  const ideal = me.style === 'Striker' ? 1.1 : 1.04;   // inside its own jab range (1.18)
   // defend: react to an incoming attack
+  // (human reaction time: the AI can only respond once the strike has been visible for ~0.1-0.2 s, so fast
+  //  jabs mostly land and slower power shots/kicks are the ones it reads and blocks)
+  // punish: once their strike has gone (whiffed or landed) they're stuck recovering - better AIs counter right there
+  if (them.state === 'attack' && them.hitDone && dist < 1.2 && brain.react <= 0 && me.state !== 'attack' && me.state !== 'stun') {
+    brain.react = .4;
+    if (rand() < .02 + lvl * .6) { pressed[rand() < .55 ? 'cross' : 'jab'] = true; brain.want = {}; return {held, pressed}; }
+  }
+  // wrestlers level-change under punches: shoot while the opponent is committed to a strike
+  if ((me.style === 'Wrestler' || me.style === 'Grappler') && them.state === 'attack' && !them.hitDone && dist < 1.3 && brain.react <= 0 && me.state !== 'attack' && me.stamina > 30) {
+    brain.react = .5;
+    if (rand() < .12 + lvl * .25) { pressed.shoot = true; return {held, pressed}; }
+  }
   if (them.state === 'attack' || them.state === 'shoot') {
-    if (brain.react <= 0) { brain.react = .35 - lvl * .2; brain.want = rand() < (them.state === 'shoot' ? .45 : .25) + lvl * .5 ? {block: true} : rand() < .3 ? {[away]: true} : {}; }
+    if (brain.react <= 0 && them.t >= .21 - lvl * .14 + brain.jitter) {
+      brain.react = .35 - lvl * .2; brain.jitter = rand() * .08;
+      brain.want = rand() < (them.state === 'shoot' ? .45 : .15) + lvl * .45 ? {block: true} : rand() < .3 ? {[away]: true} : {};
+    }
   } else if (brain.plan <= 0) {
-    brain.plan = .18 + rand() * (.4 - lvl * .22);
+    brain.plan = .2 + (1 - lvl) * .22 + rand() * (.42 - lvl * .24);   // easier AIs think (and throw) less often
     brain.want = {};
     if (me.stamina < 25) brain.want = {[away]: true, block: rand() < .5};
-    else if (dist > ideal + .25) brain.want = {[toward]: true};
+    else if (dist > ideal + .14) brain.want = {[toward]: true};
     else if (dist < ideal - .5 && me.style === 'Striker' && rand() < .35) brain.want = {[away]: true};
     else {
       const r = rand();
       const grappler = me.style === 'Wrestler' || me.style === 'Grappler';
-      if (grappler && r < .1 + (them.stamina < 50 ? .08 : 0) && dist < 1.35 && g.clock < ROUND_SECONDS - 5) brain.want = {shoot: true};
+      if (grappler && r < .22 + (them.stamina < 50 ? .08 : 0) && dist < 1.35 && g.clock < ROUND_SECONDS - 5) brain.want = {shoot: true};
+      else if (them.state === 'block' && r < .55) brain.want = rand() < .55 ? {kick: true} : rand() < .5 && grappler ? {shoot: true} : {cross: true};   // break a shell: low kicks, power, level change
       else if (r < .45) brain.want = {jab: true};
       else if (r < .65) brain.want = {cross: true};
       else if (r < .76) brain.want = {kick: true};
-      else if (r < .82 && dist < 1) brain.want = {upper: true};
+      else if (r < .82 && dist < 1.08) brain.want = {upper: true};
       else if (r < .9) brain.want = {block: true};
       else brain.want = {[away]: true};
     }
+    // never throw from outside the strike's reach: close the distance instead
+    for (const k of ['jab', 'cross', 'kick', 'upper'] as const) if (brain.want[k] && dist > MOVES[k].range * .97) brain.want = {[toward]: true};
     for (const k of ['jab', 'cross', 'kick', 'upper', 'shoot'] as const) if (brain.want[k]) { pressed[k] = true; brain.want[k] = false; }
     if ((pressed.jab || pressed.cross) && rand() < .35 + lvl * .35) brain.chain = rand() < .5 ? 'cross' : rand() < .5 ? 'kick' : 'upper';
   }

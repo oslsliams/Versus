@@ -45,7 +45,7 @@ const ONE_SHOT = ['jab_head', 'jab_body', 'cross_head', 'cross_body', 'lead_hook
 const UPPER_ONLY = ['jab_head', 'cross_head', 'lead_hook', 'rear_hook', 'lead_uppercut', 'rear_uppercut', 'lead_elbow', 'block_high', 'hit_head', 'hit_head_l', 'hit_head_r', 'idle'];
 const isUpperTrack = (t: THREE.KeyframeTrack) => /(Spine|Neck|Head|Shoulder|Arm|Hand)/.test(t.name.split('.')[0]);
 function pickMove(m: MoveId, dist: number, combo: number): Pick {
-  const range = dist < 1.0 ? 'close' : dist > 1.35 ? 'long' : 'mid';
+  const range = dist < 1.12 ? 'close' : dist > 1.4 ? 'long' : 'mid';
   const opts = MOVE_ANIMS[m].map(p => ({p, w: p.weight * (p.range === 'any' || p.range === range ? 1 : .15) * (combo > 0 && /hook|body|upper/.test(p.anim) ? 1.6 : 1)}));
   let r = Math.random() * opts.reduce((a, o) => a + o.w, 0);
   for (const o of opts) { r -= o.w; if (r <= 0) return o.p; }

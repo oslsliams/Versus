@@ -16,7 +16,7 @@ export const ROSTER: (Corner & {nickname: string; blurb: string})[] = [
   {name: 'Kofi Mwangi', nickname: 'Gravity', style: 'Wrestler', color: '#bfe36b', stats: S(62, 78, 64, 84, 72, 72, 82, 66), blurb: 'Takes you down and keeps you there.'},
   {name: 'Hugo Delacroix', nickname: 'Slow Burn', style: 'All-rounder', color: '#d9a7ff', stats: S(70, 66, 68, 68, 74, 90, 72, 86), blurb: 'Wins the fourth and fifth round every time.'},
 ];
-const LEVELS = [{label: 'Easy', v: .25}, {label: 'Normal', v: .55}, {label: 'Hard', v: .85}] as const;
+const LEVELS = [{label: 'Easy', v: .12}, {label: 'Normal', v: .5}, {label: 'Hard', v: .74}] as const;
 
 export function QuickFight() {
   const [mine, setMine] = useState(0);
