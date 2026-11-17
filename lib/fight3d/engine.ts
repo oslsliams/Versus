@@ -67,7 +67,8 @@ export function step(g: LiveFight, inputs: [Input, Input], pressed: [Input, Inpu
   const dt = g.slowmo > 0 ? DT * .3 : DT;
   if (g.slowmo > 0) g.slowmo -= DT;
   g.phaseT += DT;
-  if (g.phase === 'intro') { if (g.phaseT > 1.4) { g.phase = 'fight'; g.phaseT = 0; ev(g, {type: 'bell', side: 0, x: 0, power: 1, text: `Round ${g.round}`}); } return; }
+  if (g.phase === 'intro') { if (g.phaseT > (g.round === 1 ? 3.6 : 1.4)) {   // round 1 waits for the opening crane shot
+ g.phase = 'fight'; g.phaseT = 0; ev(g, {type: 'bell', side: 0, x: 0, power: 1, text: `Round ${g.round}`}); } return; }
   if (g.phase === 'break') { if (g.phaseT > 2.6) nextRound(g); return; }
   if (g.phase === 'over') { for (const f of g.f) f.t += dt; return; }
 

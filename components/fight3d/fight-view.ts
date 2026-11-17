@@ -10,6 +10,7 @@ import {UnrealBloomPass} from 'three/examples/jsm/postprocessing/UnrealBloomPass
 import {OutputPass} from 'three/examples/jsm/postprocessing/OutputPass.js';
 import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment.js';
 import {distance, type Fighter, type FightEvent, type LiveFight, type MoveId} from '../../lib/fight3d/engine';
+import {Stadium} from './stadium';
 
 const PLAT = .9;           // mat height in the arena model
 const X_SCALE = .82;       // engine metres -> arena metres along the fight line
@@ -65,7 +66,7 @@ function pickMove(m: MoveId, dist: number, combo: number): Pick {
 }
 
 type Src = {scene: THREE.Group; clips: THREE.AnimationClip[]};
-type Assets = {arena: THREE.Group; red: Src; blue: Src};
+type Assets = {arena: THREE.Group; red: Src; blue: Src; crowd: number[] | null};
 // original MakeHuman fighter bodies built by scripts/art/build_fighter_mh.py
 export const FIGHTER_MODELS = ['okafor', 'volkov', 'takeda', 'ashford', 'kalani', 'bianchi', 'mwangi', 'delacroix'] as const;
 export type FighterModel = typeof FIGHTER_MODELS[number];
@@ -91,8 +92,9 @@ export function loadFightAssets(red: FighterModel, blue: FighterModel, onProgres
   const urls = ['/models/arena.glb', `/models/fighter-${red}.glb`, `/models/fighter-${blue}.glb`];
   const done = [0, 0, 0];
   const report = () => onProgress?.(done.reduce((a, b) => a + b, 0) / 3);
-  return Promise.all(urls.map((u, i) => loadGlb(u, p => { done[i] = p; report(); })))
-    .then(([a, r, b]) => ({arena: a.scene, red: {scene: r.scene, clips: r.animations}, blue: {scene: b.scene, clips: b.animations}}));
+  const crowd = fetch('/models/arena-crowd.json').then(r => r.ok ? r.json() as Promise<{seats?: number[]}> : null).then(j => j?.seats ?? null).catch(() => null);
+  return Promise.all([...urls.map((u, i) => loadGlb(u, p => { done[i] = p; report(); })), crowd])
+    .then(([a, r, b, c]) => ({arena: (a as any).scene, red: {scene: (r as any).scene, clips: (r as any).animations}, blue: {scene: (b as any).scene, clips: (b as any).animations}, crowd: c as number[] | null}));
 }
 
 function inPlace(clip: THREE.AnimationClip) {
@@ -270,6 +272,7 @@ export class FightView {
   /** the player's screen axes on the floor (world xz): WASD moves along these */
   axes = {rx: 1, rz: 0, fx: 0, fz: -1};
   private cage: {mesh: THREE.Object3D; x: number; z: number}[] = [];
+  stadium: Stadium; private introAmt = 1;
   debugCam = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('fightcam') : null;
 
   constructor(canvas: HTMLCanvasElement, g: LiveFight, assets: Assets) {
@@ -280,7 +283,7 @@ export class FightView {
     const pm = new THREE.PMREMGenerator(this.renderer);
     this.scene.environment = pm.fromScene(new RoomEnvironment(), .04).texture; this.scene.environmentIntensity = .35;
     this.scene.background = new THREE.Color('#060a16');
-    this.scene.fog = new THREE.FogExp2('#081227', .05);
+    this.scene.fog = new THREE.FogExp2('#081227', .014);   // light haze: the far stands stay visible
 
     const arena = assets.arena.clone(true);
     arena.updateMatrixWorld(true);
@@ -300,6 +303,8 @@ export class FightView {
     });
     this.scene.add(arena);
     this.buildLights();
+    const lowSpec = typeof navigator !== 'undefined' && ((navigator.hardwareConcurrency ?? 8) <= 4 || /Mobi|Android/i.test(navigator.userAgent));
+    this.stadium = new Stadium(this.scene, arena, assets.crowd, [g.f[0].name, g.f[1].name], lowSpec);
 
     this.rigs = [new FighterRig(assets.red), new FighterRig(assets.blue)];
     this.rigs.forEach(r => this.scene.add(r.root));
@@ -332,14 +337,18 @@ export class FightView {
     const front = new THREE.DirectionalLight('#dfe6ff', .55); front.position.set(0, PLAT + 3, 8); s.add(front);
     const rimR = new THREE.PointLight('#ff3a55', 14, 18, 2); rimR.position.set(6, PLAT + 2.5, -4); s.add(rimR);
     const rimB = new THREE.PointLight('#2f6bff', 14, 18, 2); rimB.position.set(-6, PLAT + 2.5, -4); s.add(rimB);
+    // house lights: red on one half of the bowl, blue on the other, like a big fight night
+    for (const [c, x] of [['#ff2a3c', 1], ['#2a5cff', -1]] as const) { const l = new THREE.PointLight(c, 260, 60, 1.9); l.position.set(x * 24, 14, 0); s.add(l); }
+    s.add(new THREE.AmbientLight('#20263a', .12));
   }
 
   resize(w: number, h: number) { this.renderer.setSize(w, h, false); this.composer.setSize(w, h); this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); }
-  degrade() { this.renderer.setPixelRatio(1); this.renderer.shadowMap.enabled = false; this.bloom.enabled = false; const c = this.renderer.domElement; this.resize(c.clientWidth, c.clientHeight); }
+  degrade() { this.stadium.degrade(); this.renderer.setPixelRatio(1); this.renderer.shadowMap.enabled = false; this.bloom.enabled = false; const c = this.renderer.domElement; this.resize(c.clientWidth, c.clientHeight); }
 
   events(evts: FightEvent[]) {
     for (const e of evts) {
       if (e.type === 'whiff' && Math.random() < .55) { this.rigs[e.side === 0 ? 1 : 0].dodge(); continue; }
+      this.stadium.excite(e.type === 'ko' || e.type === 'tap' ? 1.6 : e.type === 'kd' ? 1 : e.type === 'td' ? .45 : e.type === 'sub' ? .5 : e.type === 'hit' ? Math.min(.35, e.power * .4) : 0);
       if (!['hit', 'block', 'ko', 'kd', 'td'].includes(e.type)) continue;
       const n = e.type === 'block' ? 5 : Math.min(16, 5 + Math.round(e.power * 7));
       this.burst(e.x * X_SCALE, e.z * X_SCALE, PLAT + (e.type === 'td' ? .3 : 1.5), n, e.type === 'block' ? '#9fc4ff' : e.type === 'ko' || e.type === 'kd' ? '#ffd27a' : '#fff3c4');
@@ -404,14 +413,34 @@ export class FightView {
     // open the cage on the camera's side
     const cl = Math.hypot(cx, cz) || 1;
     for (const p of this.cage) { const pl = Math.hypot(p.x, p.z); p.mesh.visible = (p.x * cx + p.z * cz) / (pl * cl) < .45 || cl < 2.2; }
-    if (this.debugCam) { const h = this.debugCam === 'hand' ? this.rigs[0].bones.LeftHand : this.rigs[0].bones.Head; if (h) { const p = new THREE.Vector3(); h.getWorldPosition(p); const k = this.debugCam === 'hand' ? .55 : 1; this.camera.position.set(p.x + .5 * k, p.y + .05, p.z + .55 * k); this.camera.lookAt(p); } }
-    else { this.camera.position.set(cx + sx, PLAT + 1.42 + sy, cz); this.camera.lookAt(this.camX, PLAT + 1.05, this.camZ); }
+    if (this.debugCam === 'board') { this.camera.position.set(3, PLAT + 6, 13); this.camera.lookAt(0, 17.5, 0); }
+    else if (this.debugCam === 'board2') { this.camera.position.set(13, PLAT + 6, 3); this.camera.lookAt(0, 17.5, 0); }
+    else if (this.debugCam === 'ribbon') { this.camera.position.set(0, PLAT + 3, 6); this.camera.lookAt(0, 10, -26); }
+    else if (this.debugCam) { const h = this.debugCam === 'hand' ? this.rigs[0].bones.LeftHand : this.rigs[0].bones.Head; if (h) { const p = new THREE.Vector3(); h.getWorldPosition(p); const k = this.debugCam === 'hand' ? .55 : 1; this.camera.position.set(p.x + .5 * k, p.y + .05, p.z + .55 * k); this.camera.lookAt(p); } }
+    else {
+      this.camera.position.set(cx + sx, PLAT + 1.42 + sy, cz); this.camera.lookAt(this.camX, PLAT + 1.05, this.camZ);
+      // opening shot before round 1: a crane move from high over the stands, round past the board, down into the cage
+      const INTRO = 3.6, u = g.round === 1 ? this.time / INTRO : 1;
+      if (u < 1) {
+        const ease = (x: number) => x * x * (3 - 2 * x);
+        const a = Math.atan2(this.camDir.y, this.camDir.x) - 2.2 * (1 - ease(u));
+        const r = 19 - 14 * ease(u), h = 10.5 - 8 * ease(u);
+        const crane = new THREE.Vector3(Math.cos(a) * r, PLAT + h, Math.sin(a) * r * .86);
+        const k = ease(Math.max(0, (u - .55) / .45));
+        this.camera.position.lerp(crane, 1 - k);
+        const look = new THREE.Vector3(this.camX, PLAT + 1.05, this.camZ).lerp(new THREE.Vector3(0, PLAT + 4 * (1 - u), 0), 1 - k);
+        this.camera.lookAt(look);
+      }
+      this.introAmt = Math.max(0, 1 - u);
+    }
+    this.stadium.update(dt, g, this.renderer, {intro: this.introAmt});
     this.composer.render(dt);
   }
 
   dispose() {
     this.disposed = true;
     for (const r of this.rigs) r.mixer.stopAllAction();
+    this.stadium.dispose();
     this.scene.traverse(o => { const m = o as THREE.Mesh; if (m.isMesh) { m.geometry?.dispose?.(); const mt = m.material; (Array.isArray(mt) ? mt : [mt]).forEach(x => x?.dispose?.()); } });
     this.composer.dispose(); this.renderer.dispose();
   }
