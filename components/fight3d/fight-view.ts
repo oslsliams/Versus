@@ -99,6 +99,8 @@ class FighterRig {
   actions = new Map<string, THREE.AnimationAction>(); current: THREE.AnimationAction | null = null; currentKey = '';
   // layered playback: legs run 'idle' underneath while the upper body plays strikes/blocks/reactions
   lower: THREE.AnimationAction | null = null; upperCur: THREE.AnimationAction | null = null; upperKey = ''; split = true;
+  // legs layer: the stance loop, or in-place step loops while the fighter moves (lead foot first forward, rear foot first back)
+  lowers = new Map<string, THREE.AnimationAction>(); lowerKey = 'idle'; prevX: number | null = null; stepRate = 1;
   bones: Record<string, THREE.Bone | undefined> = {};
   flash = 0; skinMats: THREE.MeshStandardMaterial[] = [];
   lastPick: Pick | null = null; lastState = ''; lastMove: MoveId | null = null;
@@ -131,6 +133,11 @@ class FighterRig {
       if (b.isBone) this.bones[b.name.replace(/^mixamorig:?/, '')] = b;
     });
     this.root.add(this.body);
+    // same-size fighters: MakeHuman's ethnicity blend changes height (1.64-1.88 m), so normalise every
+    // body to ~1.80 m from its bind-pose head height, keeping a hint (±1.5%) of natural difference
+    this.body.updateMatrixWorld(true);
+    const headY = this.bones.Head ? this.bones.Head.getWorldPosition(new THREE.Vector3()).y : 0;
+    if (headY > 1) this.body.scale.multiplyScalar(Math.pow(1.6 / headY, .88));
     this.mixer = new THREE.AnimationMixer(this.body);
     const byName = new Map(src.clips.map(c => [c.name, inPlace(c)]));
     for (const loop of ['idle', 'idle_box', 'ground_top']) {
@@ -155,8 +162,12 @@ class FighterRig {
       if (name === 'idle') a.setLoop(THREE.LoopRepeat, Infinity); else { a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; }
       this.actions.set('u:' + name, a);
     }
-    const idle = byName.get('idle');
-    if (idle) { this.lower = this.mixer.clipAction(new THREE.AnimationClip('lower:idle', idle.duration, idle.tracks.filter(t => !isUpperTrack(t)))); this.lower.setLoop(THREE.LoopRepeat, Infinity); }
+    for (const name of ['idle', 'step_fwd', 'step_back']) {
+      const c = byName.get(name); if (!c) continue;
+      const a = this.mixer.clipAction(new THREE.AnimationClip('lower:' + name, c.duration, c.tracks.filter(t => !isUpperTrack(t))));
+      a.setLoop(THREE.LoopRepeat, Infinity); this.lowers.set(name, a);
+    }
+    this.lower = this.lowers.get('idle') ?? null;
     this.toSplit(0);
     this.mixer.update(Math.random() * 2);
   }
@@ -187,6 +198,15 @@ class FighterRig {
     next.play(); this.upperCur = next; this.upperKey = k;
   }
   private settle(fade: number) { if (this.split) this.playUpper('u:idle', fade); else this.toSplit(fade); }
+  /** swap the legs loop (stance <-> stepping) with a short blend so the feet never pop */
+  private setLower(key: string, fade = .14) {
+    const next = this.lowers.get(key); if (!next || key === this.lowerKey) return;
+    this.lowerKey = key;
+    if (!this.split) { this.lower = next; return; }
+    next.reset(); next.enabled = true; next.setEffectiveWeight(1); next.play();
+    if (this.lower && this.lower !== next) next.crossFadeFrom(this.lower, fade, false); else next.fadeIn(fade);
+    this.lower = next;
+  }
   sync(f: Fighter, opp: Fighter, dt: number) {
     const st = f.state;
     if (st === 'attack' && (this.lastState !== 'attack' || this.lastMove !== f.move || f.t < .02)) {
@@ -211,8 +231,18 @@ class FighterRig {
       const done = (a: THREE.AnimationAction | null) => !!a && a.getClip().duration - a.time < .02;
       if ((!this.split && done(this.current)) || (this.split && this.upperKey !== 'u:idle' && done(this.upperCur))) this.settle(.15);
     }
+    // footwork: pick the step loop from which way we're actually moving, and match its rate to the speed
+    const dx = this.prevX === null ? 0 : f.x - this.prevX; this.prevX = f.x;
+    const speed = dt > 0 ? Math.abs(dx) / dt : 0;
+    if (st === 'walk' && speed > .15) {
+      this.setLower(dx * f.facing > 0 ? 'step_fwd' : 'step_back');
+      this.stepRate += (THREE.MathUtils.clamp(speed / 1.4, .75, 1.7) - this.stepRate) * Math.min(1, dt * 8);
+      this.lower!.timeScale = this.stepRate;
+    } else if (st !== 'walk' || speed < .05) {
+      this.setLower('idle', .2); if (this.lower) this.lower.timeScale = 1;
+    }
     this.lastState = st; this.lastMove = f.move;
-    this.mixer.timeScale = st === 'walk' ? 1.35 : st === 'top' ? 1.6 : 1;
+    this.mixer.timeScale = st === 'top' ? 1.6 : 1;
     this.mixer.update(dt);
     this.flash = Math.max(0, this.flash - dt * 4);
     for (const m of this.skinMats) m.emissive?.setRGB(this.flash * .5, this.flash * .05, this.flash * .05);

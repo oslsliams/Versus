@@ -16,7 +16,7 @@ const MOVES: Record<MoveId, {start: number; active: number; rec: number; range: 
   upper: {start: .17, active: .07, rec: .3, range: .95, dmg: 5, cost: 8, push: .35, heavy: true},
 };
 const SHOOT = {start: .26, active: .16, rec: .45, range: 1.35, cost: 14};
-export const ROUND_SECONDS = 75;
+export const ROUND_SECONDS = 90;
 
 export type Fighter = {
   name: string; color: string; style: Style; stats: Stats; side: 0 | 1;
@@ -144,7 +144,7 @@ function resolveHit(g: LiveFight, f: Fighter, o: Fighter, m: MoveId) {
     return;
   }
   const counter = o.state === 'attack' ? 1.3 : 1;
-  dmg *= counter * (1 + f.combo * .05) * .62;
+  dmg *= counter * (1 + f.combo * .05) * .52;  // tuned for 1:30 rounds
   o.hp -= dmg; o.x += f.facing * d.push * (d.heavy ? 1.6 : 1); f.landed += 1; f.points += dmg;
   g.hitstop = d.heavy ? .085 : .045;
   g.events.push({type: 'hit', side: f.side, x: hx, power: dmg / 10, text: counter > 1 ? 'Counter!' : undefined});
@@ -264,7 +264,7 @@ export function aiInput(g: LiveFight, me: Fighter, them: Fighter, brain: AIBrain
     else {
       const r = rand();
       const grappler = me.style === 'Wrestler' || me.style === 'Grappler';
-      if (grappler && r < .1 + (them.stamina < 50 ? .08 : 0) && dist < 1.35 && g.clock < 70) brain.want = {shoot: true};
+      if (grappler && r < .1 + (them.stamina < 50 ? .08 : 0) && dist < 1.35 && g.clock < ROUND_SECONDS - 5) brain.want = {shoot: true};
       else if (r < .45) brain.want = {jab: true};
       else if (r < .65) brain.want = {cross: true};
       else if (r < .76) brain.want = {kick: true};

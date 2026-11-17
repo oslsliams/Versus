@@ -22,24 +22,25 @@ VARIANTS = {
     'blue': dict(race={'caucasian': .25, 'african': .65, 'asian': .1}, skin='young_african_male', hair='short04', brow='eyebrow003',
                  shorts='#f1f1f3', trim='#16181d', glove='#141416', glove_trim='#2459d6', muscle=1.0, weight=.66, height=.6, proportions=.8),
     # ---- roster: one original body per Quick Fight fighter ----
-    'okafor': dict(race={'african': .9, 'caucasian': .1, 'asian': 0}, skin='young_african_male', hair='short01', brow='eyebrow002',
-                   shorts='#c2242f', trim='#f1f1f3', glove='#141416', glove_trim='#f1f1f3', muscle=.95, weight=.45, height=.62, proportions=.85, age=.5),
-    'volkov': dict(race={'caucasian': 1, 'african': 0, 'asian': 0}, skin='young_caucasian_male', hair='short03', brow='eyebrow010',
-                   shorts='#1c2a4a', trim='#c9a227', glove='#141416', glove_trim='#c9a227', muscle=1.0, weight=.78, height=.5, proportions=.7, age=.6),
-    'takeda': dict(race={'asian': .95, 'caucasian': .05, 'african': 0}, skin='young_asian_male', hair='short02', brow='eyebrow005',
-                   shorts='#f1f1f3', trim='#c2242f', glove='#141416', glove_trim='#c2242f', muscle=.85, weight=.42, height=.42, proportions=.8, age=.55),
+    'okafor': dict(race={'african': .9, 'caucasian': .1, 'asian': 0}, skin='middleage_african_male', hair='short01', brow='eyebrow002',
+                   shorts='#c2242f', trim='#f1f1f3', glove='#141416', glove_trim='#f1f1f3', muscle=.68, weight=.48, height=.56, proportions=.5, age=.5),
+    'volkov': dict(race={'caucasian': 1, 'african': 0, 'asian': 0}, skin='middleage_caucasian_male', hair='short02', brow='eyebrow010',
+                   shorts='#1c2a4a', trim='#c9a227', glove='#141416', glove_trim='#c9a227', muscle=.72, weight=.58, height=.53, proportions=.5, age=.6),
+    'takeda': dict(race={'asian': .95, 'caucasian': .05, 'african': 0}, skin='middleage_asian_male', hair='short02', brow='eyebrow005',
+                   shorts='#f1f1f3', trim='#c2242f', glove='#141416', glove_trim='#c2242f', muscle=.65, weight=.46, height=.52, proportions=.5, age=.55),
     'ashford': dict(race={'caucasian': .85, 'african': .15, 'asian': 0}, skin='middleage_caucasian_male', hair='short04', brow='eyebrow011',
-                    shorts='#111216', trim='#e8722a', glove='#141416', glove_trim='#e8722a', muscle=.95, weight=.95, height=.72, proportions=.55, age=.7),
-    'kalani': dict(race={'african': .45, 'asian': .45, 'caucasian': .1}, skin='young_african_male', hair='afro01', brow='eyebrow004',
-                   shorts='#0f7a6c', trim='#f1f1f3', glove='#141416', glove_trim='#18b5a0', muscle=1.0, weight=.85, height=.68, proportions=.6, age=.55),
-    'bianchi': dict(race={'caucasian': .95, 'african': 0, 'asian': .05}, skin='young_caucasian_male2', hair='ponytail01', brow='eyebrow008',
-                    shorts='#e9c873', trim='#111216', glove='#141416', glove_trim='#e9c873', muscle=.8, weight=.35, height=.7, proportions=.9, age=.45),
+                    shorts='#111216', trim='#e8722a', glove='#141416', glove_trim='#e8722a', muscle=.7, weight=.62, height=.57, proportions=.5, age=.68),
+    'kalani': dict(race={'african': .45, 'asian': .45, 'caucasian': .1}, skin='middleage_african_male', hair='afro01', brow='eyebrow004',
+                   shorts='#0f7a6c', trim='#f1f1f3', glove='#141416', glove_trim='#18b5a0', muscle=.7, weight=.6, height=.55, proportions=.5, age=.55),
+    'bianchi': dict(race={'caucasian': .95, 'african': 0, 'asian': .05}, skin='middleage_caucasian_male', hair='short04', brow='eyebrow008',
+                    shorts='#e9c873', trim='#111216', glove='#141416', glove_trim='#e9c873', muscle=.64, weight=.44, height=.56, proportions=.5, age=.5),
     'mwangi': dict(race={'african': 1, 'caucasian': 0, 'asian': 0}, skin='middleage_african_male', hair='short01', brow='eyebrow001',
-                   shorts='#5a2a86', trim='#f1f1f3', glove='#141416', glove_trim='#9b6bd6', muscle=1.0, weight=.72, height=.55, proportions=.7, age=.62),
+                   shorts='#5a2a86', trim='#f1f1f3', glove='#141416', glove_trim='#9b6bd6', muscle=.72, weight=.55, height=.54, proportions=.5, age=.62),
     'delacroix': dict(race={'caucasian': .7, 'african': .2, 'asian': .1}, skin='middleage_caucasian_male', hair='short03', brow='eyebrow012',
-                      shorts='#2f6b2f', trim='#111216', glove='#141416', glove_trim='#7fd16b', muscle=.9, weight=.58, height=.6, proportions=.75, age=.72),
+                      shorts='#2f6b2f', trim='#111216', glove='#141416', glove_trim='#7fd16b', muscle=.66, weight=.52, height=.55, proportions=.5, age=.66),
 }
 V = VARIANTS[VARIANT]
+ARM_OPEN = 9   # degrees the elbows are opened in the capture clips (bulkier bodies)
 ANIMS = [('Mma Idle.fbx', 'idle'), ('Fighting Idle.fbx', 'idle_box'), ('Mma Kick.fbx', 'kick_high'), ('Mma Kick (1).fbx', 'kick_feint'),
          ('Mma Kick (2).fbx', 'kick_lead'), ('Punch To Elbow Combo.fbx', 'combo')]
 
@@ -59,8 +60,31 @@ addon_utils.enable(MOD, default_set=True)
 
 # ---- body --------------------------------------------------------------
 macro = {'gender': 1.0, 'age': V.get('age', .62), 'muscle': V['muscle'], 'weight': V['weight'], 'proportions': V['proportions'], 'height': V['height'],
-         'cupsize': .5, 'firmness': .5, 'race': V['race']}
+         'cupsize': 0.5, 'firmness': .5, 'race': V['race']}
 body = HS.create_human(macro_detail_dict=macro, feet_on_ground=True, scale=0.1)
+print('BODYDIMS', [round(x, 3) for x in body.dimensions])
+# ---- masculine, distinct faces + natural chest (MakeHuman detail targets) ----
+TS = importlib.import_module(MOD + '.services.targetservice').TargetService
+TDIR = os.path.join(LS.get_mpfb_data('targets'))
+def tgt(name, w):
+    hits = glob.glob(os.path.join(TDIR, '**', name + '.target.gz'), recursive=True)
+    if hits and w: TS.load_target(body, hits[0], weight=w)
+    elif not hits: print('NO TARGET', name)
+MALE_FACE = {'head-square': .6, 'chin-width-incr': .6, 'chin-prominent-incr': .4, 'chin-jaw-drop-incr': .3, 'mouth-scale-horiz-incr': .2, 'l-cheek-bones-incr': .35, 'r-cheek-bones-incr': .35,
+             'eyebrows-trans-down': .3, 'nose-scale-horiz-incr': .2, 'torso-muscle-pectoral-decr': .9, 'neck-scale-horiz-incr': .3}
+FACES = {
+    'okafor': {'nose-scale-horiz-incr': .5, 'chin-height-incr': .3, 'head-rectangular': .3},
+    'volkov': {'head-square': .8, 'chin-width-incr': .8, 'nose-hump-incr': .6, 'eyebrows-trans-down': .5},
+    'takeda': {'head-oval': .4, 'chin-prominent-incr': .1, 'nose-scale-vert-decr': .3},
+    'ashford': {'chin-width-incr': .9, 'chin-bones-incr': .6, 'nose-hump-incr': .8, 'head-fat-incr': .3},
+    'kalani': {'head-round': .4, 'nose-scale-horiz-incr': .7, 'chin-width-incr': .7},
+    'bianchi': {'chin-prominent-incr': .7, 'nose-scale-vert-incr': .5, 'head-diamond': .3, 'chin-cleft-incr': .5},
+    'mwangi': {'chin-bones-incr': .7, 'eyebrows-trans-down': .6, 'nose-scale-horiz-incr': .6},
+    'delacroix': {'nose-hump-incr': .5, 'chin-height-incr': .4, 'head-age-incr': .5},
+}
+face = dict(MALE_FACE); face.update(FACES.get(VARIANT, {}))
+for name, w in face.items(): tgt(name, w)
+print('FACE', VARIANT, len(face), 'targets')
 rig = HS.add_builtin_rig(body, 'mixamo')
 HS.set_character_skin(os.path.join(UD, 'skins', V['skin'], V['skin'] + '.mhmat'), body, skin_type='GAMEENGINE')
 for kind, name, at in [('eyes', 'high-poly', 'Eyes'), ('eyebrows', V['brow'], 'Eyebrows'), ('eyelashes', 'eyelashes01', 'Eyelashes'), ('hair', V['hair'], 'Hair')]:
@@ -107,6 +131,72 @@ bpy.context.view_layer.objects.active = rig
 bpy.ops.object.mode_set(mode='POSE'); bpy.ops.pose.select_all(action='SELECT'); bpy.ops.pose.armature_apply(selected=False)
 bpy.ops.object.mode_set(mode='OBJECT')
 print('REST', 'matched to Mixamo T-pose for', len(src_rest), 'bones')
+# ---- chest: blend the skin weights across the pecs/shoulders so the guard doesn't fold or bulge the chest ----
+bonew0 = lambda n: rig.matrix_world @ rig.data.bones['mixamorig:' + n].head_local
+z_lo, z_hi = bonew0('Spine1').z - .04, bonew0('Neck').z + .02
+x_arm = abs(bonew0('LeftArm').x); x_max = x_arm + .12
+# the inner chest belongs to the ribcage, not the arms: hand the arm bones' share of it to Spine2
+VG = body.vertex_groups
+armg = {VG[n].index for n in ('mixamorig:LeftArm', 'mixamorig:RightArm') if VG.get(n)}
+sp2 = VG['mixamorig:Spine2']; moved_n = 0
+s2y = bonew0('Spine2').y
+for v in body.data.vertices:
+    w = body.matrix_world @ v.co
+    if not (z_lo < w.z < z_hi): continue
+    kx = min(1., max(0., (abs(w.x) / x_arm - .8) / .45))               # fade out toward the armpit
+    front = min(1., max(0., ((s2y - .02) - w.y) / .05))                   # only the front of the chest
+    keep = 1 - front * (1 - kx)
+    if keep >= .999: continue
+    moved = 0.
+    for g in v.groups:
+        if g.group in armg and g.weight > 0:
+            m = g.weight * (1 - keep); g.weight -= m; moved += m
+    if moved > 1e-4:
+        cur = next((g.weight for g in v.groups if g.group == sp2.index), 0.)
+        sp2.add([v.index], cur + moved, 'REPLACE'); moved_n += 1
+print('CHEST', 'arm weight moved to Spine2 on', moved_n, 'verts')
+bpy.ops.object.select_all(action='DESELECT'); body.select_set(True); bpy.context.view_layer.objects.active = body
+bpy.ops.object.mode_set(mode='EDIT'); bpy.ops.mesh.select_all(action='DESELECT'); bpy.ops.object.mode_set(mode='OBJECT')
+nsel = 0
+for e in body.data.edges: e.select = False
+for f in body.data.polygons: f.select = False
+for v in body.data.vertices:
+    w = body.matrix_world @ v.co
+    v.select = bonew0('Spine').z - .06 < w.z < z_hi and abs(w.x) < x_max; nsel += v.select
+probe_i = min(body.data.vertices, key=lambda v: ((body.matrix_world @ v.co) - Vector((.1, s2y - .08, bonew0('Spine1').z + .03))).length).index
+wb = lambda: sorted([(VG[g.group].name[10:], round(g.weight, 2)) for g in body.data.vertices[probe_i].groups if g.weight > .02])
+print('CHESTW before', wb())
+bpy.ops.object.mode_set(mode='EDIT')
+bpy.ops.object.vertex_group_smooth(group_select_mode='BONE_DEFORM', factor=.7, repeat=20, expand=0.0)
+bpy.ops.object.mode_set(mode='OBJECT')
+print('CHEST', 'smoothed weights on', nsel, 'verts'); print('CHESTW after', wb())
+# relax the pinched nipple patches in the base mesh: the torso bend in the stance opened them into a fold
+s1z, s2z = bonew0('Spine1').z, bonew0('Spine2').z
+tips = []
+for sx in (1, -1):
+    cand = [v for v in body.data.vertices if s1z < (body.matrix_world @ v.co).z < s2z + .12 and .05 < sx * (body.matrix_world @ v.co).x < .17]
+    tips.append(body.matrix_world @ min(cand, key=lambda v: (body.matrix_world @ v.co).y).co)
+print('NIPPLES', [[round(c, 3) for c in t] for t in tips])
+for e in body.data.edges: e.select = False
+for f in body.data.polygons: f.select = False
+for v in body.data.vertices:
+    w = body.matrix_world @ v.co
+    v.select = s1z - .06 < w.z < s2z + .1 and abs(w.x) < .18 and w.y < s2y - .03
+print('NIPPLE verts', sum(v.select for v in body.data.vertices))
+# flatten the pec bulge: compress anything that sticks out past the ribcage front, fading at the edges
+y_front = min(t.y for t in tips) + .045
+mwi = body.matrix_world.inverted(); nflat = 0
+for v in body.data.vertices:
+    w = body.matrix_world @ v.co
+    if not v.select or w.y >= y_front: continue
+    fx = min(1., max(0., (.19 - abs(w.x)) / .05)); fz = min(1., max(0., (w.z - (s1z - .06)) / .05, 0.)) * min(1., max(0., ((s2z + .1) - w.z) / .05))
+    k = .55 * fx * fz
+    w.y = w.y + (y_front - w.y) * k; v.co = mwi @ w; nflat += 1
+print('PECS flattened', nflat)
+bpy.ops.object.mode_set(mode='EDIT')
+bpy.ops.mesh.vertices_smooth(factor=.5, repeat=4)
+bpy.ops.mesh.select_all(action='DESELECT')
+bpy.ops.object.mode_set(mode='OBJECT')
 
 # ---- shorts: recolour body faces between mid-thigh and waist -------------------
 bpy.context.view_layer.update()
@@ -191,6 +281,25 @@ for fn, name in ANIMS:
         if fc.data_path.endswith('location'):
             for kp in fc.keyframe_points:
                 kp.co.y *= k; kp.handle_left.y *= k; kp.handle_right.y *= k
+    # Our fighters are thicker through the chest and arms than the capture actor, so the tucked guard
+    # drove the inner upper arm into the pecs (that crumpled-chest look). Open the elbows a few degrees.
+    from mathutils import Quaternion as _Q
+    W = rig.matrix_world.to_quaternion()
+    fcs = {}
+    for fc in [c for l in act.layers for s in l.strips for cb in s.channelbags for c in cb.fcurves]:
+        fcs[(fc.data_path, fc.array_index)] = fc
+    for side, sgn in (('Left', -1), ('Right', 1)):
+        bn = f'mixamorig:{side}Arm'; path = f'pose.bones["{bn}"].rotation_quaternion'
+        if (path, 0) not in fcs or bn not in rig.data.bones: continue
+        R = W.inverted() @ _Q((0, 1, 0), sgn * math.radians(ARM_OPEN)) @ W       # world abduction -> armature space
+        rest = rig.data.bones[bn].matrix_local.to_quaternion()
+        off = rest.inverted() @ R @ rest                                       # -> bone basis space
+        curves = [fcs[(path, i)] for i in range(4)]
+        for j in range(len(curves[0].keyframe_points)):
+            q = _Q([c.keyframe_points[j].co.y for c in curves]); q2 = off @ q
+            for i, c in enumerate(curves):
+                kp = c.keyframe_points[j]; d = q2[i] - kp.co.y
+                kp.co.y += d; kp.handle_left.y += d; kp.handle_right.y += d
     for o in new: bpy.data.objects.remove(o, do_unlink=True)
     tr = rig.animation_data.nla_tracks.new(); tr.name = name
     st = tr.strips.new(name, int(act.frame_range[0]), act)
@@ -244,11 +353,30 @@ def key_pose(action, frame):
     for pb in rig.pose.bones:
         pb.keyframe_insert('rotation_quaternion', frame=frame)
         if pb.name == 'mixamorig:Hips': pb.keyframe_insert('location', frame=frame)
-def make_action(name, frames):
+def channelbags(act):
+    return [cb for l in act.layers for s in l.strips for cb in s.channelbags]
+# Per-segment timing curves. A key's tag shapes the motion from that key to the next one:
+#   snap  = explosive (most of the travel in the first frames, like a punch leaving the guard)
+#   hold  = linear (the short "stick" at full extension that sells the impact)
+#   back  = return with a small overshoot that settles into the guard
+#   load  = gentle in/out (anticipation, weight loading)   smooth = cubic in/out
+EASE = {'snap': ('EXPO', 'EASE_OUT'), 'quick': ('QUAD', 'EASE_OUT'), 'load': ('SINE', 'EASE_IN_OUT'),
+        'hold': ('LINEAR', None), 'back': ('BACK', 'EASE_OUT'), 'smooth': ('CUBIC', 'EASE_IN_OUT')}
+def ease_action(act, tags):
+    for cb in channelbags(act):
+        for fc in cb.fcurves:
+            for kp in fc.keyframe_points:
+                tag = tags.get(int(round(kp.co.x)))
+                if not tag: continue
+                ip, e = EASE[tag]; kp.interpolation = ip
+                if e: kp.easing = e
+                if ip == 'BACK': kp.back = .8
+def make_action(name, frames, tags=None):
     act = bpy.data.actions.new(name); act.use_fake_user = True
     rig.animation_data.action = act
     for fr, build in frames:
         reset_pose(); build(); key_pose(act, fr)
+    if tags: ease_action(act, tags)
     rig.animation_data.action = None
     tr = rig.animation_data.nla_tracks.new(); tr.name = name
     st = tr.strips.new(name, int(act.frame_range[0]), act)
@@ -319,10 +447,14 @@ def level(dz):  # bend the knees: lower the hips (feet stay roughly planted)
     pb = rig.pose.bones['mixamorig:Hips']; wm = rig.matrix_world @ pb.matrix; wm.translation.z -= dz
     pb.matrix = rig.matrix_world.inverted() @ wm; bpy.context.view_layer.update()
 REACH = .62
+EXT = [0.]          # extra reach on the "stick" frame right after impact
 def target(height='head', side_off=0.):
     h = wpos('Head'); c = wpos('Spine1')
     z = h.z - .02 if height == 'head' else c.z - .05
-    return Vector((h.x * .3 + side_off, h.y - REACH, z))
+    return Vector((h.x * .3 + side_off, h.y - REACH - EXT[0], z))
+def ext(v):
+    def f(): EXT[0] = v
+    return f
 def straight(side, tgt, ext=1.0):
     sh = wpos(side + 'Arm'); d = (tgt - sh)
     aim(side + 'Arm', d); aim(side + 'ForeArm', d.lerp(Vector((0, -.2, 1)), 1 - ext) if ext < 1 else d)
@@ -340,68 +472,136 @@ def chamber(side):  # pull the hand back by the chin (loading / recovering)
     s = SX[side]; aim(side + 'Arm', (s * .3, -.35, -.88)); aim(side + 'ForeArm', (-s * .2, -.45, .87))
 def guard_hands():
     chamber('Left'); chamber('Right')
+def nudge(name, d):  # push a bone's current direction a little (relative edit of the captured stance)
+    pb = rig.pose.bones['mixamorig:' + name]
+    cur = ((rig.matrix_world @ pb.tail) - (rig.matrix_world @ pb.head)).normalized()
+    aim(name, cur + Vector(d))
+def heel_up(side, amt=.4):  # come up onto the ball of the foot (the pivot that turns the hips over)
+    nudge(side + 'Foot', (0, 0, -amt * .6))
 def F(*steps):      # build a key: apply each step function in order, starting from the guard
     def build():
-        guard()
+        guard(); EXT[0] = 0.
         for st in steps: st()
+        EXT[0] = 0.
     return build
-def move(name, keys):
-    make_action(name, [(fr, F(*steps)) for fr, steps in keys])
+def move(name, keys, tags=None):
+    if tags is None:  # default feel: quick into the pose, smooth out of it
+        tags = {fr: ('quick' if i == 0 else 'smooth') for i, (fr, _) in enumerate(keys)}
+    make_action(name, [(fr, F(*steps)) for fr, steps in keys], tags)
+def strike(name, fr, ant, imp, rec=None, follow=()):
+    """guard -> anticipation (load) -> impact (snap) -> 1 frame stick, slightly deeper (hold) -> [recoil] -> guard (settle).
+    Timing from frame-stepping the UFC 6 reference at 30 fps: a jab leaves the guard and lands in ~3 frames and
+    takes ~6 to come home; power shots show a 2-3 frame shoulder/hip load first and land in ~4."""
+    a, i, h, e = fr
+    keys = [(1, []), (a, ant), (i, imp), (h, [ext(.045)] + imp + list(follow))]
+    tags = {1: 'load', a: 'snap', i: 'hold', h: 'quick' if rec else 'back'}
+    if rec:
+        r = (h + e) // 2; keys.append((r, rec)); tags[r] = 'back'
+    keys.append((e, []))
+    make_action(name, [(k, F(*s)) for k, s in keys], tags)
+L = lambda f, *a: (lambda: f(*a))   # tiny helper: L(torso, .2) == lambda: torso(.2)
 
-# ---- punches (lead = Left, rear = Right) ----
-move('jab_head', [(1, []), (4, [lambda: torso(-.18), lambda: straight('Left', target())]), (9, [])])
-move('jab_body', [(1, []), (3, [lambda: level(.12)]), (6, [lambda: level(.16), lambda: torso(-.2, .25), lambda: straight('Left', target('body'))]), (12, [])])
-move('cross_head', [(1, []), (5, [lambda: torso(.55, .05, 0, .2), lambda: straight('Right', target()), lambda: chamber('Left')]), (12, [])])
-move('cross_body', [(1, []), (4, [lambda: level(.1)]), (7, [lambda: level(.17), lambda: torso(.5, .3, 0, .18), lambda: straight('Right', target('body'))]), (14, [])])
-move('lead_hook', [(1, []), (3, [lambda: torso(.18)]), (7, [lambda: torso(-.6, 0, 0, -.22), lambda: hook('Left'), lambda: chamber('Right')]), (13, [])])
-move('lead_body_hook', [(1, []), (4, [lambda: level(.12), lambda: torso(.2, .1)]), (8, [lambda: level(.16), lambda: torso(-.55, .2, .15, -.2), lambda: hook('Left', True)]), (15, [])])
-move('rear_hook', [(1, []), (4, [lambda: torso(-.15)]), (8, [lambda: torso(.65, 0, 0, .25), lambda: hook('Right'), lambda: chamber('Left')]), (14, [])])
-move('lead_uppercut', [(1, []), (4, [lambda: level(.1), lambda: torso(.15, .1, .15)]), (8, [lambda: torso(-.35, -.1, -.1), lambda: upper('Left')]), (14, [])])
-move('rear_uppercut', [(1, []), (4, [lambda: level(.12), lambda: torso(-.1, .1, -.15)]), (8, [lambda: torso(.45, -.1, .1, .15), lambda: upper('Right')]), (14, [])])
-move('overhand', [(1, []), (5, [lambda: torso(-.2, -.1)]), (10, [lambda: level(.08), lambda: torso(.7, .3, .2, .25), lambda: aim('RightArm', (-.1, -.7, .7)), lambda: aim('RightForeArm', (.15, -.75, -.4))]), (17, [])])
-move('lead_elbow', [(1, []), (6, [lambda: torso(-.55, .1, 0, -.2), lambda: elbow('Left')]), (12, [])])
-move('superman', [(1, []), (6, [lambda: aim('RightUpLeg', (0, .75, -.66)), lambda: aim('RightLeg', (0, .9, .2)), lambda: torso(.2, -.1)]),
-                  (11, [lambda: torso(.6, .15, 0, .25), lambda: straight('Right', target()), lambda: aim('RightUpLeg', (0, .3, -.95))]), (19, [])])
+# ---- punches (lead = Left, rear = Right). Head leaves the centre line toward the lead side on rear hands. ----
+strike('jab_head', (2, 4, 5, 11), [L(level, .02), L(torso, .06)],
+       [L(level, .035), L(torso, -.22, .1, .05), lambda: straight('Left', target())])
+strike('jab_body', (3, 6, 7, 13), [L(level, .1), L(torso, .05, .08)],
+       [L(level, .17), L(torso, -.22, .28, .05), lambda: straight('Left', target('body'))])
+strike('cross_head', (3, 6, 7, 14), [L(level, .03), L(torso, -.12, -.03)],
+       [L(level, .05), L(torso, .62, .15, .1, .24), lambda: straight('Right', target()), L(chamber, 'Left')])
+strike('cross_body', (4, 7, 8, 15), [L(level, .1), L(torso, -.1, .1)],
+       [L(level, .18), L(torso, .55, .32, .08, .2), lambda: straight('Right', target('body')), L(chamber, 'Left'), L(heel_up, 'Right', .35)])
+strike('lead_hook', (3, 7, 8, 15), [L(level, .03), L(torso, .2)],
+       [L(level, .05), L(torso, -.65, .06, -.05, -.24), L(hook, 'Left'), L(chamber, 'Right')], follow=[L(torso, -.08)])
+strike('lead_body_hook', (4, 8, 9, 16), [L(level, .12), L(torso, .22, .1, .08)],
+       [L(level, .18), L(torso, -.58, .2, .15, -.22), L(hook, 'Left', True), L(chamber, 'Right')])
+strike('rear_hook', (3, 8, 9, 15), [L(level, .03), L(torso, -.18)],
+       [L(level, .05), L(torso, .7, .06, .06, .27), L(hook, 'Right'), L(chamber, 'Left')], follow=[L(torso, .08)])
+strike('lead_uppercut', (4, 8, 9, 15), [L(level, .12), L(torso, .18, .12, .18)],
+       [L(level, .02), L(torso, -.38, -.1, -.12), L(upper, 'Left'), L(chamber, 'Right')])
+strike('rear_uppercut', (4, 8, 9, 15), [L(level, .14), L(torso, -.12, .12, -.18)],
+       [L(level, .02), L(torso, .48, -.1, .12, .16), L(upper, 'Right'), L(chamber, 'Left')])
+strike('overhand', (5, 10, 11, 19), [L(level, .02), L(torso, -.22, -.12)],
+       [L(level, .12), L(torso, .72, .32, .22, .26), L(aim, 'RightArm', (-.1, -.7, .7)), L(aim, 'RightForeArm', (.15, -.75, -.4)),
+        L(chamber, 'Left'), L(heel_up, 'Right', .4)], rec=[L(level, .06), L(torso, .2, .12)])
+strike('lead_elbow', (3, 6, 7, 13), [L(torso, .15)], [L(level, .04), L(torso, -.6, .12, 0, -.22), L(elbow, 'Left'), L(chamber, 'Right')])
+strike('superman', (6, 11, 12, 20), [L(aim, 'RightUpLeg', (0, .75, -.66)), L(aim, 'RightLeg', (0, .9, .2)), L(torso, .2, -.1), L(level, -.05)],
+       [L(torso, .6, .15, 0, .25), lambda: straight('Right', target()), L(aim, 'RightUpLeg', (0, .3, -.95)), L(chamber, 'Left')],
+       rec=[L(level, .04), L(torso, .2)])
 
-# ---- kicks and knees ----
-def rkick(height):  # rear roundhouse: pivot, hips turn over, shin through the target
+# ---- kicks and knees: load -> chamber -> snap through -> stick -> recoil -> guard ----
+def rkick_chamber():
+    torso(.45, -.12, -.12, .35); aim('RightUpLeg', (.3, -.8, -.05)); aim('RightLeg', (.15, .35, -.92))
+    aim('RightArm', (-.45, .3, -.6)); chamber('Left'); heel_up('Left', .3)
+def rkick(height):  # rear roundhouse: support foot pivots, hips turn over, shin through the target, rear arm swings down
     z = {'low': -.35, 'body': .15, 'calf': -.6}[height]
     torso(.75, -.25, -.25, .55)
     aim('RightUpLeg', (.45, -.8, z * .6 + .05)); aim('RightLeg', (.55, -.8, z))
-    aim('RightArm', (-.6, .5, -.4)); aim('RightForeArm', (-.3, .2, -.9)); chamber('Left')
-move('rear_low_kick', [(1, []), (5, [lambda: torso(.35, 0, 0, .25), lambda: level(.05)]), (10, [lambda: rkick('low')]), (18, [])])
-move('calf_kick', [(1, []), (4, [lambda: torso(.3, 0, 0, .2)]), (9, [lambda: rkick('calf')]), (16, [])])
-move('body_kick', [(1, []), (5, [lambda: torso(.4, 0, 0, .3)]), (11, [lambda: rkick('body')]), (20, [])])
-move('teep', [(1, []), (5, [lambda: aim('LeftUpLeg', (.1, -.95, .25)), lambda: aim('LeftLeg', (0, -.15, -.99)), lambda: torso(0, -.15)]),
-              (9, [lambda: aim('LeftUpLeg', (.1, -.97, .15)), lambda: aim('LeftLeg', (.05, -.98, .2)), lambda: torso(0, -.3)]), (16, [])])
-move('rear_knee', [(1, []), (4, [lambda: straight('Left', target('head', .1), .7), lambda: straight('Right', target('head', -.1), .7)]),
-                   (8, [lambda: torso(0, -.25), lambda: aim('RightUpLeg', (.15, -.72, .66)), lambda: aim('RightLeg', (0, .35, -.94)),
-                        lambda: aim('LeftForeArm', (-.3, -.6, -.75)), lambda: aim('RightForeArm', (.3, -.6, -.75))]), (15, [])])
+    aim('RightArm', (-.6, .5, -.4)); aim('RightForeArm', (-.3, .2, -.9)); chamber('Left'); heel_up('Left', .35)
+def kick(name, height, fr):
+    a, c, i, h, r, e = fr
+    make_action(name, [(1, F()), (a, F(L(torso, .3, 0, 0, .22), L(level, .06))), (c, F(rkick_chamber)), (i, F(L(rkick, height))),
+                       (h, F(L(rkick, height), L(torso, .06))), (r, F(rkick_chamber, L(torso, -.15))), (e, F())],
+                {1: 'load', a: 'quick', c: 'snap', i: 'hold', h: 'smooth', r: 'back'})
+kick('rear_low_kick', 'low', (4, 7, 10, 12, 16, 21))
+kick('calf_kick', 'calf', (3, 6, 9, 11, 14, 18))
+kick('body_kick', 'body', (4, 8, 11, 13, 17, 22))
+def teep_chamber():
+    aim('LeftUpLeg', (.1, -.85, .5)); aim('LeftLeg', (0, .2, -.98)); torso(0, -.1)
+make_action('teep', [(1, F()), (4, F(teep_chamber)), (8, F(L(aim, 'LeftUpLeg', (.1, -.97, .15)), L(aim, 'LeftLeg', (.05, -.98, .2)), L(torso, 0, -.3), L(heel_up, 'Right', .3))),
+                     (10, F(L(aim, 'LeftUpLeg', (.1, -.97, .12)), L(aim, 'LeftLeg', (.05, -.98, .18)), L(torso, 0, -.32))), (14, F(teep_chamber)), (19, F())],
+            {1: 'quick', 4: 'snap', 8: 'hold', 10: 'smooth', 14: 'back'})
+def clinch_hands():
+    straight('Left', target('head', .1), .7); straight('Right', target('head', -.1), .7)
+    aim('LeftForeArm', (-.3, -.6, -.75)); aim('RightForeArm', (.3, -.6, -.75))
+make_action('rear_knee', [(1, F()), (4, F(lambda: straight('Left', target('head', .1), .7), lambda: straight('Right', target('head', -.1), .7))),
+                          (8, F(clinch_hands, L(torso, 0, -.25), L(level, -.04), L(aim, 'RightUpLeg', (.15, -.72, .66)), L(aim, 'RightLeg', (0, .35, -.94)), L(heel_up, 'Left', .4))),
+                          (10, F(clinch_hands, L(torso, 0, -.2), L(aim, 'RightUpLeg', (.15, -.7, .62)), L(aim, 'RightLeg', (0, .35, -.94)))), (16, F())],
+            {1: 'quick', 4: 'snap', 8: 'hold', 10: 'back'})
 
 # ---- defense ----
-move('slip_out', [(1, []), (4, [lambda: level(.06), lambda: torso(-.15, .1, .35)]), (10, [])])
-move('slip_in', [(1, []), (4, [lambda: level(.06), lambda: torso(.2, .1, -.35)]), (10, [])])
-move('roll', [(1, []), (4, [lambda: level(.12), lambda: torso(.1, .35, .3)]), (8, [lambda: level(.18), lambda: torso(0, .5, 0)]), (12, [lambda: level(.12), lambda: torso(-.1, .35, -.3)]), (17, [])])
+def slip(name, R, end=11):   # snap off the line, stick a beat, roll back into the guard
+    make_action(name, [(1, F()), (4, F(*R)), (6, F(*R)), (end, F())], {1: 'snap', 4: 'hold', 6: 'back'})
+slip('slip_out', [L(level, .07), L(torso, -.15, .12, .38)])
+slip('slip_in', [L(level, .07), L(torso, .2, .12, -.38)])
+move('roll', [(1, []), (4, [L(level, .12), L(torso, .1, .35, .3)]), (8, [L(level, .2), L(torso, 0, .5, 0)]), (12, [L(level, .12), L(torso, -.1, .35, -.3)]), (17, [])],
+     {1: 'quick', 4: 'smooth', 8: 'smooth', 12: 'back'})
 def high_guard():
     for side, s in SX.items(): aim(side + 'Arm', (s * .3, -.75, -.25)); aim(side + 'ForeArm', (-s * .2, -.15, .97))
     turn('Head', (1, 0, 0), .25)
-move('block_high', [(1, []), (3, [high_guard, lambda: level(.04)])])
+move('block_high', [(1, []), (3, [high_guard, L(level, .04)])], {1: 'snap'})
 def body_guard():
     for side, s in SX.items(): aim(side + 'Arm', (s * .15, -.25, -.95)); aim(side + 'ForeArm', (-s * .25, -.6, .75))
     torso(0, .25)
-move('block_body', [(1, []), (3, [body_guard, lambda: level(.08)])])
-move('check', [(1, []), (4, [lambda: aim('LeftUpLeg', (.55, -.7, .45)), lambda: aim('LeftLeg', (.2, -.25, -.95)), lambda: torso(0, .05)]), (11, [])])
+move('block_body', [(1, []), (3, [body_guard, L(level, .08)])], {1: 'snap'})
+move('check', [(1, []), (4, [L(aim, 'LeftUpLeg', (.55, -.7, .45)), L(aim, 'LeftLeg', (.2, -.25, -.95)), L(torso, 0, .05)]),
+               (6, [L(aim, 'LeftUpLeg', (.55, -.7, .45)), L(aim, 'LeftLeg', (.2, -.25, -.95)), L(torso, 0, .08)]), (12, [])], {1: 'snap', 4: 'hold', 6: 'back'})
 
-# ---- reactions ----
-move('hit_head', [(1, []), (3, [lambda: torso(.1, -.2), guard_hands, lambda: turn('Head', (1, 0, 0), -.6), lambda: level(.03)]), (11, [])])
-move('hit_head_l', [(1, []), (3, [lambda: turn('Head', (0, 0, 1), .7), lambda: turn('Head', (0, 1, 0), .3), lambda: torso(.3, -.1, .25)]), (11, [])])
-move('hit_head_r', [(1, []), (3, [lambda: turn('Head', (0, 0, 1), -.7), lambda: turn('Head', (0, 1, 0), -.3), lambda: torso(-.3, -.1, -.25)]), (11, [])])
-move('hit_body', [(1, []), (3, [lambda: level(.08), lambda: torso(0, .45), body_guard]), (13, [])])
-move('hit_leg', [(1, []), (3, [lambda: aim('LeftLeg', (0, .55, -.83)), lambda: level(.1), lambda: torso(0, .1, .2)]), (12, [])])
-move('stagger', [(1, []), (4, [lambda: turn('Head', (1, 0, 0), -.7), lambda: torso(.4, -.45, .3), lambda: aim('LeftArm', (.8, .2, -.55)), lambda: aim('RightArm', (-.8, .3, -.5))]),
-                 (10, [lambda: level(.1), lambda: torso(-.3, -.2, -.25)]), (18, [])])
-move('victory', [(1, []), (8, [lambda: aim('LeftArm', (.35, 0, .94)), lambda: aim('LeftForeArm', (.25, -.1, .96)), lambda: aim('RightArm', (-.35, 0, .94)),
-                               lambda: aim('RightForeArm', (-.25, -.1, .96)), lambda: turn('Head', (1, 0, 0), -.35), lambda: torso(0, -.15)])])
+# ---- reactions: the hit snaps the head/body in 2 frames, it hangs there, then the fighter fights back to the guard ----
+def react(name, R, end=12):
+    make_action(name, [(1, F()), (3, F(*R)), (5, F(*R, L(level, .02))), (end, F())], {1: 'snap', 3: 'hold', 5: 'smooth'})
+react('hit_head', [L(torso, .1, -.22), guard_hands, L(turn, 'Head', (1, 0, 0), -.6), L(level, .03)])
+react('hit_head_l', [L(turn, 'Head', (0, 0, 1), .7), L(turn, 'Head', (0, 1, 0), .3), L(torso, .3, -.1, .25)])
+react('hit_head_r', [L(turn, 'Head', (0, 0, 1), -.7), L(turn, 'Head', (0, 1, 0), -.3), L(torso, -.3, -.1, -.25)])
+react('hit_body', [L(level, .1), L(torso, 0, .48), body_guard], 14)
+react('hit_leg', [L(aim, 'LeftLeg', (0, .55, -.83)), L(level, .1), L(torso, 0, .1, .2)], 13)
+move('stagger', [(1, []), (4, [L(turn, 'Head', (1, 0, 0), -.7), L(torso, .4, -.45, .3), L(aim, 'LeftArm', (.8, .2, -.55)), L(aim, 'RightArm', (-.8, .3, -.5))]),
+                 (10, [L(level, .1), L(torso, -.3, -.2, -.25)]), (18, [])], {1: 'snap', 4: 'smooth', 10: 'smooth'})
+move('victory', [(1, []), (8, [L(aim, 'LeftArm', (.35, 0, .94)), L(aim, 'LeftForeArm', (.25, -.1, .96)), L(aim, 'RightArm', (-.35, 0, .94)),
+                               L(aim, 'RightForeArm', (-.25, -.1, .96)), L(turn, 'Head', (1, 0, 0), -.35), L(torso, 0, -.15)])], {1: 'smooth'})
+
+# ---- footwork: in-place step loops for the legs layer (the game slides the root) ----
+# Stepping forward the lead foot moves first and the rear foot follows; stepping back the rear foot leads.
+# Feet stay low to the mat (a shuffle, not a walk), with a small dip on each plant.
+make_action('step_fwd', [(1, F()),
+    (4, F(L(nudge, 'LeftUpLeg', (0, -.22, .12)), L(nudge, 'LeftLeg', (0, .12, 0)), L(level, -.012))),
+    (7, F(L(nudge, 'LeftUpLeg', (0, -.16, 0)), L(nudge, 'LeftLeg', (0, -.12, 0)), L(nudge, 'RightUpLeg', (0, .14, 0)), L(level, .025))),
+    (10, F(L(nudge, 'RightUpLeg', (0, -.04, .08)), L(nudge, 'RightLeg', (0, .22, .04)), L(level, -.005))), (13, F())],
+    {1: 'smooth', 4: 'smooth', 7: 'smooth', 10: 'smooth'})
+make_action('step_back', [(1, F()),
+    (4, F(L(nudge, 'RightUpLeg', (0, .1, .1)), L(nudge, 'RightLeg', (0, .2, 0)), L(level, -.012))),
+    (7, F(L(nudge, 'RightUpLeg', (0, .18, 0)), L(nudge, 'LeftUpLeg', (0, -.1, 0)), L(level, .025))),
+    (10, F(L(nudge, 'LeftUpLeg', (0, .06, .1)), L(nudge, 'LeftLeg', (0, .2, 0)), L(level, -.005))), (13, F())],
+    {1: 'smooth', 4: 'smooth', 7: 'smooth', 10: 'smooth'})
 print('MOVES', len([t for t in rig.animation_data.nla_tracks]))
 print('POSES', [t.name for t in rig.animation_data.nla_tracks])
 
@@ -412,8 +612,8 @@ if PREVIEW:
     sc.render.resolution_x, sc.render.resolution_y = 640, 480
     pcd = bpy.data.cameras.new('pc'); pcd.lens = 35; pcam = bpy.data.objects.new('pc', pcd); sc.collection.objects.link(pcam); sc.camera = pcam
     pcam.location = (3.4, -2.2, 1.2); pcam.rotation_euler = (Vector((0, 0, .45)) - pcam.location).to_track_quat('-Z', 'Y').to_euler()
-    PF = {'ground_top': 7, 'shoot': 8, 'jab_head': 4, 'cross_head': 5, 'lead_hook': 7, 'rear_uppercut': 8, 'body_kick': 11, 'teep': 9, 'rear_knee': 8, 'roll': 8, 'hit_head': 3, 'stagger': 4, 'check': 4}
-    for pose_name in ('ground_back', 'ground_top', 'knocked', 'shoot', 'jab_head', 'cross_head', 'lead_hook', 'rear_uppercut', 'body_kick', 'teep', 'rear_knee', 'roll', 'hit_head', 'stagger', 'check'):
+    PF = {'ground_top': 7, 'shoot': 8, 'jab_head': 4, 'cross_head': 6, 'lead_hook': 7, 'rear_hook': 8, 'overhand': 10, 'step_fwd': 7, 'step_back': 7, 'calf_kick': 9, 'rear_uppercut': 8, 'body_kick': 11, 'teep': 8, 'rear_knee': 8, 'roll': 8, 'hit_head': 3, 'stagger': 4, 'check': 4}
+    for pose_name in ('ground_back', 'ground_top', 'knocked', 'shoot', 'jab_head', 'cross_head', 'lead_hook', 'rear_uppercut', 'body_kick', 'teep', 'rear_knee', 'roll', 'hit_head', 'stagger', 'check', 'rear_hook', 'overhand', 'step_fwd', 'step_back', 'calf_kick'):
         rig.animation_data.nla_tracks[pose_name].mute = False; sc.frame_set(PF.get(pose_name, 1)); bpy.context.view_layer.update()
         hz = (rig.matrix_world @ rig.pose.bones['mixamorig:Hips'].head).z
         print('POSEHIP', pose_name, round(hz, 3))
@@ -457,8 +657,6 @@ for side in ('Left', 'Right'):
             fist[pb.name] = best[1]
 print('FIST', len(fist), 'finger joints')
 
-def channelbags(act):
-    return [cb for l in act.layers for s in l.strips for cb in s.channelbags]
 for act in [a for a in bpy.data.actions]:
     for cb in channelbags(act):
         for fc in list(cb.fcurves):
@@ -497,6 +695,8 @@ if PREVIEW:
     sc.render.filepath = PREVIEW.replace('.png', '-hand.png'); bpy.ops.render.render(write_still=True)
     for t in rig.animation_data.nla_tracks: t.mute = True
 
+for o in [o for o in bpy.data.objects if o.name.startswith('Icosphere')]: bpy.data.objects.remove(o, do_unlink=True)
+for pb in rig.pose.bones: pb.custom_shape = None
 bpy.ops.object.select_all(action='DESELECT')
 for o in [rig] + parts + gloves: o.select_set(True)
 bpy.context.view_layer.objects.active = rig
