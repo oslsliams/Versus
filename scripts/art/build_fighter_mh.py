@@ -399,7 +399,8 @@ def knocked():      # out cold: limbs loose, arms flung out
            'L:Arm': (.92, .05, .38), 'R:Arm': (.85, -.2, .1), 'L:ForeArm': (.6, .1, .8), 'R:ForeArm': (.95, -.1, -.3), 'Head': (.25, .15, .95)})
     tip_body(LIE); drop_to_floor(.06)
 def top_base(punch):  # low, chest-to-chest top control (like UFC half guard / side control), right hand ground-and-pound
-    limbs({'UpLeg': (.45, -.15, -.88), 'Leg': (.05, .99, -.1),
+    # heavy top: knees wide on the mat, hips sunk low between the opponent's legs, chest driving down on his chest
+    limbs({'UpLeg': (.5, -.38, -.78), 'Leg': (.08, .99, -.08),
            'Spine': (0, -.85, .52), 'Spine1': (0, -.95, .3), 'Spine2': (0, -.98, .18), 'Head': (0, -.9, .42),
            'L:Arm': (.55, -.55, -.62), 'L:ForeArm': (-.15, -.3, -.94)})
     if punch: limbs({'R:Arm': (.05, -.55, -.83), 'R:ForeArm': (.15, -.45, -.88)})

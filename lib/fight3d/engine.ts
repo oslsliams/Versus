@@ -173,42 +173,52 @@ function takedown(g: LiveFight, f: Fighter, o: Fighter) {
   g.events.push({type: 'td', side: f.side, x: o.x, power: 1, text: 'Takedown!'});
 }
 
+// Ground game: two plain mashing contests the player can read off the HUD meters.
+//  - Bottom fighter mashes to fill ESCAPE (top control and ground-and-pound push it back).
+//  - Top fighter starts a SUBMISSION (kick key), then mashes to crank it; the bottom fighter mashes to defend.
+//    Defending also builds escape, and a failed attempt gives the bottom fighter a big escape bonus.
+// Mash rates: a human hammering a key ~6-8/s; AI rates scale with difficulty (see aiInput).
 function ground(g: LiveFight, inputs: [Input, Input], pressed: [Input, Input], dt: number) {
   const top = g.f[0].state === 'top' ? g.f[0] : g.f[1], bot = top.side === 0 ? g.f[1] : g.f[0];
   const tp = pressed[top.side], bp = pressed[bot.side];
-  // bottom player works to escape: mash any button
   const mash = bp.jab || bp.cross || bp.kick || bp.upper || bp.shoot || bp.block;
-  if (top.sub === 0) {
-    if (mash) bot.escape += .028 + bot.stats.wrestling / 1800 + bot.stats.grappling / 2800;
-    bot.escape += dt * .085;
-  }
-  bot.escape -= dt * (.02 + top.stats.wrestling / 2500);
+  const grapEdge = (top.stats.grappling - bot.stats.grappling) / 400;
   if (top.sub > 0) {
-    // submission attempt in progress
-    top.sub += dt * (.3 + (top.stats.grappling - bot.stats.grappling) / 250) * (.6 + .4 * (1 - bot.stamina / 100));
-    if (mash) top.sub -= .009 + bot.stats.grappling / 6000;
+    // submission battle
+    const crank = tp.jab || tp.cross || tp.upper || tp.kick;
+    top.sub += dt * Math.max(.05, .16 + grapEdge) * (.75 + .25 * (1 - bot.stamina / 100));
+    if (crank) top.sub += .04 + top.stats.grappling / 4000;
+    if (mash) { top.sub -= .045 + bot.stats.grappling / 4000; bot.escape += .015; bot.stamina = Math.max(0, bot.stamina - .6); }
     if (top.sub >= 1) { g.events.push({type: 'tap', side: top.side, x: bot.x, power: 2, text: 'TAP OUT!'}); return finish(g, top, 'SUB'); }
     top.subClock += dt;
-    if (top.subClock > 8) top.sub = 0;
-    if (top.sub <= 0) { top.sub = 0; bot.escape += .3; g.events.push({type: 'escape', side: bot.side, x: bot.x, power: .6, text: 'Escaped!'}); }
+    if (top.sub <= 0 || top.subClock > 6) {
+      top.sub = 0; top.mashCd = 3; bot.escape += .3;
+      g.events.push({type: 'escape', side: bot.side, x: bot.x, power: .6, text: 'Submission defended!'});
+    }
   } else {
+    if (mash) bot.escape += .028 + bot.stats.wrestling / 3500 + bot.stats.grappling / 6000;
+    bot.escape += dt * .05;
+    bot.escape -= dt * (.04 + top.stats.wrestling / 2000);
     if ((tp.jab || tp.cross || tp.upper) && top.gnpCd <= 0) {
       top.gnpCd = .42 / spd(top);
-      const dmg = .9 * (.55 + top.stats.power / 100) * (1.25 - bot.stats.chin / 200);
-      bot.hp -= dmg; top.points += dmg; top.landed += 1; top.stamina -= 2.5;
+      const dmg = .75 * (.55 + top.stats.power / 100) * (1.25 - bot.stats.chin / 200);
+      bot.hp -= dmg; top.points += dmg; top.landed += 1; top.stamina -= 2.5; bot.escape -= .04;
       g.events.push({type: 'hit', side: top.side, x: bot.x, power: dmg / 8});
       if (bot.hp <= 0) { g.slowmo = 1; g.events.push({type: 'ko', side: top.side, x: bot.x, power: 2, text: 'TKO! Ref stops it'}); return finish(g, top, 'KO/TKO'); }
     }
-    if (tp.kick && top.stamina > 20) { top.sub = .18; top.subClock = 0; top.stamina -= 12; g.events.push({type: 'sub', side: top.side, x: bot.x, power: 1, text: ['Rear-naked choke!', 'Armbar!', 'Guillotine!', 'Kimura!'][Math.floor(rand() * 4)]}); }
+    if (tp.kick && top.stamina > 20 && top.mashCd <= 0) {
+      top.sub = .2; top.subClock = 0; top.stamina -= 12;
+      g.events.push({type: 'sub', side: top.side, x: bot.x, power: 1, text: ['Rear-naked choke!', 'Armbar!', 'Guillotine!', 'Kimura!'][Math.floor(rand() * 4)]});
+    }
   }
-  top.points += dt * 2;   // and control on top
+  bot.escape = Math.max(0, bot.escape);
+  top.points += dt * 2;   // control on top
   if (bot.escape >= 1) {
-    setState(top, 'idle'); setState(bot, 'getup'); top.sub = 0;
-    bot.x = top.x + (bot.x > top.x ? 1 : -1) * .9;
+    setState(top, 'idle'); setState(bot, 'getup'); top.sub = 0; bot.escape = 0;
+    bot.x = top.x + (bot.x > top.x ? 1 : -1) * 1.05;
     g.events.push({type: 'escape', side: bot.side, x: bot.x, power: .6, text: 'Back to the feet'});
   }
 }
-
 function finish(g: LiveFight, winner: Fighter, method: 'KO/TKO' | 'SUB') {
   const loser = winner.side === 0 ? g.f[1] : g.f[0];
   setState(loser, 'ko'); setState(winner, 'win');
@@ -252,10 +262,12 @@ export function aiInput(g: LiveFight, me: Fighter, them: Fighter, brain: AIBrain
   if (g.phase !== 'fight') return {held, pressed};
   brain.react -= DT; brain.plan -= DT;
   const lvl = brain.level; // 0..1
-  if (me.state === 'bottom') { if (rand() < .06 + lvl * .1) pressed.jab = true; return {held, pressed}; }
+  // ground mashing: a hard-mashing human is ~6-8 presses/s; Normal AI ~4/s, more when fighting off a submission
+  if (me.state === 'bottom') { if (rand() < (.03 + lvl * .07) * (them.sub > 0 ? 1.5 : 1)) pressed.jab = true; return {held, pressed}; }
   if (me.state === 'top') {
     if (me.sub === 0 && brain.plan <= 0) { brain.plan = 1.2; if (me.stats.grappling > 55 && them.hp < 85 && rand() < .15 + lvl * .15) pressed.kick = true; }
-    if (rand() < .12 + lvl * .1) pressed.jab = true;
+    // ground and pound ~2/s; while a submission is on, crank it (Normal ~3 presses/s)
+    if (rand() < (me.sub > 0 ? .02 + lvl * .06 : .12 + lvl * .1)) pressed.jab = true;
     return {held, pressed};
   }
   const dist = Math.abs(them.x - me.x), toward = them.x > me.x ? 'right' : 'left', away = toward === 'right' ? 'left' : 'right';

@@ -134,7 +134,7 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
 
     {callout && <div key={callout.key} className={`lf-callout ${callout.tone}`} aria-live="assertive">{callout.text}</div>}
     {ground && <div className="lf-ground">
-      <span>{ground === 'top' ? 'Top position: J / K ground and pound · L submission' : 'On your back: mash any attack key to escape'}</span>
+      <span>{ground === 'top' ? 'Top: J / K ground and pound · L start a submission, then mash J / K to crank it' : 'On your back: mash any key to fill Escape (and to fight off submissions)'}</span>
       <span className="lf-meter"><b>Escape</b><span className="lf-mbar"><i className="esc" ref={el => { hud.current.escape = el; }}/></span></span>
       <span className="lf-meter"><b>Submission</b><span className="lf-mbar"><i className="sub" ref={el => { hud.current.sub = el; }}/></span></span>
     </div>}

@@ -91,9 +91,9 @@ export function createCareer(input: {name: string; nickname: string; country: st
 export type Action = {type: 'train'; focus: StatKey} | {type: 'spar'} | {type: 'rest'} | {type: 'promote'};
 export const ACTIONS = {
   train: {label: 'Train', energy: -18, blurb: 'Big gains in one stat. Tiring.'},
-  spar: {label: 'Spar', energy: -12, blurb: 'Small gains in a few stats. Some injury risk.'},
+  spar: {label: 'Spar', energy: -12, blurb: 'Small gains in a few stats. Small knock risk.'},
   rest: {label: 'Rest', energy: +35, blurb: 'Recover energy and heal up.'},
-  promote: {label: 'Promote', energy: -8, blurb: 'Interviews and socials. Hype and a little cash.'},
+  promote: {label: 'Promote', energy: -8, blurb: 'Interviews and socials. Hype = more offers, bigger names, reach fights.'},
 } as const;
 
 const growth = (age: number) => age < 26 ? 1.25 : age < 30 ? 1 : age < 33 ? .7 : .4;
@@ -124,7 +124,7 @@ export function takeAction(prev: Career, a: Action): Career {
     const gs = ks.map(k => `${STAT_LABEL[k]} +${gain(c, k, .7 + r() * .7).toFixed(1)}`);
     c.log.unshift({week: c.week, text: `Sparring rounds: ${[...new Set(gs)].join(', ')}.`});
     c.energy = Math.max(0, c.energy + ACTIONS.spar.energy);
-    injuryRoll(c, r, tired ? .15 : .05);
+    injuryRoll(c, r, tired ? .06 : .015, true);   // controlled rounds: knocks are rare and short
   } else if (a.type === 'rest') {
     c.energy = Math.min(100, c.energy + ACTIONS.rest.energy);
     c.health = Math.min(100, c.health + 20);
@@ -137,9 +137,9 @@ export function takeAction(prev: Career, a: Action): Career {
   return advanceWeek(c, r);
 }
 
-function injuryRoll(c: Career, r: () => number, chance: number) {
+function injuryRoll(c: Career, r: () => number, chance: number, minor = false) {
   if (r() < chance) {
-    c.injuryWeeks = 2 + Math.floor(r() * 4); c.health = Math.max(20, c.health - 30);
+    c.injuryWeeks = minor ? 1 + Math.floor(r() * 2) : 2 + Math.floor(r() * 4); c.health = Math.max(20, c.health - (minor ? 15 : 30));
     c.log.unshift({week: c.week, text: `Injured in camp. Out ${c.injuryWeeks} weeks.`, tone: 'bad'});
     if (c.camp) { c.log.unshift({week: c.week, text: 'The fight is off. The promotion pulls the bout.', tone: 'bad'}); c.camp = null; c.hype = Math.max(0, c.hype - 5); }
   }
@@ -185,7 +185,10 @@ function withOffers(c: Career, r: () => number): Career {
   if (c.camp || c.injuryWeeks > 0 || c.retired || c.week < c.nextOfferWeek) return c;
   const pool = c.roster.filter(n => n.tier === c.tier);
   const offers: Offer[] = [];
-  if (c.tier === 2 && !c.champ && c.rank != null && c.rank <= 3 && c.hype >= 45 && c.champion) {
+  // hype is reach: the more people want to see you, the more (and bigger) fights the matchmakers offer
+  const reach = Math.floor(c.hype / 20);                  // 0..5
+  const want = 2 + (c.hype >= 30 ? 1 : 0) + (c.hype >= 60 ? 1 : 0);
+  if (c.tier === 2 && !c.champ && c.rank != null && c.rank <= 3 + Math.floor(c.hype / 25) && c.hype >= 45 && c.champion) {
     offers.push(offer(c, r, c.champion, true));
   }
   if (c.tier === 2 && c.champ) {
@@ -193,20 +196,26 @@ function withOffers(c: Career, r: () => number): Career {
     if (challenger) offers.push(offer(c, r, challenger, true));
   } else {
     let near = pool;
-    if (c.tier === 2 && c.rank != null) near = c.rankings.slice(Math.max(0, c.rank - 4), c.rank + 3).filter(id => id !== 'you').map(id => npc(c, id)!).filter(Boolean);
-    const shuffled = [...near].sort(() => r() - .5).slice(0, 3 - offers.length);
+    if (c.tier === 2 && c.rank != null) near = c.rankings.slice(Math.max(0, c.rank - 4 - reach), c.rank + 3).filter(id => id !== 'you').map(id => npc(c, id)!).filter(Boolean);
+    // reach fight: enough hype gets you a call-up bout against someone from the league above
+    if (c.tier < 2 && c.hype >= 35) {
+      const above = c.roster.filter(n => n.tier === c.tier + 1).sort((x, y) => overall(x.stats) - overall(y.stats));
+      const pickUp = above[Math.floor(r() * Math.max(1, Math.ceil(above.length / 2)))];
+      if (pickUp) offers.push(offer(c, r, pickUp.id, false, c.tier + 1));
+    }
+    const shuffled = [...near].sort(() => r() - .5).slice(0, Math.max(0, want + (offers.length ? 1 : 0) - offers.length));
     for (const n of shuffled) offers.push(offer(c, r, n.id, false));
   }
   c.offers = offers;
   return c;
 }
 
-function offer(c: Career, r: () => number, opponentId: string, title: boolean): Offer {
-  const base = [800, 6000, 40000][c.tier] * (1 + c.hype / 100) * (title ? 3 : 1);
+function offer(c: Career, r: () => number, opponentId: string, title: boolean, tier = c.tier): Offer {
+  const base = [800, 6000, 40000][tier] * (1 + c.hype / 100) * (title ? 3 : 1);
   const o = npc(c, opponentId)!;
   const gap = overall(o.stats) - overall(c.stats);
-  const note = title ? (c.champ ? 'Title defense' : 'Title shot') : gap > 8 ? 'Big step up' : gap < -8 ? 'Tune-up fight' : 'Even matchup';
-  return {id: `${opponentId}-${c.week}`, opponentId, tier: c.tier, purse: Math.round(base / 50) * 50, winBonus: Math.round(base / 50) * 50, weeksOut: title ? 10 : 6 + Math.floor(r() * 5), rounds: title ? 5 : 3, title, note};
+  const note = title ? (c.champ ? 'Title defense' : 'Title shot') : tier > c.tier ? `Reach fight: ${TIERS[tier].short} call-up` : gap > 8 ? 'Big step up' : gap < -8 ? 'Tune-up fight' : 'Even matchup';
+  return {id: `${opponentId}-${c.week}`, opponentId, tier, purse: Math.round(base / 50) * 50, winBonus: Math.round(base / 50) * 50, weeksOut: title ? 10 : 6 + Math.floor(r() * 5), rounds: title ? 5 : 3, title, note};
 }
 
 export function acceptOffer(prev: Career, id: string): Career {
@@ -262,13 +271,14 @@ export function applyResult(prev: Career, out: FightOutcome): Career {
     syncRank(c);
   }
   // promotions up the ladder
-  if (c.tier < 2 && won && c.tierWins >= (c.tier === 0 ? 3 : 2) && c.hype >= (c.tier === 0 ? 20 : 35)) {
+  const reachWin = won && camp.tier > c.tier;   // beat someone from the league above: straight call-up
+  if (c.tier < 2 && won && (reachWin || (c.tierWins >= (c.tier === 0 ? 3 : 2) && c.hype >= (c.tier === 0 ? 20 : 35)))) {
     c.tier += 1; c.tierWins = 0;
     if (c.tier === 2) { c.rankings = c.rankings.slice(0, 14); c.rankings.push('you'); syncRank(c); }
     c.log.unshift({week: c.week, text: `Contract offer accepted: ${c.name} moves up to the ${TIERS[c.tier].name}!`, tone: 'big'});
   }
   c.camp = null;
-  c.nextOfferWeek = c.week + 3 + Math.round(out.damageTaken / 20) + c.injuryWeeks;
+  c.nextOfferWeek = c.week + Math.max(1, 3 - Math.floor(c.hype / 34)) + Math.round(out.damageTaken / 20) + c.injuryWeeks;   // hyped fighters get the phone call sooner
   return withOffers(c, r);
 }
 

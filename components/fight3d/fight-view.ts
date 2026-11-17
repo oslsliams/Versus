@@ -350,8 +350,11 @@ export class FightView {
     this.time += dt;
     g.f.forEach((f, i) => {
       const r = this.rigs[i];
-      r.root.position.x += (f.x * X_SCALE - r.root.position.x) * (1 - Math.exp(-25 * dt));
-      r.root.position.y = PLAT; r.root.position.z = i === 0 ? .08 : -.08;
+      // on the ground the top fighter sits in close, hips between the bottom fighter's legs, chest over his chest
+      const o = g.f[i === 0 ? 1 : 0];
+      const tx = f.state === 'top' && o.state === 'bottom' ? o.x * X_SCALE - f.facing * .3 : f.x * X_SCALE;
+      r.root.position.x += (tx - r.root.position.x) * (1 - Math.exp(-25 * dt));
+      r.root.position.y = PLAT; r.root.position.z = f.state === 'top' || f.state === 'bottom' ? 0 : i === 0 ? .08 : -.08;
       const face = f.facing > 0 ? Math.PI / 2 : -Math.PI / 2;
       r.root.rotation.y += (face - r.root.rotation.y) * (1 - Math.exp(-10 * dt));
       r.sync(f, g.f[i === 0 ? 1 : 0], dt);
