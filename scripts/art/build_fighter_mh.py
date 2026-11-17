@@ -41,6 +41,8 @@ VARIANTS = {
 }
 V = VARIANTS[VARIANT]
 ARM_OPEN = 9   # degrees the elbows are opened in the capture clips (bulkier bodies)
+POSTURE = [('Spine', (1, 0, 0), 6), ('Spine1', (1, 0, 0), 11), ('Spine2', (1, 0, 0), 11), ('Neck', (1, 0, 0), -15), ('Head', (1, 0, 0), -7),
+           ('LeftArm', (1, 0, 0), -6), ('RightArm', (1, 0, 0), -6)]   # keep the gloves at the chin after the crunch
 ANIMS = [('Mma Idle.fbx', 'idle'), ('Fighting Idle.fbx', 'idle_box'), ('Mma Kick.fbx', 'kick_high'), ('Mma Kick (1).fbx', 'kick_feint'),
          ('Mma Kick (2).fbx', 'kick_lead'), ('Punch To Elbow Combo.fbx', 'combo')]
 
@@ -288,10 +290,14 @@ for fn, name in ANIMS:
     fcs = {}
     for fc in [c for l in act.layers for s in l.strips for cb in s.channelbags for c in cb.fcurves]:
         fcs[(fc.data_path, fc.array_index)] = fc
-    for side, sgn in (('Left', -1), ('Right', 1)):
-        bn = f'mixamorig:{side}Arm'; path = f'pose.bones["{bn}"].rotation_quaternion'
+    # posture: the capture actor stands chest-out with an arched lower back; fighters sit in a slight
+    # crunch (shoulders rolled forward, chin down). Flex the spine forward, give it back at the neck so
+    # the eyes stay level on the opponent. Positive about +X tips the bone toward -Y (forward).
+    fixes = [('LeftArm', (0, 1, 0), -ARM_OPEN), ('RightArm', (0, 1, 0), ARM_OPEN)] + POSTURE
+    for short, axis, deg in fixes:
+        bn = f'mixamorig:{short}'; path = f'pose.bones["{bn}"].rotation_quaternion'
         if (path, 0) not in fcs or bn not in rig.data.bones: continue
-        R = W.inverted() @ _Q((0, 1, 0), sgn * math.radians(ARM_OPEN)) @ W       # world abduction -> armature space
+        R = W.inverted() @ _Q(axis, math.radians(deg)) @ W                       # world rotation -> armature space
         rest = rig.data.bones[bn].matrix_local.to_quaternion()
         off = rest.inverted() @ R @ rest                                       # -> bone basis space
         curves = [fcs[(path, i)] for i in range(4)]
