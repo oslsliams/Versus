@@ -11,7 +11,8 @@ import {PLANS, aiPlan, fightRound, startFight, type FightState} from '../../lib/
 import {competitors} from '../../lib/competitors';
 import {StudioIntro} from './studio-intro';
 import {QuickFight} from './quick-fight';
-import {LiveFightGame, type LiveResult} from '../fight3d/live-fight';
+import {FightStats, LiveFightGame, type LiveResult} from '../fight3d/live-fight';
+import {tape, type FightCard} from '../../lib/fight3d/tape';
 
 const SAVE = 'versus-career-v1', FIGHT = 'versus-career-fight-v1';
 const load = <T,>(k: string): T | null => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) as T : null; } catch { return null; } };
@@ -67,13 +68,25 @@ function LiveFightNight({career: c, onDone}: {career: Career; onDone: (o: NonNul
   const difficulty = Math.max(.2, Math.min(.95, .35 + (overall(opp.stats) - overall(c.stats)) / 60 + c.tier * .12 + (c.camp!.edge ?? 0)));
   const [result, setResult] = useState<LiveResult | null>(null);
   const onEnd = useCallback((r: LiveResult) => setResult(r), []);
+  // broadcast card: the real event, billing, records, ages, countries and rankings
+  const card = useMemo<FightCard>(() => {
+    const ri = c.rankings.indexOf(opp.id);
+    const oppRank = c.champion === opp.id ? 'C' : c.tier === 2 && ri >= 0 ? `#${ri + 1}` : undefined;
+    const myRank = c.champ ? 'C' : c.rank ? `#${c.rank}` : undefined;
+    return {
+      event: c.camp!.event ?? TIERS[c.camp!.tier].name.toUpperCase(), billing: c.camp!.billing ?? 'Main card',
+      title: c.camp!.title ? `VERSUS ${c.division.toUpperCase()} CHAMPIONSHIP` : undefined,
+      you: tape({name: c.name, nickname: c.nickname || undefined, style: c.style, stats: c.stats, country: c.country, age: c.age, record: c.record[2] ? c.record.join('-') : `${c.record[0]}-${c.record[1]}`, rank: myRank}, opp.stats, c.division),
+      opp: tape({name: opp.name, nickname: opp.nickname, style: opp.style, stats: opp.stats, country: opp.country, age: opp.age, record: opp.record.join('-'), rank: oppRank}, c.stats, c.division),
+    };
+  }, [c, opp]);
   const sim = useCallback(() => { const o = simulate(c)!; setResult({...o, cards: []}); }, [c]);
   if (!result) return <div className="bn-page cg">
     <div className="cg-livehead"><span className="eyebrow">{c.camp!.event ? ` · ` : ''}{c.camp!.title ? (c.champ ? ' · Title defense' : ' · Title fight') : ''}</span><h1>{c.name} <span className="muted">vs</span> {opp.name}</h1></div>
-    <LiveFightGame you={you} opp={them} rounds={c.camp!.rounds} difficulty={difficulty} onEnd={onEnd} onSim={sim}/>
+    <LiveFightGame card={card} you={you} opp={them} rounds={c.camp!.rounds} difficulty={difficulty} onEnd={onEnd} onSim={sim}/>
   </div>;
   const purse = c.camp!.purse + (result.winner === 'you' ? c.camp!.winBonus : 0);
-  return <div className="bn-page cg"><section className={`panel cg-result ${result.winner}`}>
+  return <div className="bn-page cg">{result.stats && <FightStats card={card} stats={result.stats} result={result}/>}<section className={`panel cg-result ${result.winner}`}>
     <img src={result.winner === 'you' ? '/art/trophy.webp' : '/art/gem.webp'} alt="" width={130} height={130}/>
     <div>
       <span className="eyebrow">{result.winner === 'you' ? 'Victory' : result.winner === 'opp' ? 'Defeat' : 'Draw'}</span>

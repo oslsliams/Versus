@@ -17,6 +17,8 @@ const MOVES: Record<MoveId, {start: number; active: number; rec: number; range: 
   kick: {start: .3, active: .09, rec: .38, range: 1.55, dmg: 4.4, cost: 9, push: .45, heavy: true},
   upper: {start: .17, active: .07, rec: .3, range: 1.08, dmg: 5, cost: 8, push: .35, heavy: true},
 };
+// hold-to-combo strings, by the button held (classic MMA combinations; 'upper' plays hooks/uppercuts/elbows)
+const COMBOS: Record<MoveId, MoveId[]> = {jab: ['jab', 'jab', 'cross', 'upper'], cross: ['cross', 'upper', 'cross', 'kick'], kick: ['kick', 'jab', 'cross', 'kick'], upper: ['upper', 'cross', 'upper']};
 const SHOOT = {start: .26, active: .16, rec: .45, range: 1.4, cost: 12};
 export const ROUND_SECONDS = 90;
 export const CAGE_R = 4.2;          // usable floor radius (engine metres)
@@ -29,6 +31,8 @@ export type Fighter = {
   hp: number; stamina: number; kdRound: number; invuln: number; queued: MoveId | null; combo: number;
   escape: number; sub: number; subClock: number; gnpCd: number; mashCd: number;
   landed: number; points: number; takedowns: number; knockdowns: number;
+  /** hold-to-combo: the button that started the current flurry; fight stats for the post-fight screen */
+  comboKey: MoveId | null; thrown: number; tdAttempts: number; ctrl: number;
 };
 export type FightEvent = {type: 'hit' | 'block' | 'whiff' | 'kd' | 'ko' | 'td' | 'sprawl' | 'sub' | 'escape' | 'tap' | 'bell' | 'tired'; side: 0 | 1; x: number; z: number; power: number; text?: string};
 export type Phase = 'intro' | 'fight' | 'break' | 'over';
@@ -43,7 +47,7 @@ const rand = () => { seedState = (seedState * 1664525 + 1013904223) >>> 0; retur
 
 export function createFight(a: {name: string; color: string; style: Style; stats: Stats}, b: {name: string; color: string; style: Style; stats: Stats}, rounds: number, seed = Date.now()): LiveFight {
   seedState = seed >>> 0 || 1;
-  const mk = (p: typeof a, side: 0 | 1, x: number): Fighter => ({...p, side, x, z: 0, hx: side === 0 ? 1 : -1, hz: 0, state: 'idle', t: 0, move: null, hitDone: false, hp: 100, stamina: 100, kdRound: 0, invuln: 0, queued: null, combo: 0, escape: 0, sub: 0, subClock: 0, gnpCd: 0, mashCd: 0, landed: 0, points: 0, takedowns: 0, knockdowns: 0});
+  const mk = (p: typeof a, side: 0 | 1, x: number): Fighter => ({...p, side, x, z: 0, hx: side === 0 ? 1 : -1, hz: 0, state: 'idle', t: 0, move: null, hitDone: false, hp: 100, stamina: 100, kdRound: 0, invuln: 0, queued: null, combo: 0, escape: 0, sub: 0, subClock: 0, gnpCd: 0, mashCd: 0, landed: 0, points: 0, takedowns: 0, knockdowns: 0, comboKey: null, thrown: 0, tdAttempts: 0, ctrl: 0});
   return {f: [mk(a, 0, -1.6), mk(b, 1, 1.6)], round: 1, rounds, clock: ROUND_SECONDS, phase: 'intro', phaseT: 0, slowmo: 0, hitstop: 0, events: [], cards: [[0, 0], [0, 0], [0, 0]], seed, result: null};
 }
 
@@ -106,7 +110,7 @@ function standUp(g: LiveFight, f: Fighter, o: Fighter, inp: Input, prs: Input, d
         setState(f, 'shoot'); f.hitDone = false; f.stamina = Math.max(0, f.stamina - SHOOT.cost); return;
       }
       const m: MoveId | null = prs.jab ? 'jab' : prs.cross ? 'cross' : prs.kick ? 'kick' : prs.upper ? 'upper' : null;
-      if (m && f.stamina > 4) { setState(f, 'attack'); f.move = m; f.hitDone = false; f.stamina -= MOVES[m].cost; return; }
+      if (m && f.stamina > 4) { setState(f, 'attack'); f.move = m; f.hitDone = false; f.stamina -= MOVES[m].cost; f.comboKey = m; f.combo = 0; f.thrown += 1; return; }
       if (m) ev(g, {type: 'tired', side: f.side, x: f.x, z: f.z, power: .3, text: 'Out of gas!'});
       if (inp.block) { if (f.state !== 'block') setState(f, 'block'); return; }
       let mx = inp.mx, mz = inp.mz; const ml = Math.hypot(mx, mz);
@@ -124,6 +128,9 @@ function standUp(g: LiveFight, f: Fighter, o: Fighter, inp: Input, prs: Input, d
       const tm = moveTiming(f, f.move!);
       const q: MoveId | null = prs.jab ? 'jab' : prs.cross ? 'cross' : prs.kick ? 'kick' : prs.upper ? 'upper' : null;
       if (q && f.t > tm.start * .5) f.queued = q;
+      // hold the button: the fighter flows into that button's combo (jab -> 1-2-hook, kick -> kick-1-2-kick...)
+      const seq = f.comboKey ? COMBOS[f.comboKey] : null;
+      if (!f.queued && seq && f.hitDone && inp[f.comboKey!] && f.combo + 1 < seq.length) f.queued = seq[f.combo + 1];
       // a little tracking during the wind-up, then the strike is committed to its line
       if (f.t < tm.start * .5) { const r = rel(f, o); f.hx += (r.ux - f.hx) * .2; f.hz += (r.uz - f.hz) * .2; const l = Math.hypot(f.hx, f.hz) || 1; f.hx /= l; f.hz /= l; }
       if (!f.hitDone && f.t >= tm.start) { f.hitDone = true; resolveHit(g, f, o, f.move!); }
@@ -131,9 +138,9 @@ function standUp(g: LiveFight, f: Fighter, o: Fighter, inp: Input, prs: Input, d
       if (f.queued && f.hitDone && f.t >= tm.start + tm.active + tm.rec * .35 && f.stamina > MOVES[f.queued].cost) {
         const m = f.queued; f.queued = null; f.combo = Math.min(4, f.combo + 1);
         const r = rel(f, o); f.hx = r.ux; f.hz = r.uz;
-        setState(f, 'attack'); f.move = m; f.hitDone = false; f.stamina -= MOVES[m].cost; return;
+        setState(f, 'attack'); f.move = m; f.hitDone = false; f.stamina -= MOVES[m].cost; f.thrown += 1; return;
       }
-      if (f.t >= tm.start + tm.active + tm.rec) { setState(f, 'idle'); f.move = null; f.combo = 0; f.queued = null; }
+      if (f.t >= tm.start + tm.active + tm.rec) { setState(f, 'idle'); f.move = null; f.combo = 0; f.queued = null; f.comboKey = null; }
       return;
     }
     case 'shoot': {
@@ -141,7 +148,7 @@ function standUp(g: LiveFight, f: Fighter, o: Fighter, inp: Input, prs: Input, d
       const s = SHOOT.start / k * (gassed ? 1.4 : 1);
       if (f.t < s) { f.x += f.hx * dt * 2.6; f.z += f.hz * dt * 2.6; }
       if (!f.hitDone && f.t >= s) {
-        f.hitDone = true;
+        f.hitDone = true; f.tdAttempts += 1;
         const r = rel(f, o), aligned = f.hx * r.ux + f.hz * r.uz > .7;
         if (r.d <= SHOOT.range && aligned && !['down', 'ko', 'getup', 'sprawled'].includes(o.state)) {
           // a SPRAWL is a block thrown as the shot comes in; a guard held up the whole time barely helps
@@ -188,15 +195,15 @@ function resolveHit(g: LiveFight, f: Fighter, o: Fighter, m: MoveId) {
   const guarded = o.state === 'block' && facingIt && !underGuard;
   if (underGuard) dmg *= .55;   // a chopped leg, not a clean head shot
   if (guarded) {
-    o.stamina = Math.max(0, o.stamina - dmg * 1.1); o.hp -= dmg * .16; push(o, r.ux, r.uz, d.push * .6); g.hitstop = .03;
+    o.stamina = Math.max(0, o.stamina - dmg * 1.1); o.hp -= dmg * .16; push(o, r.ux, r.uz, d.push * .25); g.hitstop = .03;
     ev(g, {type: 'block', side: o.side, x: hx, z: hz, power: dmg / 10});
     if (o.stamina <= 0) { setState(o, 'stun'); ev(g, {type: 'tired', side: o.side, x: o.x, z: o.z, power: .4, text: 'Guard broken, gassed!'}); }
     return;
   }
   const open = o.state === 'sprawled';          // caught under a stuffed shot
   const counter = o.state === 'attack' || open ? 1.2 : 1;
-  dmg *= counter * (1 + f.combo * .05) * .23;  // tuned for 1:30 rounds
-  o.hp -= dmg; push(o, r.ux, r.uz, d.push * (d.heavy ? 1.6 : 1) * (open ? .3 : 1)); f.landed += 1; f.points += dmg;
+  dmg *= counter * (1 + f.combo * .05) * .238;  // tuned for 1:30 rounds
+  o.hp -= dmg; push(o, r.ux, r.uz, d.push * (d.heavy ? .7 : .4) * (open ? .3 : 1)); f.landed += 1; f.points += dmg;   // a snap back, not a shove across the cage
   g.hitstop = d.heavy ? .085 : .045;
   ev(g, {type: 'hit', side: f.side, x: hx, z: hz, power: dmg / 10, text: counter > 1 ? 'Counter!' : undefined});
   const kdChance = d.heavy && !underGuard ? .005 + (f.stats.power - o.stats.chin) / 800 + Math.max(0, 40 - o.hp) / 520 + (counter > 1 ? .03 : 0) + (m === 'upper' ? .04 : 0) : .0;
@@ -255,7 +262,7 @@ function ground(g: LiveFight, inputs: [Input, Input], pressed: [Input, Input], d
     }
   }
   bot.escape = Math.max(0, bot.escape);
-  top.points += dt * 1.4;   // control on top
+  top.points += dt * 1.4; top.ctrl += dt;   // control on top
   if (bot.escape >= 1) {
     setState(top, 'idle'); setState(bot, 'getup'); top.sub = 0; bot.escape = 0;
     const r = rel(top, bot); bot.x = top.x + r.ux * 1.05; bot.z = top.z + r.uz * 1.05;

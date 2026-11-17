@@ -68,16 +68,8 @@ function pickMove(m: MoveId, dist: number, combo: number): Pick {
 type Src = {scene: THREE.Group; clips: THREE.AnimationClip[]};
 type Assets = {arena: THREE.Group; red: Src; blue: Src; crowd: number[] | null};
 // original MakeHuman fighter bodies built by scripts/art/build_fighter_mh.py
-export const FIGHTER_MODELS = ['okafor', 'volkov', 'takeda', 'ashford', 'kalani', 'bianchi', 'mwangi', 'delacroix'] as const;
-export type FighterModel = typeof FIGHTER_MODELS[number];
-/** Pick a body for any fighter name: roster fighters get their own, everyone else a stable pick. */
-export function modelFor(name: string): FighterModel {
-  const last = name.trim().split(/\s+/).pop()!.toLowerCase();
-  const hit = FIGHTER_MODELS.find(m => m === last);
-  if (hit) return hit;
-  let h = 7; for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return FIGHTER_MODELS[h % FIGHTER_MODELS.length];
-}
+export {FIGHTER_MODELS, modelFor, type FighterModel} from '../../lib/fight3d/tape';
+import type {FighterModel} from '../../lib/fight3d/tape';
 const loads = new Map<string, Promise<{scene: THREE.Group; animations: THREE.AnimationClip[]}>>();
 const loader = new GLTFLoader();
 function loadGlb(url: string, onProgress: (p: number) => void) {
