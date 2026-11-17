@@ -24,17 +24,29 @@ const SEGMENTS: Record<string, {clip: string; from: number; to: number; speed: n
   kick_high: {clip: 'kick_high', from: 5, to: 45, speed: 1.35},
   kick_feint: {clip: 'kick_feint', from: 14, to: 46, speed: 1.35},
   kick_lead: {clip: 'kick_lead', from: 5, to: 34, speed: 1.3},
+  // Mixamo punch captures (retargeted in Blender). Each cut starts 6 frames before the measured impact frame,
+  // so at x1.1 the fist lands ~0.18 s in, matching the engine's hit timing.
+  jab_a: {clip: 'punching2', from: 12, to: 30, speed: 1.1},     // single lead straight (impact f18)
+  jab_b: {clip: 'combo_punch', from: 6, to: 17, speed: 1.1},    // first of a double jab (f12)
+  jab_c: {clip: 'punch_combo', from: 14, to: 25, speed: 1.1},   // jab opening the 1-2 (f20)
+  jab_d: {clip: 'combo_punch', from: 45, to: 57, speed: 1.1},   // lead to the chest (f51)
+  cross_a: {clip: 'punching', from: 6, to: 24, speed: 1.1},     // rear straight (f12)
+  cross_b: {clip: 'punch_combo', from: 21, to: 34, speed: 1.1}, // cross off the jab (f27)
+  cross_c: {clip: 'combo_punch', from: 24, to: 37, speed: 1.1}, // cross (f30)
+  cross_d: {clip: 'cross_punch', from: 27, to: 52, speed: 1.5}, // loaded power cross with the wind-up (f36)
+  cross_e: {clip: 'combo_punch', from: 52, to: 65, speed: 1.1}, // rear to the chest (f58)
 };
 // Move library: each engine move picks from several real animations by range and combo position.
 // 'u:' = upper-body only (legs keep their stance and footwork underneath); others are full-body.
 type Pick = {anim: string; range: 'close' | 'mid' | 'long' | 'any'; weight: number; body?: boolean; leg?: boolean};
 const MOVE_ANIMS: Record<MoveId, Pick[]> = {
-  jab: [{anim: 'u:jab_head', range: 'any', weight: 4}, {anim: 'jab', range: 'mid', weight: 2}, {anim: 'jab_body', range: 'any', weight: 1.5, body: true}],
-  cross: [{anim: 'u:cross_head', range: 'any', weight: 3}, {anim: 'cross', range: 'mid', weight: 2}, {anim: 'cross_body', range: 'close', weight: 1.5, body: true},
-          {anim: 'u:rear_hook', range: 'close', weight: 2}, {anim: 'u:lead_hook', range: 'close', weight: 2}, {anim: 'hook', range: 'close', weight: 1.5},
-          {anim: 'overhand', range: 'mid', weight: 1}, {anim: 'superman', range: 'long', weight: .6}],
-  upper: [{anim: 'u:rear_uppercut', range: 'close', weight: 2}, {anim: 'u:lead_uppercut', range: 'close', weight: 2}, {anim: 'lead_body_hook', range: 'close', weight: 1.5, body: true},
-          {anim: 'u:lead_elbow', range: 'close', weight: 1.2}, {anim: 'elbow', range: 'close', weight: 1}],
+  // punches: Mixamo motion capture only (the user's punch clips); hooks/elbows come from the Mixamo combo clip
+  jab: [{anim: 'jab_a', range: 'any', weight: 3}, {anim: 'jab_b', range: 'any', weight: 2.5}, {anim: 'jab_c', range: 'any', weight: 2.5},
+        {anim: 'jab_d', range: 'close', weight: 1.5, body: true}, {anim: 'jab', range: 'mid', weight: 1}],
+  cross: [{anim: 'cross_a', range: 'any', weight: 3}, {anim: 'cross_b', range: 'any', weight: 2.5}, {anim: 'cross_c', range: 'any', weight: 2.5},
+          {anim: 'cross_d', range: 'mid', weight: 1.5}, {anim: 'cross_e', range: 'close', weight: 1.5, body: true}, {anim: 'hook', range: 'close', weight: 1.2}],
+  upper: [{anim: 'elbow', range: 'any', weight: 2.5}, {anim: 'u:lead_elbow', range: 'close', weight: 1.2},
+          {anim: 'u:rear_uppercut', range: 'close', weight: 1}, {anim: 'u:lead_uppercut', range: 'close', weight: 1}],
   // kicks: Mixamo motion capture only (the hand-keyed kicks looked stiff); the clinch knee stays for close range
   kick: [{anim: 'kick_high', range: 'any', weight: 2}, {anim: 'kick_lead', range: 'any', weight: 2, body: true},
          {anim: 'kick_feint', range: 'any', weight: 1.2, leg: true}, {anim: 'rear_knee', range: 'close', weight: 1, body: true}],

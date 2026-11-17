@@ -4,7 +4,7 @@ import {useCallback, useEffect, useMemo, useState} from 'react';
 import {Dumbbell, Swords, BedDouble, Megaphone, Crown, Flame, HeartPulse, Zap, Wallet, ChevronRight, RotateCcw, Flag, Shield, X, Check} from 'lucide-react';
 import {
   ACTIONS, DIVISIONS, FIGHTER_COLORS, START_COUNTRIES, STAT_KEYS, STAT_LABEL, STYLES, TIERS,
-  acceptOffer, applyResult, createCareer, declineOffer, legacy, npc, overall, retire, rng, takeAction,
+  acceptOffer, applyResult, createCareer, declineOffer, heatOf, legacy, migrate, npc, overall, resolveChoice, retire, rng, takeAction,
   type Career, type Division, type NPC, type Plan, type StatKey, type Style,
 } from '../../lib/career/engine';
 import {PLANS, aiPlan, fightRound, startFight, type FightState} from '../../lib/career/fight';
@@ -31,7 +31,7 @@ export function CareerGame() {
   const [live, setLive] = useState(false);
   const [mode, setMode] = useState<'career' | 'quick'>('career');
   const [ready, setReady] = useState(false);
-  useEffect(() => { setCareer(load<Career>(SAVE)); setFight(load<FightState>(FIGHT)); setReady(true); if (new URLSearchParams(location.search).get('watch') === '1') setMode('quick'); }, []);
+  useEffect(() => { const saved = load<Career>(SAVE); setCareer(saved ? migrate(saved) : null); setFight(load<FightState>(FIGHT)); setReady(true); if (new URLSearchParams(location.search).get('watch') === '1') setMode('quick'); }, []);
   const update = (c: Career | null) => { setCareer(c); save(SAVE, c); };
   const updateFight = (f: FightState | null) => { setFight(f); save(FIGHT, f); };
   const inFight = live || (!!fight && !!career?.camp);
@@ -63,12 +63,13 @@ function LiveFightNight({career: c, onDone}: {career: Career; onDone: (o: NonNul
   const opp = npc(c, c.camp!.opponentId)!;
   const you = useMemo(() => ({name: c.name, color: c.color, style: c.style, stats: c.stats}), [c.name, c.color, c.style, c.stats]);
   const them = useMemo(() => ({name: opp.name, color: opp.color, style: opp.style, stats: opp.stats}), [opp]);
-  const difficulty = Math.max(.2, Math.min(.95, .35 + (overall(opp.stats) - overall(c.stats)) / 60 + c.tier * .12));
+  // the opponent's mood from the press conference (edge) nudges how sharp he fights
+  const difficulty = Math.max(.2, Math.min(.95, .35 + (overall(opp.stats) - overall(c.stats)) / 60 + c.tier * .12 + (c.camp!.edge ?? 0)));
   const [result, setResult] = useState<LiveResult | null>(null);
   const onEnd = useCallback((r: LiveResult) => setResult(r), []);
   const sim = useCallback(() => { const o = simulate(c)!; setResult({...o, cards: []}); }, [c]);
   if (!result) return <div className="bn-page cg">
-    <div className="cg-livehead"><span className="eyebrow">{c.camp!.title ? (c.champ ? 'Title defense' : 'Title fight') : TIERS[c.tier].name}</span><h1>{c.name} <span className="muted">vs</span> {opp.name}</h1></div>
+    <div className="cg-livehead"><span className="eyebrow">{c.camp!.event ? ` · ` : ''}{c.camp!.title ? (c.champ ? ' · Title defense' : ' · Title fight') : ''}</span><h1>{c.name} <span className="muted">vs</span> {opp.name}</h1></div>
     <LiveFightGame you={you} opp={them} rounds={c.camp!.rounds} difficulty={difficulty} onEnd={onEnd} onSim={sim}/>
   </div>;
   const purse = c.camp!.purse + (result.winner === 'you' ? c.camp!.winBonus : 0);
@@ -189,13 +190,23 @@ function Hub({career: c, update, startFightNight}: {career: Career; update: (c: 
 
     <div className="cg-main">
       <div className="cg-col">
+        {c.choice && <section className="panel cg-choice" aria-live="polite">
+          <span className="eyebrow">Fight week media</span>
+          <h2>{c.choice.title}</h2>
+          <p className="muted">{c.choice.text}</p>
+          <div className="cg-choice-opts">{c.choice.options.map(o => <button key={o.id} className="button outline" onClick={() => update(resolveChoice(c, o.id))}><strong>{o.label}</strong><small>{o.hint}</small></button>)}</div>
+        </section>}
+
         {c.camp && opp && <section className={`panel cg-camp ${fightWeek ? 'fight-week' : ''}`}>
-          <span className="eyebrow">{fightWeek ? 'Fight week' : `Fight camp · ${c.camp.weeksLeft} week${c.camp.weeksLeft === 1 ? '' : 's'} out`}</span>
+          <span className="eyebrow">{c.camp.event ? `${c.camp.event} · ${c.camp.billing} · ` : ''}{fightWeek ? 'Fight week' : `${c.camp.weeksLeft} week${c.camp.weeksLeft === 1 ? '' : 's'} out`}</span>
           <div className="cg-vs">
             <Avatar name={c.name} color={c.color}/><img src="/art/vs-badge.webp" alt="versus" width={64} height={64}/><Avatar name={opp.name} color={opp.color}/>
           </div>
-          <h2>{c.camp.title ? (c.champ ? 'Title defense' : 'Title fight') : 'Main card'} vs {opp.name}</h2>
+          <h2>{c.camp.title ? (c.champ ? 'Title defense' : 'Title fight') : c.camp.note} vs {opp.name}</h2>
+          {heatOf(c, opp.id) >= 40 && <span className="sticker pink" style={{'--tilt': '-2deg'} as React.CSSProperties}>Bad blood</span>}
           <p className="muted">“{opp.nickname}” · {opp.style} · {opp.record.join('–')} · OVR {overall(opp.stats)} · {c.camp.rounds} rounds · Purse {money(c.camp.purse)} + {money(c.camp.winBonus)} to win</p>
+          {(c.camp.edge ?? 0) > .02 && <p className="cg-warn">{opp.name.split(' ')[0]} is fired up for this one. Expect his best.</p>}
+          {(c.camp.edge ?? 0) < -.02 && <p className="muted">{opp.name.split(' ')[0]} looked rattled at fight week.</p>}
           {fightWeek && <button className="button primary cg-big" onClick={startFightNight}><Swords size={18} aria-hidden="true"/>Walk out to the cage</button>}
         </section>}
 
@@ -221,7 +232,10 @@ function Hub({career: c, update, startFightNight}: {career: Career; update: (c: 
           {c.offers.map(o => { const n = npc(c, o.opponentId)!; const gap = overall(n.stats) - overall(c.stats); return <article key={o.id} className={`cg-offer ${o.title ? 'title' : ''}`}>
             <Avatar name={n.name} color={n.color}/>
             <div className="cg-offer-body">
-              <span className={`sticker ${o.title ? 'sun' : gap > 8 ? 'pink' : gap < -8 ? 'lime' : 'sky'}`} style={{'--tilt': '-2deg'} as React.CSSProperties}>{o.note}</span>
+              <span className="bn-pills">
+                <span className={`sticker ${o.title ? 'sun' : o.tag === 'rematch' || o.tag === 'grudge' ? 'pink' : o.tag === 'eliminator' ? 'violet' : o.tag === 'short' ? 'sky' : gap > 8 ? 'pink' : gap < -8 ? 'lime' : 'sky'}`} style={{'--tilt': '-2deg'} as React.CSSProperties}>{o.note}</span>
+                {heatOf(c, n.id) >= 40 && o.tag !== 'grudge' && <span className="sticker pink" style={{'--tilt': '2deg'} as React.CSSProperties}>Bad blood</span>}
+              </span>
               <strong>{n.name}</strong>
               <small>“{n.nickname}” · {n.style} · {n.record.join('–')} · OVR {overall(n.stats)}{c.tier === 2 ? rankText(c, n.id) : ''}</small>
               <small>{o.rounds} rounds in {o.weeksOut} weeks · {money(o.purse)} + {money(o.winBonus)} win bonus</small>
@@ -245,6 +259,7 @@ function Hub({career: c, update, startFightNight}: {career: Career; update: (c: 
           <div className="cg-statlist">{STAT_KEYS.map(k => <StatBar key={k} k={k} v={c.stats[k]} cap={c.potential}/>)}</div>
         </section>
         <Rankings c={c}/>
+        <Storylines c={c}/>
         {c.history.length > 0 && <section className="panel cg-history">
           <h2>Fight record</h2>
           <ol>{c.history.slice(0, 8).map((h, i) => <li key={i}><span className={`bn-res ${h.result === 'W' ? 'win' : h.result === 'L' ? 'loss' : ''}`}>{h.result}</span><span><strong>{h.opponent}{h.title ? ' · title' : ''}</strong><small>{h.method} · R{h.round} · {TIERS[h.tier].short} · {money(h.purse)}</small></span></li>)}</ol>
@@ -289,6 +304,24 @@ function Rankings({c}: {c: Career}) {
       <li className={`champ ${c.champ ? 'you' : ''}`}><span className="cg-rk"><Crown size={14} aria-label="Champion"/></span><span>{c.champ ? c.name : champ?.name}</span><small>{c.champ ? c.record.join('–') : champ?.record.join('–')}</small></li>
       {c.rankings.map((id, i) => { const n = id === 'you' ? null : npc(c, id); return <li key={id} className={id === 'you' ? 'you' : ''}><span className="cg-rk">{i + 1}</span><span>{n ? n.name : c.name}</span><small>{n ? n.record.join('–') : c.record.join('–')}</small></li>; })}
     </ol></section>;
+}
+
+/** rivals with their heat, and who has held the belt */
+function Storylines({c}: {c: Career}) {
+  const rivals = (c.rivals ?? []).map(rv => ({rv, n: npc(c, rv.id)})).filter(x => x.n);
+  const lineage = c.lineage ?? [];
+  if (!rivals.length && lineage.length < 1) return null;
+  return <section className="panel cg-story">
+    <h2>Storylines</h2>
+    {rivals.length > 0 ? <ol className="cg-rivals">{rivals.map(({rv, n}) => <li key={rv.id}>
+      <Avatar name={n!.name} color={n!.color} size="sm"/>
+      <span><strong>{n!.name}</strong><small>{rv.why} · {TIERS[n!.tier].short}{rankText(c, n!.id)}</small></span>
+      <span className="bn-meter-track" title={`Heat ${rv.heat}`} aria-label={`Heat ${rv.heat} of 100`}><i className={`tone-${rv.heat >= 60 ? 'pink' : rv.heat >= 40 ? 'sun' : 'sky'}`} style={{width: `${rv.heat}%`}}/></span>
+    </li>)}</ol> : <p className="muted">No rivals yet. Lose to someone, win a split, or get called out and it gets personal.</p>}
+    {lineage.length > 0 && <><h3 className="cg-sub">{c.division} title lineage</h3>
+      <ol className="cg-lineage">{lineage.slice(0, 6).map((l, i) => <li key={i} className={l.name === c.name ? 'you' : ''}><Crown size={13} aria-hidden="true"/><strong>{l.name}</strong><small>{l.how} · {yearWeek(l.week)}</small></li>)}</ol></>}
+    {(c.bonuses?.potn || c.bonuses?.fotn) ? <p className="muted">Bonuses: {c.bonuses!.potn} Performance of the Night · {c.bonuses!.fotn} Fight of the Night</p> : null}
+  </section>;
 }
 
 function LegendMatches({c}: {c: Career}) {

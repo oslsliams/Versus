@@ -221,3 +221,20 @@ button.cg-action:active:not(:disabled){transform:scale(.96,.92)}
   .cg-retired-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
   .cg-two{grid-template-columns:1fr}
 }
+
+/* storylines: press conference choice, rivals, title lineage */
+.app .cg-choice{display:grid;gap:10px;border-color:var(--sun);box-shadow:0 0 0 3px color-mix(in srgb,var(--sun) 18%,transparent),var(--glass-shadow)}
+.cg-choice h2{font-size:clamp(20px,2.4vw,26px)}
+.cg-choice p{margin:0}
+.cg-choice-opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
+.cg-choice-opts .button{display:grid;justify-items:start;gap:2px;height:auto;padding:12px 14px;text-align:left;white-space:normal}
+.cg-choice-opts small{color:var(--muted);font-weight:600}
+.cg-story h3.cg-sub{margin:16px 0 6px;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.cg-rivals,.cg-lineage{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}
+.cg-rivals li{display:grid;grid-template-columns:auto minmax(0,1fr) 90px;gap:10px;align-items:center}
+.cg-rivals li span{display:grid;min-width:0}
+.cg-rivals small,.cg-lineage small{color:var(--muted);font-size:12px}
+.cg-lineage li{display:grid;grid-template-columns:16px auto minmax(0,1fr);gap:8px;align-items:center;font-size:14px;color:var(--sun)}
+.cg-lineage li strong{color:var(--ink,inherit)}
+.cg-lineage li.you strong{color:var(--lime)}
+@media (max-width:520px){.cg-rivals li{grid-template-columns:auto minmax(0,1fr)}.cg-rivals li .bn-meter-track{grid-column:1/-1}}

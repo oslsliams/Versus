@@ -144,15 +144,17 @@ function standUp(g: LiveFight, f: Fighter, o: Fighter, inp: Input, prs: Input, d
         const r = rel(f, o), aligned = f.hx * r.ux + f.hz * r.uz > .7;
         if (r.d <= SHOOT.range && aligned && !['down', 'ko', 'getup', 'sprawled'].includes(o.state)) {
           // a SPRAWL is a block thrown as the shot comes in; a guard held up the whole time barely helps
-          const timedSprawl = (o.state === 'block' && o.t < .5) || o.state === 'sprawl';
-          const turtled = o.state === 'block' && !timedSprawl;
+          // the window is tight: the guard has to come down into the sprawl in the last quarter second (the shot itself takes ~0.3 s)
+          const perfect = o.state === 'block' && o.t < .12, early = o.state === 'block' && !perfect && o.t < .25;
+          const timedSprawl = perfect || early || o.state === 'sprawl';
+          const turtled = o.state === 'block' && !timedSprawl;   // a guard held up the whole time does nothing against a shot
           const chance = .5 + (f.stats.wrestling - o.stats.wrestling) / 120 + (100 - o.stamina) / 450 + (o.state === 'attack' ? .22 : 0)
-            - (timedSprawl ? .4 : turtled ? .1 : 0) - (gassed ? .2 : 0);
+            - (timedSprawl ? (perfect ? .22 : .09) * (.55 + .45 * o.stamina / 100) + (o.stats.wrestling - 60) / 300 : 0) - (gassed ? .2 : 0);   // a tired sprawl is a weak sprawl
           if (rand() < chance) { takedown(g, f, o); return; }
           // stuffed: the shooter is stuck on his knees under the sprawl, gassed and open
           setState(o, 'sprawl'); setState(f, 'sprawled');
           f.stamina = Math.max(0, f.stamina - 10); o.points += 3;
-          ev(g, {type: 'sprawl', side: o.side, x: o.x, z: o.z, power: .5, text: timedSprawl ? 'SPRAWL! Shot stuffed' : 'Takedown stuffed'});
+          ev(g, {type: 'sprawl', side: o.side, x: o.x, z: o.z, power: .5, text: perfect ? 'PERFECT SPRAWL!' : timedSprawl ? 'Sprawl! Shot stuffed' : 'Takedown stuffed'});
           return;
         }
         ev(g, {type: 'whiff', side: f.side, x: f.x, z: f.z, power: .2, text: 'Shot missed'});
@@ -362,7 +364,7 @@ export function aiInput(g: LiveFight, me: Fighter, them: Fighter, brain: AIBrain
     else if (dist < ideal - .5 && me.style === 'Striker' && rand() < .35) brain.want = {move: 'away'};
     else {
       const r = rand();
-      if (grappler && brain.shotCd <= 0 && r < .12 + (them.stamina < 50 ? .06 : 0) && dist < 1.35 && g.clock < ROUND_SECONDS - 5) brain.want = {shoot: true};
+      if (grappler && brain.shotCd <= 0 && r < .08 + (them.stamina < 50 ? .05 : 0) && dist < 1.35 && g.clock < ROUND_SECONDS - 5) brain.want = {shoot: true};
       else if (them.state === 'block' && r < .55) brain.want = rand() < .55 ? {kick: true} : rand() < .5 && grappler && brain.shotCd <= 0 ? {shoot: true} : {cross: true};   // break a shell
       else if (r < .42) brain.want = {jab: true};
       else if (r < .6) brain.want = {cross: true};

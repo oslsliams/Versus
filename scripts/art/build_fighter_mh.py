@@ -5,7 +5,7 @@ Run: blender -b -P scripts/art/build_fighter_mh.py -- <mixamo_dir> <out.glb> <va
 variant: red | blue
 """
 import bpy, sys, os, glob, math, importlib, addon_utils
-from mathutils import Vector, Matrix
+from mathutils import Vector, Matrix, Quaternion
 
 args = sys.argv[sys.argv.index('--') + 1:]
 SRC, OUT, VARIANT = args[0], args[1], args[2]
@@ -272,17 +272,7 @@ bm.to_mesh(body.data); bm.free()
 # ---- animations from the Mixamo clips ---------------------------------------------
 for pb in rig.pose.bones: pb.rotation_mode = 'QUATERNION'
 if not rig.animation_data: rig.animation_data_create()
-for fn, name in ANIMS:
-    before = set(bpy.data.objects)
-    bpy.ops.import_scene.fbx(filepath=os.path.join(SRC, fn))
-    new = [o for o in bpy.data.objects if o not in before]
-    src_arm = next(o for o in new if o.type == 'ARMATURE')
-    act = src_arm.animation_data.action; act.name = name; act.use_fake_user = True
-    k = src_arm.scale.x / rig.scale.x
-    for fc in (act.fcurves if hasattr(act, 'fcurves') else [c for l in act.layers for s in l.strips for cb in s.channelbags for c in cb.fcurves]):
-        if fc.data_path.endswith('location'):
-            for kp in fc.keyframe_points:
-                kp.co.y *= k; kp.handle_left.y *= k; kp.handle_right.y *= k
+def apply_fixes(act):
     # Our fighters are thicker through the chest and arms than the capture actor, so the tucked guard
     # drove the inner upper arm into the pecs (that crumpled-chest look). Open the elbows a few degrees.
     from mathutils import Quaternion as _Q
@@ -306,6 +296,18 @@ for fn, name in ANIMS:
             for i, c in enumerate(curves):
                 kp = c.keyframe_points[j]; d = q2[i] - kp.co.y
                 kp.co.y += d; kp.handle_left.y += d; kp.handle_right.y += d
+for fn, name in ANIMS:
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.fbx(filepath=os.path.join(SRC, fn))
+    new = [o for o in bpy.data.objects if o not in before]
+    src_arm = next(o for o in new if o.type == 'ARMATURE')
+    act = src_arm.animation_data.action; act.name = name; act.use_fake_user = True
+    k = src_arm.scale.x / rig.scale.x
+    for fc in (act.fcurves if hasattr(act, 'fcurves') else [c for l in act.layers for s in l.strips for cb in s.channelbags for c in cb.fcurves]):
+        if fc.data_path.endswith('location'):
+            for kp in fc.keyframe_points:
+                kp.co.y *= k; kp.handle_left.y *= k; kp.handle_right.y *= k
+    apply_fixes(act)
     for o in new: bpy.data.objects.remove(o, do_unlink=True)
     tr = rig.animation_data.nla_tracks.new(); tr.name = name
     st = tr.strips.new(name, int(act.frame_range[0]), act)
@@ -313,10 +315,67 @@ for fn, name in ANIMS:
     tr.mute = True
 rig.animation_data.action = None
 
+# ---- punch clips captured on a different Mixamo character: retarget in world space ----
+# Their skeleton ('mixamorig1:') rests up to ~12 deg differently from ours, so rotations can't be copied
+# straight across. For every frame we take each source bone's rotation away from ITS rest pose (D) and
+# re-apply that on top of OUR rest pose: basis = Rt^-1 . D(parent)^-1 . D(bone) . Rt   (Rt = target rest, world).
+FOREIGN = [('Punching.fbx', 'punching'), ('Punching 2.fbx', 'punching2'), ('Combo Punch.fbx', 'combo_punch'),
+           ('Punch Combo.fbx', 'punch_combo'), ('Cross Punch.fbx', 'cross_punch')]
+bpy.context.view_layer.update()
+tgt_rest = {b.name: (rig.matrix_world @ b.matrix_local).to_quaternion() for b in rig.data.bones}
+tgt_head_z = (rig.matrix_world @ rig.data.bones['mixamorig:Head'].matrix_local).translation.z
+tgt_hips_rest = rig.data.bones['mixamorig:Hips'].matrix_local.copy()
+for fn, name in FOREIGN:
+    fp = os.path.join(SRC, fn)
+    if not os.path.exists(fp): print('MISSING CLIP', fn); continue
+    before_o, before_a = set(bpy.data.objects), set(bpy.data.actions)
+    bpy.ops.import_scene.fbx(filepath=fp)
+    new = [o for o in bpy.data.objects if o not in before_o]
+    src = next(o for o in new if o.type == 'ARMATURE')
+    pre = src.pose.bones[0].name.split(':')[0] + ':'
+    sact = src.animation_data.action
+    f0, f1 = int(sact.frame_range[0]), int(sact.frame_range[1])
+    SW = src.matrix_world
+    s_rest = {b.name[len(pre):]: (SW @ b.matrix_local).to_quaternion() for b in src.data.bones}
+    s_hips_rest = (SW @ src.data.bones[pre + 'Hips'].matrix_local).translation.copy()
+    hscale = tgt_head_z / (SW @ src.data.bones[pre + 'Head'].matrix_local).translation.z
+    frames = []
+    for fr in range(f0, f1 + 1):
+        bpy.context.scene.frame_set(fr)
+        frames.append((fr, {pb.name[len(pre):]: (SW @ pb.matrix).to_quaternion() for pb in src.pose.bones},
+                       (SW @ src.pose.bones[pre + 'Hips'].matrix).translation.copy()))
+    act = bpy.data.actions.new(name); act.use_fake_user = True
+    rig.animation_data.action = act
+    if hasattr(rig.animation_data, 'action_slot') and act.slots: rig.animation_data.action_slot = act.slots[0]
+    hips = rig.pose.bones['mixamorig:Hips']
+    for fr, rots, hip in frames:
+        D = {k: rots[k] @ s_rest[k].inverted() for k in rots if k in s_rest}
+        for pb in rig.pose.bones:
+            k = pb.name.split(':')[-1]
+            if k not in D: continue
+            pk = pb.parent.name.split(':')[-1] if pb.parent else None
+            Dp = D.get(pk, Quaternion()) if pk else Quaternion()
+            Rt = tgt_rest[pb.name]
+            pb.rotation_quaternion = Rt.inverted() @ Dp.inverted() @ D[k] @ Rt
+            pb.keyframe_insert('rotation_quaternion', frame=fr)
+        d_arm = rig.matrix_world.to_3x3().inverted() @ ((hip - s_hips_rest) * hscale)
+        hips.location = tgt_hips_rest.to_3x3().inverted() @ d_arm
+        hips.keyframe_insert('location', frame=fr)
+    rig.animation_data.action = None
+    apply_fixes(act)
+    for o in new: bpy.data.objects.remove(o, do_unlink=True)
+    for a in [a for a in bpy.data.actions if a not in before_a and a is not act]: bpy.data.actions.remove(a)
+    tr = rig.animation_data.nla_tracks.new(); tr.name = name
+    st = tr.strips.new(name, f0, act)
+    if hasattr(st, 'action_slot') and len(act.slots): st.action_slot = act.slots[0]
+    tr.mute = True
+    print('RETARGET', name, f0, f1, 'scale', round(hscale, 3))
+for m in [m for m in bpy.data.meshes if m.users == 0]: bpy.data.meshes.remove(m)
+for m in [m for m in bpy.data.materials if m.users == 0]: bpy.data.materials.remove(m)
+for i in [i for i in bpy.data.images if i.users == 0]: bpy.data.images.remove(i)
 # ---- authored poses for states without motion capture (ground game, shots, knockouts) ----
 # Each limb is aimed along a world direction in the standing frame (character faces -Y,
 # left side is +X); the whole body is then tipped from the hips and dropped onto the mat.
-from mathutils import Vector, Quaternion
 def reset_pose():
     for pb in rig.pose.bones: pb.rotation_quaternion = (1, 0, 0, 0); pb.location = (0, 0, 0)
     bpy.context.view_layer.update()
