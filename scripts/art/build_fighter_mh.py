@@ -461,10 +461,12 @@ def straight(side, tgt, ext=1.0):
 SX = {'Left': 1, 'Right': -1}
 def hook(side, low=False):
     s = SX[side]
-    aim(side + 'Arm', (s * .75, -.6, -.25 if low else .12)); aim(side + 'ForeArm', (-s * .85, -.5, -.1 if low else .02))
+    # elbow up at shoulder height, forearm level, fist swinging across onto the side of the head (or ribs)
+    aim(side + 'Arm', (s * .55, -.82, -.3 if low else .1)); aim(side + 'ForeArm', (-s * .88, -.46, -.12 if low else .02))
 def upper(side):
     s = SX[side]
-    aim(side + 'Arm', (s * .1, -.85, -.35)); aim(side + 'ForeArm', (-s * .1, -.2, .98))
+    # compact: elbow stays bent ~90 deg, fist drives up under the chin in front, not up past the head
+    aim(side + 'Arm', (s * .05, -.85, -.5)); aim(side + 'ForeArm', (-s * .1, -.6, .8))
 def elbow(side):
     s = SX[side]
     aim(side + 'Arm', (s * .55, -.7, .45)); aim(side + 'ForeArm', (-s * .95, .1, -.1))
@@ -503,11 +505,11 @@ L = lambda f, *a: (lambda: f(*a))   # tiny helper: L(torso, .2) == lambda: torso
 
 # ---- punches (lead = Left, rear = Right). Head leaves the centre line toward the lead side on rear hands. ----
 strike('jab_head', (2, 4, 5, 11), [L(level, .02), L(torso, .06)],
-       [L(level, .035), L(torso, -.22, .1, .05), lambda: straight('Left', target())])
+       [L(level, .04), L(torso, -.24, .17, .05), lambda: straight('Left', target())])
 strike('jab_body', (3, 6, 7, 13), [L(level, .1), L(torso, .05, .08)],
        [L(level, .17), L(torso, -.22, .28, .05), lambda: straight('Left', target('body'))])
 strike('cross_head', (3, 6, 7, 14), [L(level, .03), L(torso, -.12, -.03)],
-       [L(level, .05), L(torso, .62, .15, .1, .24), lambda: straight('Right', target()), L(chamber, 'Left')])
+       [L(level, .07), L(torso, .64, .26, .12, .26), lambda: straight('Right', target()), L(chamber, 'Left')])
 strike('cross_body', (4, 7, 8, 15), [L(level, .1), L(torso, -.1, .1)],
        [L(level, .18), L(torso, .55, .32, .08, .2), lambda: straight('Right', target('body')), L(chamber, 'Left'), L(heel_up, 'Right', .35)])
 strike('lead_hook', (3, 7, 8, 15), [L(level, .03), L(torso, .2)],
@@ -530,12 +532,13 @@ strike('superman', (6, 11, 12, 20), [L(aim, 'RightUpLeg', (0, .75, -.66)), L(aim
 
 # ---- kicks and knees: load -> chamber -> snap through -> stick -> recoil -> guard ----
 def rkick_chamber():
-    torso(.45, -.12, -.12, .35); aim('RightUpLeg', (.3, -.8, -.05)); aim('RightLeg', (.15, .35, -.92))
+    torso(.45, -.12, -.12, .35); aim('RightUpLeg', (.12, -.9, -.05)); aim('RightLeg', (.05, .35, -.92))
     aim('RightArm', (-.45, .3, -.6)); chamber('Left'); heel_up('Left', .3)
 def rkick(height):  # rear roundhouse: support foot pivots, hips turn over, shin through the target, rear arm swings down
     z = {'low': -.35, 'body': .15, 'calf': -.6}[height]
     torso(.75, -.25, -.25, .55)
-    aim('RightUpLeg', (.45, -.8, z * .6 + .05)); aim('RightLeg', (.55, -.8, z))
+    # leg travels at the opponent (-Y), only slightly across, so the shin actually lands
+    aim('RightUpLeg', (.12, -.92, z * .55 + .08)); aim('RightLeg', (.2, -.96, z))
     aim('RightArm', (-.6, .5, -.4)); aim('RightForeArm', (-.3, .2, -.9)); chamber('Left'); heel_up('Left', .35)
 def kick(name, height, fr):
     a, c, i, h, r, e = fr
