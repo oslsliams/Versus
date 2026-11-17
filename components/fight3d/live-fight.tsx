@@ -9,9 +9,11 @@ import type {FightView} from './fight-view';
 export type Corner = {name: string; color: string; style: Style; stats: Stats};
 export type LiveResult = {winner: 'you' | 'opp' | 'draw'; method: 'KO/TKO' | 'SUB' | 'DEC' | 'SPLIT DEC' | 'DRAW'; round: number; damageTaken: number; cards: [number, number][]};
 
-const KEYMAP: Record<string, keyof Input> = {
-  KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right',
-  KeyS: 'block', ArrowDown: 'block', ShiftLeft: 'block', ShiftRight: 'block',
+type Btn = Exclude<keyof Input, 'mx' | 'mz'>;
+// WASD / arrows move around the octagon (relative to the camera); Shift blocks (and sprawls)
+const KEYMAP: Record<string, Btn> = {
+  KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right', KeyW: 'up', ArrowUp: 'up', KeyS: 'down', ArrowDown: 'down',
+  ShiftLeft: 'block', ShiftRight: 'block', KeyO: 'block',
   KeyJ: 'jab', KeyK: 'cross', KeyL: 'kick', KeyI: 'upper', KeyU: 'upper', Space: 'shoot',
 };
 const last = (n: string) => n.split(' ').slice(-1)[0].toUpperCase();
@@ -52,6 +54,10 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
         acc += frame;
         while (acc >= DT) {
           const ai = aiInput(g, g.f[1], g.f[0], brain);
+          if (!watch) {   // screen-space keys -> world movement along the camera's axes
+            const h = held.current, ax = view!.axes, sx = (h.right ? 1 : 0) - (h.left ? 1 : 0), sy = (h.up ? 1 : 0) - (h.down ? 1 : 0);
+            h.mx = sx * ax.rx + sy * ax.fx; h.mz = sx * ax.rz + sy * ax.fz;
+          }
           const me = watch ? aiInput(g, g.f[0], g.f[1], autoBrain) : {held: held.current, pressed: pressed.current};
           step(g, [me.held, ai.held], [me.pressed, ai.pressed]);
           pressed.current = {...NO_INPUT};
@@ -74,7 +80,8 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
       g.f.forEach((f, i) => {
         const hp = h['hp' + i], st = h['st' + i];
         if (hp) { hp.style.width = `${Math.max(0, f.hp)}%`; hp.dataset.low = f.hp < 30 ? '1' : ''; }
-        if (st) st.style.width = `${f.stamina}%`;
+        if (st) { st.style.width = `${f.stamina}%`; st.dataset.low = f.stamina < 30 ? '1' : ''; }
+        const sn = h['sn' + i]; if (sn) { const s = Math.round(f.stamina); sn.textContent = s < 12 ? `GASSED ${s}` : `STAMINA ${s}`; sn.dataset.low = s < 30 ? '1' : ''; }
       });
       const clock = h.clock; if (clock) { const s = Math.max(0, Math.ceil(g.clock)); clock.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
       const rd = h.round; if (rd) rd.textContent = g.phase === 'break' ? 'BREAK' : `R${g.round}`;
@@ -108,7 +115,7 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
   const toggleFull = async () => {
     try { if (document.fullscreenElement) await document.exitFullscreen(); else await shell.current?.requestFullscreen(); } catch { /* fullscreen not allowed here: the overlay still fills the window */ }
   };
-  const touch = (k: keyof Input) => ({
+  const touch = (k: Btn) => ({
     onPointerDown: (e: React.PointerEvent) => { e.preventDefault(); (e.target as HTMLElement).setPointerCapture?.(e.pointerId); if (!held.current[k]) pressed.current[k] = true; held.current[k] = true; },
     onPointerUp: () => { held.current[k] = false; }, onPointerCancel: () => { held.current[k] = false; }, onPointerLeave: () => { held.current[k] = false; },
   });
@@ -119,7 +126,7 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
 
     <div className="lf-top">
       {[you, opp].map((c, i) => <div key={i} className={`lf-plate ${i ? 'blue' : 'red'}`}>
-        <span className="lf-bars"><span className="lf-hp"><i ref={el => { hud.current['hp' + i] = el; }}/></span><span className="lf-st"><i ref={el => { hud.current['st' + i] = el; }}/></span></span>
+        <span className="lf-bars"><span className="lf-hp"><i ref={el => { hud.current['hp' + i] = el; }}/></span><span className="lf-st"><i ref={el => { hud.current['st' + i] = el; }}/></span><b className="lf-stn" ref={el => { hud.current['sn' + i] = el; }}>STAMINA 100</b></span>
         <span className="lf-name">{c.name.toUpperCase()}</span>
       </div>)}
     </div>
@@ -147,14 +154,14 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
       <button className="button primary" onClick={() => setPaused(false)}><Play size={16} aria-hidden="true"/>Resume</button>
       {onSim && <button className="button outline" onClick={onSim}><FastForward size={16} aria-hidden="true"/>Simulate the rest</button>}
       {onQuit && <button className="button outline" onClick={onQuit}><X size={16} aria-hidden="true"/>Leave the fight</button>}
-      <p className="lf-keys"><kbd>A</kbd><kbd>D</kbd> move · <kbd>S</kbd> block · <kbd>J</kbd> jab · <kbd>K</kbd> cross / hook · <kbd>L</kbd> kick · <kbd>I</kbd> elbow · <kbd>Space</kbd> takedown</p>
+      <p className="lf-keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move around the cage · <kbd>Shift</kbd> block (tap as they shoot to sprawl) · <kbd>J</kbd> jab · <kbd>K</kbd> cross / hook · <kbd>L</kbd> kick · <kbd>I</kbd> elbow · <kbd>Space</kbd> takedown</p>
     </div>}
     {error && <div className="lf-pause"><h2>Can't start the fight</h2><p>{error}</p>{onSim && <button className="button primary" onClick={onSim}>Simulate the fight</button>}{onQuit && <button className="button outline" onClick={onQuit}>Back</button>}</div>}
 
     <div className="lf-pad" aria-label="Touch controls">
-      <div className="lf-dpad"><button {...touch('left')} aria-label="Move left">◀</button><button {...touch('block')} aria-label="Block">Block</button><button {...touch('right')} aria-label="Move right">▶</button></div>
+      <div className="lf-dpad"><button {...touch('up')} aria-label="Move in">▲</button><button {...touch('left')} aria-label="Move left">◀</button><button {...touch('block')} aria-label="Block">Block</button><button {...touch('right')} aria-label="Move right">▶</button><button {...touch('down')} aria-label="Move out">▼</button></div>
       <div className="lf-btns"><button className="jab" {...touch('jab')}>Jab</button><button className="cross" {...touch('cross')}>Cross</button><button className="kick" {...touch('kick')}>Kick</button><button className="upper" {...touch('upper')}>Elbow</button><button className="shoot" {...touch('shoot')}>Shoot</button></div>
     </div>
-    {ready && !paused && <p className="lf-hint"><kbd>J</kbd> jab <kbd>K</kbd> cross <kbd>L</kbd> kick <kbd>I</kbd> elbow <kbd>Space</kbd> takedown <kbd>S</kbd> block <kbd>Esc</kbd> menu</p>}
+    {ready && !paused && <p className="lf-hint"><kbd>J</kbd> jab <kbd>K</kbd> cross <kbd>L</kbd> kick <kbd>I</kbd> elbow <kbd>Space</kbd> takedown <kbd>Shift</kbd> block / sprawl <kbd>WASD</kbd> move <kbd>Esc</kbd> menu</p>}
   </div>;
 }

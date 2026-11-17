@@ -9,7 +9,7 @@ import {RenderPass} from 'three/examples/jsm/postprocessing/RenderPass.js';
 import {UnrealBloomPass} from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import {OutputPass} from 'three/examples/jsm/postprocessing/OutputPass.js';
 import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment.js';
-import type {Fighter, FightEvent, LiveFight, MoveId} from '../../lib/fight3d/engine';
+import {distance, type Fighter, type FightEvent, type LiveFight, type MoveId} from '../../lib/fight3d/engine';
 
 const PLAT = .9;           // mat height in the arena model
 const X_SCALE = .82;       // engine metres -> arena metres along the fight line
@@ -35,9 +35,9 @@ const MOVE_ANIMS: Record<MoveId, Pick[]> = {
           {anim: 'overhand', range: 'mid', weight: 1}, {anim: 'superman', range: 'long', weight: .6}],
   upper: [{anim: 'u:rear_uppercut', range: 'close', weight: 2}, {anim: 'u:lead_uppercut', range: 'close', weight: 2}, {anim: 'lead_body_hook', range: 'close', weight: 1.5, body: true},
           {anim: 'u:lead_elbow', range: 'close', weight: 1.2}, {anim: 'elbow', range: 'close', weight: 1}],
-  kick: [{anim: 'rear_low_kick', range: 'any', weight: 2.5, leg: true}, {anim: 'calf_kick', range: 'any', weight: 2, leg: true}, {anim: 'body_kick', range: 'mid', weight: 2, body: true},
-         {anim: 'teep', range: 'long', weight: 2, body: true}, {anim: 'kick_high', range: 'mid', weight: 1.4}, {anim: 'kick_lead', range: 'mid', weight: 1.2},
-         {anim: 'kick_feint', range: 'mid', weight: .8}, {anim: 'rear_knee', range: 'close', weight: 2.5, body: true}],
+  // kicks: Mixamo motion capture only (the hand-keyed kicks looked stiff); the clinch knee stays for close range
+  kick: [{anim: 'kick_high', range: 'any', weight: 2}, {anim: 'kick_lead', range: 'any', weight: 2, body: true},
+         {anim: 'kick_feint', range: 'any', weight: 1.2, leg: true}, {anim: 'rear_knee', range: 'close', weight: 1, body: true}],
 };
 const ONE_SHOT = ['jab_head', 'jab_body', 'cross_head', 'cross_body', 'lead_hook', 'lead_body_hook', 'rear_hook', 'lead_uppercut', 'rear_uppercut', 'overhand', 'lead_elbow', 'superman',
   'rear_low_kick', 'calf_kick', 'body_kick', 'teep', 'rear_knee', 'slip_out', 'slip_in', 'roll', 'block_high', 'block_body', 'check',
@@ -100,7 +100,7 @@ class FighterRig {
   // layered playback: legs run 'idle' underneath while the upper body plays strikes/blocks/reactions
   lower: THREE.AnimationAction | null = null; upperCur: THREE.AnimationAction | null = null; upperKey = ''; split = true;
   // legs layer: the stance loop, or in-place step loops while the fighter moves (lead foot first forward, rear foot first back)
-  lowers = new Map<string, THREE.AnimationAction>(); lowerKey = 'idle'; prevX: number | null = null; stepRate = 1;
+  lowers = new Map<string, THREE.AnimationAction>(); lowerKey = 'idle'; prevX: number | null = null; prevZ: number | null = null; stepRate = 1;
   bones: Record<string, THREE.Bone | undefined> = {};
   flash = 0; skinMats: THREE.MeshStandardMaterial[] = [];
   lastPick: Pick | null = null; lastState = ''; lastMove: MoveId | null = null;
@@ -210,7 +210,7 @@ class FighterRig {
   sync(f: Fighter, opp: Fighter, dt: number) {
     const st = f.state;
     if (st === 'attack' && (this.lastState !== 'attack' || this.lastMove !== f.move || f.t < .02)) {
-      const pick = pickMove(f.move!, Math.abs(opp.x - f.x), f.combo);
+      const pick = pickMove(f.move!, distance(f, opp), f.combo);
       this.lastPick = pick;
       const key = pick.anim;
       if (this.actions.has(key)) { if (key.startsWith('u:')) this.playUpper(key, .05); else this.play(key, .06); }
@@ -218,7 +218,7 @@ class FighterRig {
     } else if (st !== 'attack' && st !== this.lastState) {
       const full: Partial<Record<string, [string, number]>> = {
         win: ['victory', .3], down: ['knocked', .25], ko: ['knocked', .2], bottom: ['ground_back', .3],
-        top: ['ground_top', .3], shoot: ['shoot', .1], sprawl: ['sprawl', .12],
+        top: ['ground_top', .3], shoot: ['shoot', .1], sprawl: ['sprawl', .12], sprawled: ['shoot', .2],
       };
       const hit = full[st];
       if (hit) this.play(this.actions.has(hit[0]) ? hit[0] : 'idle', hit[1]);
@@ -232,10 +232,11 @@ class FighterRig {
       if ((!this.split && done(this.current)) || (this.split && this.upperKey !== 'u:idle' && done(this.upperCur))) this.settle(.15);
     }
     // footwork: pick the step loop from which way we're actually moving, and match its rate to the speed
-    const dx = this.prevX === null ? 0 : f.x - this.prevX; this.prevX = f.x;
-    const speed = dt > 0 ? Math.abs(dx) / dt : 0;
+    const dx = this.prevX === null ? 0 : f.x - this.prevX, dz = this.prevZ === null ? 0 : f.z - this.prevZ; this.prevX = f.x; this.prevZ = f.z;
+    const speed = dt > 0 ? Math.hypot(dx, dz) / dt : 0;
     if (st === 'walk' && speed > .15) {
-      this.setLower(dx * f.facing > 0 ? 'step_fwd' : 'step_back');
+      // stepping in (or circling) leads with the front foot; backing off leads with the rear foot
+      this.setLower(dx * f.hx + dz * f.hz >= -.3 * Math.hypot(dx, dz) ? 'step_fwd' : 'step_back');
       this.stepRate += (THREE.MathUtils.clamp(speed / 1.4, .75, 1.7) - this.stepRate) * Math.min(1, dt * 8);
       this.lower!.timeScale = this.stepRate;
     } else if (st !== 'walk' || speed < .05) {
@@ -253,7 +254,10 @@ export class FightView {
   renderer: THREE.WebGLRenderer; scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(40, 1, .05, 200);
   composer: EffectComposer; bloom: UnrealBloomPass;
   rigs: [FighterRig, FighterRig]; sparks: {mesh: THREE.Mesh; life: number; v: THREE.Vector3}[] = [];
-  shake = 0; time = 0; camX = 0; camDist = 3.6; private disposed = false;
+  shake = 0; time = 0; camX = 0; camZ = 0; camDist = 3.6; camDir = new THREE.Vector2(0, 1); private disposed = false;
+  /** the player's screen axes on the floor (world xz): WASD moves along these */
+  axes = {rx: 1, rz: 0, fx: 0, fz: -1};
+  private cage: {mesh: THREE.Object3D; x: number; z: number}[] = [];
   debugCam = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('fightcam') : null;
 
   constructor(canvas: HTMLCanvasElement, g: LiveFight, assets: Assets) {
@@ -274,7 +278,7 @@ export class FightView {
       const name = `${m.name} ${m.parent?.name ?? ''}`.toLowerCase();
       if (/post|rail|skirt|fence|txt/.test(name)) {
         m.geometry.computeBoundingBox(); const c = new THREE.Vector3(); m.geometry.boundingBox!.getCenter(c); m.localToWorld(c);
-        if (c.z > 1.2 && c.y > PLAT - .2) m.visible = false; // open the camera side of the cage
+        if (c.y > PLAT - .2 && Math.hypot(c.x, c.z) > 2.5) this.cage.push({mesh: m, x: c.x, z: c.z}); // hidden on the camera's side each frame
       }
       const mat = m.material as THREE.MeshStandardMaterial;
       if (mat && /fence/.test(mat.name)) { mat.alphaTest = .5; mat.transparent = false; mat.side = THREE.DoubleSide; }
@@ -326,7 +330,7 @@ export class FightView {
       if (e.type === 'whiff' && Math.random() < .55) { this.rigs[e.side === 0 ? 1 : 0].dodge(); continue; }
       if (!['hit', 'block', 'ko', 'kd', 'td'].includes(e.type)) continue;
       const n = e.type === 'block' ? 5 : Math.min(16, 5 + Math.round(e.power * 7));
-      this.burst(e.x * X_SCALE, PLAT + (e.type === 'td' ? .3 : 1.5), n, e.type === 'block' ? '#9fc4ff' : e.type === 'ko' || e.type === 'kd' ? '#ffd27a' : '#fff3c4');
+      this.burst(e.x * X_SCALE, e.z * X_SCALE, PLAT + (e.type === 'td' ? .3 : 1.5), n, e.type === 'block' ? '#9fc4ff' : e.type === 'ko' || e.type === 'kd' ? '#ffd27a' : '#fff3c4');
       this.shake = Math.max(this.shake, e.type === 'ko' ? .3 : e.type === 'kd' ? .18 : e.type === 'block' ? .02 : Math.min(.1, e.power * .07));
       const attacker = this.rigs[e.side], defender = this.rigs[e.side === 0 ? 1 : 0];
       if (e.type === 'hit') { defender.flash = 1; defender.hit(e.power, attacker.lastPick); }
@@ -334,11 +338,11 @@ export class FightView {
       else if (e.type === 'block') this.rigs[e.side].blocked(this.rigs[e.side === 0 ? 1 : 0].lastPick);
     }
   }
-  private burst(x: number, y: number, n: number, color: string) {
+  private burst(x: number, z: number, y: number, n: number, color: string) {
     let used = 0;
     for (const s of this.sparks) {
       if (s.life > 0) continue;
-      s.life = .3; s.mesh.visible = true; s.mesh.position.set(x, y + (Math.random() - .5) * .15, (Math.random() - .5) * .2);
+      s.life = .3; s.mesh.visible = true; s.mesh.position.set(x, y + (Math.random() - .5) * .15, z + (Math.random() - .5) * .2);
       (s.mesh.material as THREE.MeshBasicMaterial).color.set(color);
       s.v.set((Math.random() - .5) * 4, Math.random() * 3, (Math.random() - .5) * 3);
       if (++used >= n) break;
@@ -352,12 +356,15 @@ export class FightView {
       const r = this.rigs[i];
       // on the ground the top fighter sits in close, hips between the bottom fighter's legs, chest over his chest
       const o = g.f[i === 0 ? 1 : 0];
-      const tx = f.state === 'top' && o.state === 'bottom' ? o.x * X_SCALE - f.facing * .3 : f.x * X_SCALE;
-      r.root.position.x += (tx - r.root.position.x) * (1 - Math.exp(-25 * dt));
-      r.root.position.y = PLAT; r.root.position.z = f.state === 'top' || f.state === 'bottom' ? 0 : i === 0 ? .08 : -.08;
-      const face = f.facing > 0 ? Math.PI / 2 : -Math.PI / 2;
-      r.root.rotation.y += (face - r.root.rotation.y) * (1 - Math.exp(-10 * dt));
-      r.sync(f, g.f[i === 0 ? 1 : 0], dt);
+      const ground = f.state === 'top' && o.state === 'bottom';
+      const tx = ground ? (o.x - f.hx * .37) * X_SCALE : f.x * X_SCALE, tz = ground ? (o.z - f.hz * .37) * X_SCALE : f.z * X_SCALE;
+      const k = 1 - Math.exp(-25 * dt);
+      r.root.position.x += (tx - r.root.position.x) * k; r.root.position.z += (tz - r.root.position.z) * k; r.root.position.y = PLAT;
+      // model forward is +z: yaw toward the fighter's heading (shortest way round)
+      const yaw = Math.atan2(f.hx, f.hz);
+      let dy = yaw - r.root.rotation.y; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+      r.root.rotation.y += dy * (1 - Math.exp(-12 * dt));
+      r.sync(f, o, dt);
     });
     for (const s of this.sparks) {
       if (s.life <= 0) continue;
@@ -365,15 +372,28 @@ export class FightView {
       (s.mesh.material as THREE.MeshBasicMaterial).opacity = Math.max(0, s.life / .3); s.mesh.scale.setScalar(.6 + s.life * 4);
       if (s.life <= 0) s.mesh.visible = false;
     }
-    // broadcast camera: inside the cage, low, slightly off-axis, following the action
-    const a = g.f[0].x * X_SCALE, b = g.f[1].x * X_SCALE, mid = (a + b) / 2, gap = Math.abs(a - b);
+    // broadcast camera: side-on to the fight line wherever they are in the octagon, low, inside the cage.
+    // It keeps the side it's on (no jarring flips) and swings round smoothly as the fighters circle.
+    const ax = g.f[0].x * X_SCALE, az = g.f[0].z * X_SCALE, bx = g.f[1].x * X_SCALE, bz = g.f[1].z * X_SCALE;
+    const mx = (ax + bx) / 2, mz = (az + bz) / 2, gap = Math.hypot(bx - ax, bz - az);
+    let lx = bx - ax, lz = bz - az; const ll = Math.hypot(lx, lz) || 1; lx /= ll; lz /= ll;
+    let px = -lz, pz = lx; if (px * this.camDir.x + pz * this.camDir.y < 0) { px = -px; pz = -pz; }
+    const kc = 1 - Math.exp(-2.2 * dt);
+    this.camDir.x += (px - this.camDir.x) * kc; this.camDir.y += (pz - this.camDir.y) * kc; this.camDir.normalize();
     const narrow = this.camera.aspect < 1;
-    this.camX += (mid - this.camX) * (1 - Math.exp(-3 * dt));
+    this.camX += (mx - this.camX) * (1 - Math.exp(-3 * dt)); this.camZ += (mz - this.camZ) * (1 - Math.exp(-3 * dt));
     this.camDist += ((narrow ? 5.2 : 3.3) + gap * (narrow ? .9 : .55) - this.camDist) * (1 - Math.exp(-2.5 * dt));
     this.shake = Math.max(0, this.shake - dt * 1.2);
     const sx = (Math.random() - .5) * this.shake, sy = (Math.random() - .5) * this.shake;
+    const cx = this.camX + this.camDir.x * this.camDist - this.camDir.y * .35, cz = this.camZ + this.camDir.y * this.camDist + this.camDir.x * .35;
+    // screen axes for the controls: right = across the screen, forward = into the screen
+    const fx = -this.camDir.x, fz = -this.camDir.y;
+    this.axes = {rx: -fz, rz: fx, fx, fz};
+    // open the cage on the camera's side
+    const cl = Math.hypot(cx, cz) || 1;
+    for (const p of this.cage) { const pl = Math.hypot(p.x, p.z); p.mesh.visible = (p.x * cx + p.z * cz) / (pl * cl) < .45 || cl < 2.2; }
     if (this.debugCam) { const h = this.debugCam === 'hand' ? this.rigs[0].bones.LeftHand : this.rigs[0].bones.Head; if (h) { const p = new THREE.Vector3(); h.getWorldPosition(p); const k = this.debugCam === 'hand' ? .55 : 1; this.camera.position.set(p.x + .5 * k, p.y + .05, p.z + .55 * k); this.camera.lookAt(p); } }
-    else { this.camera.position.set(this.camX + .35 + sx, PLAT + 1.42 + sy, this.camDist); this.camera.lookAt(this.camX, PLAT + 1.05, 0); }
+    else { this.camera.position.set(cx + sx, PLAT + 1.42 + sy, cz); this.camera.lookAt(this.camX, PLAT + 1.05, this.camZ); }
     this.composer.render(dt);
   }
 

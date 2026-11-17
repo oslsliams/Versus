@@ -13,7 +13,14 @@ html.lf-lock,html.lf-lock body{overflow:hidden}
 .lf-bars{display:grid;gap:4px;padding:6px;background:#0a0d16d9;clip-path:polygon(0 0,100% 0,96% 100%,0 100%)}
 .lf-plate.blue .lf-bars{clip-path:polygon(0 0,100% 0,100% 100%,4% 100%)}
 .lf-hp,.lf-st{display:block;height:14px;background:#ffffff14;overflow:hidden}
-.lf-st{height:6px}
+.lf-st{height:9px}
+/* stamina: a real bar with a readout; flashes when low */
+.lf-stn{font:800 12px/1 var(--font-sans,system-ui);letter-spacing:.08em;color:#ffe08a;opacity:.9}
+.lf-plate.blue .lf-stn{text-align:right}
+.lf-stn[data-low="1"]{color:#ff7b6b;animation:lf-gas .6s steps(2) infinite}
+.lf-st i[data-low="1"]{background:linear-gradient(90deg,#ff7b6b,#ffb36b);animation:lf-gas .6s steps(2) infinite}
+@keyframes lf-gas{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.lf-stn[data-low="1"],.lf-st i[data-low="1"]{animation:none}}
 .lf-plate.blue .lf-hp i,.lf-plate.blue .lf-st i{margin-left:auto}
 .lf-hp i,.lf-st i{display:block;height:100%;transition:width .12s linear}
 .lf-hp i{background:linear-gradient(180deg,#3df2b0,#1fc98d)}
@@ -61,7 +68,8 @@ html.lf-lock,html.lf-lock body{overflow:hidden}
   .lf-pad{position:absolute;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:max(14px,env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
   .lf-pad button{border:1px solid #ffffff30;background:#0a0d16a6;color:#fff;font:inherit;font-weight:800;border-radius:16px;min-width:56px;min-height:56px;touch-action:none}
   .lf-pad button:active{transform:scale(.92);background:#ffffff26}
-  .lf-dpad{display:flex;gap:6px}
+  .lf-dpad{display:grid;grid-template-columns:repeat(3,auto);gap:6px}
+  .lf-dpad button:nth-child(1){grid-column:2}.lf-dpad button:nth-child(5){grid-column:2}
   .lf-btns{display:grid;grid-template-columns:repeat(3,58px);gap:6px}
   .lf-btns .shoot{grid-column:span 2}
   .lf-ground{bottom:150px}
