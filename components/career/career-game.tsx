@@ -1,14 +1,15 @@
 'use client';
 // VERSUS career mode: create a fighter, run their weeks, take fights, climb to a belt.
 import {useCallback, useEffect, useMemo, useState} from 'react';
-import {Dumbbell, Swords, BedDouble, Megaphone, Crown, Flame, HeartPulse, Zap, Wallet, ChevronRight, RotateCcw, Flag, Shield, X, Check, Film, Activity, Users, Smartphone, Shirt, Stethoscope, BookOpen} from 'lucide-react';
+import {Dumbbell, Swords, BedDouble, Megaphone, Crown, Flame, HeartPulse, Zap, Wallet, ChevronRight, RotateCcw, Shield, X, Check, Film, Activity, Users, Smartphone, Shirt, Stethoscope, Trophy, UserRound} from 'lucide-react';
 import {
   ACTIONS, BACKSTORIES, CAMP_LEVELS, COACHES, DIVISIONS, FIGHTER_COLORS, GYMS, START_COUNTRIES, STAT_KEYS, STAT_LABEL, STYLES, TIERS,
-  acceptOffer, applyResult, buy, campPrice, createCareer, declineOffer, fightStats, fitnessLabel, handleOf, heatOf, legacy, migrate, npc, overall, physioPrice, prPrice, resolveChoice, retire, rng, takeAction, weeklyCost,
+  acceptOffer, applyResult, buy, campPrice, createCareer, declineOffer, fightStats, fitnessLabel, handleOf, heatOf, legacy, migrate, npc, overall, physioPrice, prPrice, rng, takeAction, weeklyCost,
   type Career, type CoachKey, type Division, type NPC, type Plan, type StatKey, type Style,
 } from '../../lib/career/engine';
 import {DEFAULT_LOOK, lookFor, type Look} from '../../lib/cosmetics';
 import {LookEditor} from './look-editor';
+import {CareerPhone, compact, money, yearWeek, type PhoneApp} from './career-phone';
 import {PLANS, aiPlan, fightRound, startFight, type FightState} from '../../lib/career/fight';
 import {competitors} from '../../lib/competitors';
 import {StudioIntro} from './studio-intro';
@@ -20,8 +21,6 @@ const SAVE = 'versus-career-v1', FIGHT = 'versus-career-fight-v1';
 const load = <T,>(k: string): T | null => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) as T : null; } catch { return null; } };
 const save = (k: string, v: unknown) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch {} };
 const initials = (n: string) => n.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-const money = (n: number) => '$' + Math.round(n).toLocaleString();
-const yearWeek = (w: number) => `Year ${Math.floor((w - 1) / 52) + 1} · Week ${((w - 1) % 52) + 1}`;
 
 function Avatar({name, color, size = 'md'}: {name: string; color: string; size?: 'sm' | 'md' | 'lg'}) {
   return <span className={`cg-avatar ${size}`} style={{'--c': color} as React.CSSProperties} aria-hidden="true">{initials(name)}</span>;
@@ -207,145 +206,163 @@ function StatBar({k, v, cap}: {k: StatKey; v: number; cap?: number}) {
 }
 
 /* ================================================================== hub */
+// The hub is split so each screen does one job: four tabs for the career itself, and the phone for everything around it.
+type HubTab = 'camp' | 'fighter' | 'team' | 'division';
+const HUB_TABS: {id: HubTab; label: string; Icon: typeof Dumbbell}[] = [{id: 'camp', label: 'This week', Icon: Dumbbell}, {id: 'fighter', label: 'Fighter', Icon: UserRound}, {id: 'team', label: 'Team', Icon: Users}, {id: 'division', label: 'Division', Icon: Trophy}];
+const TAB_KEY = 'versus-hub-tab';
+
 function Hub({career: c, update, startFightNight}: {career: Career; update: (c: Career | null) => void; startFightNight: () => void}) {
   const [focus, setFocus] = useState<StatKey>('striking');
-  const [confirm, setConfirm] = useState<'retire' | 'new' | null>(null);
+  const [tab, setTabState] = useState<HubTab>('camp');
+  const [app, setApp] = useState<PhoneApp>(c.choice ? 'messages' : 'home');
+  const [phoneOpen, setPhoneOpen] = useState(false);
+  useEffect(() => { const t = load<HubTab>(TAB_KEY); if (t && HUB_TABS.some(x => x.id === t)) setTabState(t); }, []);
+  const setTab = (t: HubTab) => { setTabState(t); save(TAB_KEY, t); };
+  // a new decision brings the phone to the conversation
+  useEffect(() => { if (c.choice) setApp('messages'); }, [c.choice?.title, c.week]);
+  const closePhone = useCallback(() => setPhoneOpen(false), []);
+  const openMessages = () => { setApp('messages'); setPhoneOpen(true); };
+  const tabKeys = (e: React.KeyboardEvent, i: number) => {
+    const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0; if (!d) return;
+    e.preventDefault(); const next = HUB_TABS[(i + d + HUB_TABS.length) % HUB_TABS.length]; setTab(next.id); document.getElementById(`hub-tab-${next.id}`)?.focus();
+  };
   const opp = c.camp ? npc(c, c.camp.opponentId) : undefined;
   const fightWeek = !!c.camp && c.camp.weeksLeft === 0;
   const injured = c.injuryWeeks > 0;
   const act = (a: Parameters<typeof takeAction>[1]) => update(takeAction(c, a));
   const tier = TIERS[c.tier];
+  const unread = (c.choice ? 1 : 0);
+  const campAlert = fightWeek ? '!' : !c.camp && c.offers.length ? String(c.offers.length) : '';
 
-  return <div className="bn-page cg">
+  return <div className="bn-page cg cg-hub">
     <section className={`panel cg-head ${c.champ ? 'is-champ' : ''}`}>
-      <Avatar name={c.name} color={c.color} size="lg"/>
+      <Avatar name={c.name} color={c.color} size="md"/>
       <div className="cg-head-copy">
-        <div className="bn-pills">
-          <span className={`sticker ${tier.color}`} style={{'--tilt': '-3deg'} as React.CSSProperties}>{tier.name}</span>
-          {c.champ ? <span className="sticker sun" style={{'--tilt': '2deg'} as React.CSSProperties}><Crown size={13} aria-hidden="true"/> Champion</span>
-            : c.rank ? <span className="sticker lime" style={{'--tilt': '2deg'} as React.CSSProperties}>#{c.rank} {c.division}</span> : null}
-          {injured && <span className="sticker pink">Injured · {c.injuryWeeks}w</span>}
-        </div>
         <h1>{c.name}</h1>
-        <p className="muted">{c.nickname ? `“${c.nickname}” · ` : ''}{c.division} · {c.style} · Age {c.age} · {yearWeek(c.week)}</p>
+        <p className="muted">{c.nickname ? `“${c.nickname}” · ` : ''}{c.division} · {c.style} · Age {c.age}</p>
       </div>
-      <div className="cg-record"><strong>{c.record.join('–')}</strong><span>{c.finishes.ko} KO · {c.finishes.sub} SUB · {c.finishes.dec} DEC</span><span className="cg-ovr">OVR {overall(c.stats)}</span></div>
-      {c.champ && <img className="cg-belt" src="/art/trophy.webp" alt="" width={110} height={110}/>}
+      <div className="bn-pills">
+        <span className={`sticker ${tier.color}`} style={{'--tilt': '-2deg'} as React.CSSProperties}>{tier.short}</span>
+        {c.champ ? <span className="sticker sun" style={{'--tilt': '2deg'} as React.CSSProperties}><Crown size={13} aria-hidden="true"/> Champion</span>
+          : c.rank ? <span className="sticker lime" style={{'--tilt': '2deg'} as React.CSSProperties}>#{c.rank}</span> : null}
+        {injured && <span className="sticker pink">Injured · {c.injuryWeeks}w</span>}
+      </div>
+      <div className="cg-record"><strong>{c.record.join('–')}</strong><span className="cg-ovr">OVR {overall(c.stats)}</span></div>
     </section>
 
     <section className="cg-meters" aria-label="Condition">
-      <Meter icon={<Zap size={16}/>} label="Energy" v={c.energy} tone="lime"/>
-      <Meter icon={<HeartPulse size={16}/>} label="Health" v={c.health} tone="pink"/>
-      <Meter icon={<Flame size={16}/>} label="Hype" v={c.hype} tone="sun"/>
-      <Meter icon={<Activity size={16}/>} label={`Fitness · ${fitnessLabel(c.fitness ?? 55)}`} v={c.fitness ?? 55} tone="sky"/>
-      <div className="cg-meter"><span><Wallet size={16} aria-hidden="true"/> Bank</span><strong className={c.money < 0 ? 'neg' : ''}>{money(c.money)}</strong><small className="muted">−{money(weeklyCost(c))}/week</small></div>
-      <div className="cg-meter"><span><Users size={16} aria-hidden="true"/> Followers</span><strong>{compact(c.followers ?? 0)}</strong></div>
+      <Meter icon={<Zap size={15}/>} label="Energy" v={c.energy} tone="lime"/>
+      <Meter icon={<HeartPulse size={15}/>} label="Health" v={c.health} tone="pink"/>
+      <Meter icon={<Flame size={15}/>} label="Hype" v={c.hype} tone="sun"/>
+      <Meter icon={<Activity size={15}/>} label={fitnessLabel(c.fitness ?? 55)} v={c.fitness ?? 55} tone="sky"/>
+      <button type="button" className="cg-meter bank" onClick={() => { setApp('bank'); setPhoneOpen(true); }} aria-label={`Bank: ${money(c.money)}. Open your bank`}><span><Wallet size={15} aria-hidden="true"/> Bank</span><strong className={c.money < 0 ? 'neg' : ''}>{money(c.money)}</strong></button>
     </section>
 
-    <div className="cg-main">
-      <div className="cg-col">
-        {c.choice && <section className="panel cg-choice" aria-live="polite">
-          <span className="eyebrow"><Smartphone size={13} aria-hidden="true"/> {c.choice.kind === 'press' ? 'Fight week media' : c.choice.from ?? 'Message'}</span>
-          <h2>{c.choice.title}</h2>
-          <p className="muted">{c.choice.text}</p>
-          <div className="cg-choice-opts">{c.choice.options.map(o => <button key={o.id} className="button outline" onClick={() => update(resolveChoice(c, o.id))}><strong>{o.label}</strong><small>{o.hint}</small></button>)}</div>
-        </section>}
+    <div className="cg-layout">
+      <div className="cg-stage">
+        <div className="cg-tabs" role="tablist" aria-label="Career">
+          {HUB_TABS.map((t, i) => <button key={t.id} id={`hub-tab-${t.id}`} type="button" role="tab" aria-selected={tab === t.id} aria-controls="hub-panel" tabIndex={tab === t.id ? 0 : -1} onClick={() => setTab(t.id)} onKeyDown={e => tabKeys(e, i)}>
+            <t.Icon size={18} aria-hidden="true"/><span>{t.label}</span>{t.id === 'camp' && campAlert && tab !== 'camp' && <b>{campAlert}</b>}
+          </button>)}
+        </div>
 
-        {c.camp && opp && <section className={`panel cg-camp ${fightWeek ? 'fight-week' : ''}`}>
-          <span className="eyebrow">{c.camp.event ? `${c.camp.event} · ${c.camp.billing} · ` : ''}{fightWeek ? 'Fight week' : `${c.camp.weeksLeft} week${c.camp.weeksLeft === 1 ? '' : 's'} out`}</span>
-          <div className="cg-vs">
-            <Avatar name={c.name} color={c.color}/><img src="/art/vs-badge.webp" alt="versus" width={64} height={64}/><Avatar name={opp.name} color={opp.color}/>
-          </div>
-          <h2>{c.camp.title ? (c.champ ? 'Title defense' : 'Title fight') : c.camp.note} vs {opp.name}</h2>
-          {heatOf(c, opp.id) >= 40 && <span className="sticker pink" style={{'--tilt': '-2deg'} as React.CSSProperties}>Bad blood</span>}
-          <p className="muted">“{opp.nickname}” · {opp.style} · {opp.record.join('–')} · OVR {overall(opp.stats)} · {c.camp.rounds} rounds · Purse {money(c.camp.purse)} + {money(c.camp.winBonus)} to win</p>
-          {(c.camp.edge ?? 0) > .02 && <p className="cg-warn">{opp.name.split(' ')[0]} is fired up for this one. Expect his best.</p>}
-          {(c.camp.edge ?? 0) < -.02 && <p className="muted">{opp.name.split(' ')[0]} looked rattled at fight week.</p>}
-          <div className="cg-campinfo">
-            <span><Activity size={14} aria-hidden="true"/> Fight-night condition: <b className={`fit-${fitnessLabel(c.fitness ?? 55).split(' ')[0].toLowerCase()}`}>{fitnessLabel(c.fitness ?? 55)}</b> ({Math.round(c.fitness ?? 55)})</span>
-            <span><Film size={14} aria-hidden="true"/> {c.camp.scouted ? 'Tape studied: you know his habits' : 'His tape: not studied yet'}</span>
-            {c.camp.missedWeight && <span className="cg-warn">Missed weight: 20% of the purse goes to him, and you're drained.</span>}
-          </div>
-          {!fightWeek && <div className="cg-camplevel" role="group" aria-label="Fight camp">
-            {CAMP_LEVELS.map((l, i) => { const cur = c.camp!.level ?? 0; const price = campPrice(c, i) - campPrice(c, cur);
-              return <button key={l.label} type="button" className={`button ${i === cur ? 'primary' : 'outline'}`} disabled={i <= cur || c.money < price} onClick={() => update(buy(c, {type: 'camp', level: i}))}>
-                <strong>{l.label}</strong><small>{i === cur ? 'Booked' : i < cur ? '' : `${money(price)} · fitness gains ×${l.mult}${i === 2 ? ', film team' : ''}`}</small></button>; })}
-          </div>}
-          {fightWeek && <button className="button primary cg-big" disabled={!!c.choice} onClick={startFightNight}><Swords size={18} aria-hidden="true"/>{c.choice ? 'Answer your phone first' : 'Walk out to the cage'}</button>}
-        </section>}
+        <div id="hub-panel" role="tabpanel" aria-labelledby={`hub-tab-${tab}`} className={`cg-pane ${tab}`} key={tab}>
+          {tab === 'camp' && <>
+            {c.choice && <button type="button" className="cg-msgbanner" onClick={openMessages}><Smartphone size={18} aria-hidden="true"/><span><strong>{c.choice.kind === 'press' ? 'Fight week media' : c.choice.from ?? 'New message'}</strong>{c.choice.title}</span><ChevronRight size={18} aria-hidden="true"/></button>}
 
-        {!fightWeek && <section className="panel cg-week">
-          <div className="section-heading"><h2>This week</h2><span className="muted">{yearWeek(c.week)}</span></div>
-          <div className="cg-actions">
-            <div className={`cg-action train ${injured ? 'off' : ''}`}>
-              <Dumbbell size={22} aria-hidden="true"/><strong>{ACTIONS.train.label}</strong><small>{ACTIONS.train.blurb}</small>
-              <label className="sr-only" htmlFor="cg-focus">Training focus</label>
-              <select id="cg-focus" value={focus} onChange={e => setFocus(e.target.value as StatKey)}>{STAT_KEYS.map(k => <option key={k} value={k}>{STAT_LABEL[k]} ({Math.floor(c.stats[k])})</option>)}</select>
-              <button className="button primary" disabled={injured} onClick={() => act({type: 'train', focus})}>Train {STAT_LABEL[focus].toLowerCase()}</button>
+            {c.camp && opp && <section className={`panel cg-camp ${fightWeek ? 'fight-week' : ''}`}>
+              <span className="eyebrow">{c.camp.event ? `${c.camp.event} · ${c.camp.billing} · ` : ''}{fightWeek ? 'Fight week' : `${c.camp.weeksLeft} week${c.camp.weeksLeft === 1 ? '' : 's'} out`}</span>
+              <div className="cg-vs">
+                <Avatar name={c.name} color={c.color}/><img src="/art/vs-badge.webp" alt="versus" width={64} height={64}/><Avatar name={opp.name} color={opp.color}/>
+              </div>
+              <h2>{c.camp.title ? (c.champ ? 'Title defense' : 'Title fight') : c.camp.note} vs {opp.name}</h2>
+              {heatOf(c, opp.id) >= 40 && <span className="sticker pink" style={{'--tilt': '-2deg'} as React.CSSProperties}>Bad blood</span>}
+              <p className="muted">“{opp.nickname}” · {opp.style} · {opp.record.join('–')} · OVR {overall(opp.stats)} · {c.camp.rounds} rounds · Purse {money(c.camp.purse)} + {money(c.camp.winBonus)} to win</p>
+              {(c.camp.edge ?? 0) > .02 && <p className="cg-warn">{opp.name.split(' ')[0]} is fired up for this one. Expect his best.</p>}
+              {(c.camp.edge ?? 0) < -.02 && <p className="muted">{opp.name.split(' ')[0]} looked rattled at fight week.</p>}
+              <div className="cg-campinfo">
+                <span><Activity size={14} aria-hidden="true"/> Fight-night condition: <b className={`fit-${fitnessLabel(c.fitness ?? 55).split(' ')[0].toLowerCase()}`}>{fitnessLabel(c.fitness ?? 55)}</b> ({Math.round(c.fitness ?? 55)})</span>
+                <span><Film size={14} aria-hidden="true"/> {c.camp.scouted ? 'Tape studied: you know his habits' : 'His tape: not studied yet'}</span>
+                {c.camp.missedWeight && <span className="cg-warn">Missed weight: 20% of the purse goes to him, and you're drained.</span>}
+              </div>
+              {!fightWeek && <div className="cg-camplevel" role="group" aria-label="Fight camp">
+                {CAMP_LEVELS.map((l, i) => { const cur = c.camp!.level ?? 0; const price = campPrice(c, i) - campPrice(c, cur);
+                  return <button key={l.label} type="button" className={`button ${i === cur ? 'primary' : 'outline'}`} disabled={i <= cur || c.money < price} onClick={() => update(buy(c, {type: 'camp', level: i}))}>
+                    <strong>{l.label}</strong><small>{i === cur ? 'Booked' : i < cur ? '' : `${money(price)} · fitness gains ×${l.mult}${i === 2 ? ', film team' : ''}`}</small></button>; })}
+              </div>}
+              {fightWeek && <button className="button primary cg-big" onClick={c.choice ? openMessages : startFightNight}>{c.choice ? <Smartphone size={18} aria-hidden="true"/> : <Swords size={18} aria-hidden="true"/>}{c.choice ? 'Answer your phone first' : 'Walk out to the cage'}</button>}
+            </section>}
+
+            {!fightWeek && <section className="panel cg-week">
+              <div className="section-heading"><h2>This week</h2><span className="muted">{yearWeek(c.week)}</span></div>
+              <div className="cg-actions">
+                <div className={`cg-action train ${injured ? 'off' : ''}`}>
+                  <Dumbbell size={22} aria-hidden="true"/><strong>{ACTIONS.train.label}</strong><small>{ACTIONS.train.blurb}</small>
+                  <label className="sr-only" htmlFor="cg-focus">Training focus</label>
+                  <select id="cg-focus" value={focus} onChange={e => setFocus(e.target.value as StatKey)}>{STAT_KEYS.map(k => <option key={k} value={k}>{STAT_LABEL[k]} ({Math.floor(c.stats[k])})</option>)}</select>
+                  <button className="button primary" disabled={injured} onClick={() => act({type: 'train', focus})}>Train {STAT_LABEL[focus].toLowerCase()}</button>
+                </div>
+                <ActionCard icon={<Swords size={22}/>} k="spar" off={injured} onClick={() => act({type: 'spar'})}/>
+                <ActionCard icon={<BedDouble size={22}/>} k="rest" onClick={() => act({type: 'rest'})}/>
+                <ActionCard icon={<Megaphone size={22}/>} k="promote" onClick={() => act({type: 'promote'})}/>
+                <ActionCard icon={<Film size={22}/>} k="tape" onClick={() => act({type: 'tape'})}/>
+              </div>
+              {c.energy < 30 && <p className="cg-warn">You're running on fumes. Training tired is slow and gets people hurt.</p>}
+            </section>}
+
+            {!c.camp && <section className="panel cg-offers">
+              <div className="section-heading"><h2>Fight offers</h2><span className="muted">{TIERS[c.tier].short}</span></div>
+              {!c.offers.length && <p className="muted">{injured ? 'No offers while you are injured.' : c.week < c.nextOfferWeek ? `Recovering from your last fight. Offers in ${c.nextOfferWeek - c.week} week(s).` : 'Your manager is working the phones. Check back next week.'}</p>}
+              {c.offers.map(o => { const n = npc(c, o.opponentId)!; const gap = overall(n.stats) - overall(c.stats); return <article key={o.id} className={`cg-offer ${o.title ? 'title' : ''}`}>
+                <Avatar name={n.name} color={n.color}/>
+                <div className="cg-offer-body">
+                  <span className="bn-pills">
+                    <span className={`sticker ${o.title ? 'sun' : o.tag === 'rematch' || o.tag === 'grudge' ? 'pink' : o.tag === 'eliminator' ? 'violet' : o.tag === 'short' ? 'sky' : gap > 8 ? 'pink' : gap < -8 ? 'lime' : 'sky'}`} style={{'--tilt': '-2deg'} as React.CSSProperties}>{o.note}</span>
+                    {heatOf(c, n.id) >= 40 && o.tag !== 'grudge' && <span className="sticker pink" style={{'--tilt': '2deg'} as React.CSSProperties}>Bad blood</span>}
+                  </span>
+                  <strong>{n.name}</strong>
+                  <small>“{n.nickname}” · {n.style} · {n.record.join('–')} · OVR {overall(n.stats)}{c.tier === 2 ? rankText(c, n.id) : ''}</small>
+                  <small>{o.rounds} rounds in {o.weeksOut} weeks · {money(o.purse)} + {money(o.winBonus)} win bonus</small>
+                </div>
+                <div className="cg-offer-actions">
+                  <button className="button primary" onClick={() => update(acceptOffer(c, o.id))}><Check size={16} aria-hidden="true"/>Sign</button>
+                  <button className="button outline" onClick={() => update(declineOffer(c, o.id))} aria-label={`Decline ${n.name}`}><X size={16} aria-hidden="true"/></button>
+                </div>
+              </article>; })}
+            </section>}
+          </>}
+
+          {tab === 'fighter' && <>
+            <section className="panel cg-stats">
+              <div className="section-heading"><h2>Attributes</h2><span className="muted">Potential {c.potential}</span></div>
+              <div className="cg-statlist">{STAT_KEYS.map(k => <StatBar key={k} k={k} v={c.stats[k]} cap={c.potential}/>)}</div>
+            </section>
+            <section className="panel cg-history">
+              <div className="section-heading"><h2>Fight record</h2><span className="muted">{c.finishes.ko} KO · {c.finishes.sub} SUB · {c.finishes.dec} DEC</span></div>
+              {c.history.length ? <ol>{c.history.slice(0, 8).map((h, i) => <li key={i}><span className={`bn-res ${h.result === 'W' ? 'win' : h.result === 'L' ? 'loss' : ''}`}>{h.result}</span><span><strong>{h.opponent}{h.title ? ' · title' : ''}</strong><small>{h.method} · R{h.round} · {TIERS[h.tier].short} · {money(h.purse)}</small></span></li>)}</ol> : <p className="muted">No fights yet. Sign your first one under This week.</p>}
+            </section>
+            <Locker c={c} update={update}/>
+          </>}
+
+          {tab === 'team' && <Team c={c} update={update}/>}
+
+          {tab === 'division' && <>
+            <Rankings c={c}/>
+            <div className="cg-col">
+              <Storylines c={c}/>
+              <section className="panel cg-legends">
+                <h2>Measured against legends</h2>
+                <LegendMatches c={c}/>
+              </section>
             </div>
-            <ActionCard icon={<Swords size={22}/>} k="spar" off={injured} onClick={() => act({type: 'spar'})}/>
-            <ActionCard icon={<BedDouble size={22}/>} k="rest" onClick={() => act({type: 'rest'})}/>
-            <ActionCard icon={<Megaphone size={22}/>} k="promote" onClick={() => act({type: 'promote'})}/>
-            <ActionCard icon={<Film size={22}/>} k="tape" onClick={() => act({type: 'tape'})}/>
-          </div>
-          {c.camp && <p className="muted">Camp: hard training and sparring build fight-night fitness ({fitnessLabel(c.fitness ?? 55)} now). Peak fitness means more gas and a better chin on the night; media weeks cost you.</p>}
-          {c.energy < 30 && <p className="cg-warn">You're running on fumes. Training tired is slow and gets people hurt.</p>}
-        </section>}
-
-        {!c.camp && <section className="panel cg-offers">
-          <div className="section-heading"><h2>Fight offers</h2><span className="muted">{TIERS[c.tier].short}</span></div>
-          {!c.offers.length && <p className="muted">{injured ? 'No offers while you are injured.' : c.week < c.nextOfferWeek ? `Recovering from your last fight. Offers in ${c.nextOfferWeek - c.week} week(s).` : 'Your manager is working the phones. Check back next week.'}</p>}
-          {c.offers.map(o => { const n = npc(c, o.opponentId)!; const gap = overall(n.stats) - overall(c.stats); return <article key={o.id} className={`cg-offer ${o.title ? 'title' : ''}`}>
-            <Avatar name={n.name} color={n.color}/>
-            <div className="cg-offer-body">
-              <span className="bn-pills">
-                <span className={`sticker ${o.title ? 'sun' : o.tag === 'rematch' || o.tag === 'grudge' ? 'pink' : o.tag === 'eliminator' ? 'violet' : o.tag === 'short' ? 'sky' : gap > 8 ? 'pink' : gap < -8 ? 'lime' : 'sky'}`} style={{'--tilt': '-2deg'} as React.CSSProperties}>{o.note}</span>
-                {heatOf(c, n.id) >= 40 && o.tag !== 'grudge' && <span className="sticker pink" style={{'--tilt': '2deg'} as React.CSSProperties}>Bad blood</span>}
-              </span>
-              <strong>{n.name}</strong>
-              <small>“{n.nickname}” · {n.style} · {n.record.join('–')} · OVR {overall(n.stats)}{c.tier === 2 ? rankText(c, n.id) : ''}</small>
-              <small>{o.rounds} rounds in {o.weeksOut} weeks · {money(o.purse)} + {money(o.winBonus)} win bonus</small>
-            </div>
-            <div className="cg-offer-actions">
-              <button className="button primary" onClick={() => update(acceptOffer(c, o.id))}><Check size={16} aria-hidden="true"/>Sign</button>
-              <button className="button outline" onClick={() => update(declineOffer(c, o.id))} aria-label={`Decline ${n.name}`}><X size={16} aria-hidden="true"/></button>
-            </div>
-          </article>; })}
-        </section>}
-
-        <section className="panel cg-news">
-          <h2>Fight news</h2>
-          <ol>{c.log.slice(0, 12).map((l, i) => <li key={i} className={l.tone ?? ''}><span>Wk {((l.week - 1) % 52) + 1}</span>{l.text}</li>)}</ol>
-        </section>
-      </div>
-
-      <div className="cg-col">
-        <section className="panel cg-stats">
-          <div className="section-heading"><h2>Attributes</h2><span className="muted">Potential {c.potential}</span></div>
-          <div className="cg-statlist">{STAT_KEYS.map(k => <StatBar key={k} k={k} v={c.stats[k]} cap={c.potential}/>)}</div>
-        </section>
-        <Team c={c} update={update}/>
-        <Locker c={c} update={update}/>
-        <Rankings c={c}/>
-        <Storylines c={c}/>
-        <Story c={c}/>
-        <Feed c={c}/>
-        {c.history.length > 0 && <section className="panel cg-history">
-          <h2>Fight record</h2>
-          <ol>{c.history.slice(0, 8).map((h, i) => <li key={i}><span className={`bn-res ${h.result === 'W' ? 'win' : h.result === 'L' ? 'loss' : ''}`}>{h.result}</span><span><strong>{h.opponent}{h.title ? ' · title' : ''}</strong><small>{h.method} · R{h.round} · {TIERS[h.tier].short} · {money(h.purse)}</small></span></li>)}</ol>
-        </section>}
-        <section className="panel cg-legends">
-          <h2>Measured against legends</h2>
-          <LegendMatches c={c}/>
-        </section>
-        <div className="cg-danger">
-          {confirm ? <div className="panel cg-confirm" role="alertdialog" aria-label="Confirm">
-            <p>{confirm === 'retire' ? 'Retire now? Your career ends and gets its legacy score.' : 'Start over? This career is deleted from this device.'}</p>
-            <div className="bn-ctas"><button className="button primary" onClick={() => { if (confirm === 'retire') update(retire(c)); else update(null); setConfirm(null); }}>{confirm === 'retire' ? 'Retire' : 'Delete and restart'}</button><button className="button outline" onClick={() => setConfirm(null)}>Cancel</button></div>
-          </div> : <div className="bn-ctas"><button className="button outline" onClick={() => setConfirm('retire')}><Flag size={16} aria-hidden="true"/>Retire</button><button className="button outline" onClick={() => setConfirm('new')}><RotateCcw size={16} aria-hidden="true"/>New career</button></div>}
+          </>}
         </div>
       </div>
+
+      <CareerPhone c={c} update={update} app={app} setApp={setApp} open={phoneOpen} onClose={closePhone} onTeam={() => { setTab('team'); setPhoneOpen(false); }}/>
     </div>
+
+    <button type="button" className={`cp-fab ${unread ? 'ring' : ''}`} onClick={() => setPhoneOpen(true)} aria-label={unread ? 'Open your phone, 1 new message' : 'Open your phone'}><Smartphone size={24} aria-hidden="true"/>{!!unread && <b>{unread}</b>}</button>
   </div>;
 }
 
@@ -355,7 +372,6 @@ function Meter({icon, label, v, tone}: {icon: React.ReactNode; label: string; v:
   return <div className="cg-meter"><span>{icon} {label}</span><strong>{Math.round(v)}</strong><span className="bn-meter-track" aria-hidden="true"><i className={`tone-${tone}`} style={{width: `${v}%`}}/></span></div>;
 }
 
-const compact = (n: number) => n >= 1e6 ? (n / 1e6).toFixed(1).replace('.0', '') + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1).replace('.0', '') + 'K' : String(Math.round(n));
 
 /** the people and things money buys: coaches, recovery, PR */
 function Team({c, update}: {c: Career; update: (c: Career | null) => void}) {
@@ -382,28 +398,6 @@ function Locker({c, update}: {c: Career; update: (c: Career | null) => void}) {
     <div className="section-heading"><h2><Shirt size={18} aria-hidden="true"/> Locker room</h2><button type="button" className="button outline" onClick={() => setOpen(o => !o)}>{open ? 'Done' : 'Change your look'}</button></div>
     {open ? <LookEditor look={look} owned={c.owned} cash={c.money} onChange={l => update(buy(c, {type: 'look', look: l}))} onBuy={(id, price) => update(buy(c, {type: 'cosmetic', id, price}))}/>
       : <p className="muted">{look.tattoos.length ? `${look.tattoos.length} tattoo${look.tattoos.length > 1 ? 's' : ''}` : 'No ink yet'} · {look.gear.length ? look.gear.length + ' gear' : 'no gear'}. New tattoos and walkout gear cost money, and they show on fight night.</p>}
-  </section>;
-}
-
-/** the timeline: what people are saying */
-function Feed({c}: {c: Career}) {
-  const feed = c.feed ?? [];
-  if (!feed.length) return null;
-  return <section className="panel cg-feed">
-    <div className="section-heading"><h2>Feed</h2><span className="muted">{compact(c.followers ?? 0)} followers</span></div>
-    <ol>{feed.slice(0, 8).map((p, i) => <li key={i} className={p.you ? 'you' : ''}>
-      <span className="cg-handle">{p.handle}{p.you ? ' · you' : ''}</span><p>{p.text}</p><small>♥ {compact(p.likes)} · {yearWeek(p.week)}</small>
-    </li>)}</ol>
-  </section>;
-}
-
-/** your story so far */
-function Story({c}: {c: Career}) {
-  const ms = c.milestones ?? [];
-  if (!ms.length) return null;
-  return <section className="panel cg-storyline">
-    <h2><BookOpen size={18} aria-hidden="true"/> Your story</h2>
-    <ol>{ms.slice(0, 10).map((m, i) => <li key={i}><span>Age {m.age}</span>{m.text}</li>)}</ol>
   </section>;
 }
 
