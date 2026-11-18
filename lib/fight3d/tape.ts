@@ -10,6 +10,8 @@ const DIV: Record<string, [number, number]> = {   // [weight limit lb, typical h
   Flyweight: [125, 65], Bantamweight: [135, 67], Featherweight: [145, 68.5], Lightweight: [155, 70],
   Welterweight: [170, 72], Middleweight: [185, 73.5], 'Light Heavyweight': [205, 75], Heavyweight: [265, 76],
 };
+/** weight class name from the weigh-in weight (e.g. '155.0' -> 'Lightweight') */
+export const divisionOf = (weight: string) => { const lb = parseFloat(weight); return Object.entries(DIV).find(([, [limit]]) => lb <= limit + 1)?.[0] ?? 'Lightweight'; };
 const hash = (s: string) => { let h = 2166136261; for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return (h >>> 0) / 4294967296; };
 const feet = (inches: number) => `${Math.floor(inches / 12)}'${Math.round(inches % 12)}"`;
 

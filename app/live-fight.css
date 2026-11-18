@@ -157,3 +157,47 @@ html.lf-lock,html.lf-lock body{overflow:hidden}
 .lf-dmg em[data-on="1"]{display:inline-block}
 @media (prefers-reduced-motion:reduce){.lf-dmg em{animation:none}}
 .tt-official{font:800 12px/1 var(--font-sans,system-ui);letter-spacing:.12em;color:#9aa3b5}
+
+/* ---- walkouts (components/fight3d/walkout.tsx): stage beams, haze, flashes, lower third ---- */
+.wo{position:absolute;inset:0;z-index:30;overflow:hidden;background:#04030a;color:#fff;--c:#2459d6}
+.wo.red{--c:#d32a3a}
+.wo-stage{position:absolute;inset:0;animation:wo-in .5s ease-out}
+.wo-stage::before{content:'';position:absolute;inset:0;background:radial-gradient(70% 55% at 50% 38%,color-mix(in srgb,var(--c) 30%,transparent),transparent 70%),linear-gradient(180deg,#0a0716 0%,#05040b 60%,#000 100%)}
+.wo-crowd{position:absolute;inset:0 0 40% 0;background:repeating-linear-gradient(180deg,#ffffff06 0 2px,transparent 2px 14px)}
+.wo-crowd i{position:absolute;width:6px;height:6px;border-radius:50%;background:#fff;box-shadow:0 0 14px 6px #ffffffcc;opacity:0;animation:wo-flash 5.6s linear infinite}
+.wo-tunnel{position:absolute;left:50%;bottom:22%;width:min(46vw,520px);height:min(50vh,480px);transform:translateX(-50%);border-radius:50% 50% 0 0/22% 22% 0 0;background:radial-gradient(60% 70% at 50% 100%,color-mix(in srgb,var(--c) 55%,#fff 10%),#120d22 70%);box-shadow:0 0 120px 20px color-mix(in srgb,var(--c) 40%,transparent),inset 0 0 60px #000;opacity:.85}
+.wo-beam{position:absolute;top:-10%;width:42vw;height:130%;transform-origin:50% 0;background:conic-gradient(from 168deg at 50% 0,transparent 0deg,#fff6 6deg,#ffffff22 12deg,transparent 18deg);mix-blend-mode:screen;filter:blur(6px);opacity:.75}
+.wo-beam.l{left:-6%;animation:wo-sweep-l 3.2s ease-in-out infinite alternate}
+.wo-beam.r{right:-6%;animation:wo-sweep-r 3.6s ease-in-out infinite alternate}
+.wo-beam.c{left:29vw;opacity:.55;background:conic-gradient(from 172deg at 50% 0,transparent 0deg,color-mix(in srgb,var(--c) 70%,#fff) 8deg,transparent 16deg);animation:wo-pulse 1.1s ease-in-out infinite alternate}
+.wo-haze{position:absolute;inset:auto -10% 10% -10%;height:45%;background:radial-gradient(50% 60% at 50% 70%,#ffffff1f,transparent 70%);filter:blur(18px);animation:wo-drift 6.5s ease-in-out infinite alternate}
+.wo-fighter{position:absolute;left:50%;bottom:9%;height:min(78vh,820px);width:auto;transform-origin:50% 100%;filter:drop-shadow(0 30px 40px #000) drop-shadow(0 0 30px color-mix(in srgb,var(--c) 45%,transparent));animation:wo-walk 6.5s cubic-bezier(.3,.1,.3,1) both,wo-bob .62s ease-in-out infinite}
+.wo-floor{position:absolute;left:0;right:0;bottom:0;height:16%;background:linear-gradient(180deg,transparent,#000 70%),radial-gradient(40% 80% at 50% 0,color-mix(in srgb,var(--c) 30%,transparent),transparent)}
+.wo-plate{position:absolute;left:clamp(16px,6vw,90px);bottom:clamp(20px,9vh,90px);display:grid;gap:6px;max-width:min(560px,calc(100% - 32px));padding:16px 22px 18px;background:linear-gradient(90deg,#08070ff0,#08070fc0);border-left:6px solid var(--c);animation:wo-plate .6s .9s cubic-bezier(.2,.9,.3,1.2) both}
+.wo-corner{font:800 12px/1 var(--font-body,system-ui);letter-spacing:.18em;text-transform:uppercase;color:color-mix(in srgb,var(--c) 60%,#fff)}
+.wo-name{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font:900 clamp(30px,5.4vw,64px)/1 var(--font-display,system-ui);text-transform:uppercase;letter-spacing:-.01em}
+.wo-rank{font:900 14px/1 var(--font-body,system-ui);padding:6px 9px;background:#fff;color:#111;letter-spacing:.08em}
+.wo-rank.champ{background:linear-gradient(180deg,#f7d77a,#c99a2e);color:#2a1d00}
+.wo-nick{font:700 clamp(16px,2vw,22px)/1.2 var(--font-body,system-ui);color:#f3d27a}
+.wo-facts{display:flex;flex-wrap:wrap;gap:6px 18px;font:700 14px/1.2 var(--font-body,system-ui);color:#d8dbe5;letter-spacing:.04em;text-transform:uppercase}
+.wo-facts span+span::before{content:'';display:inline-block;width:5px;height:5px;margin:0 12px 2px -10px;border-radius:50%;background:var(--c)}
+.wo-top{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:14px;padding:max(14px,env(safe-area-inset-top)) 18px 14px;background:linear-gradient(180deg,#000a,transparent)}
+.wo-event{font:800 13px/1.2 var(--font-body,system-ui);letter-spacing:.14em;text-transform:uppercase;color:#f3d27a}
+.wo-steps{display:flex;gap:6px;margin-left:auto}
+.wo-steps i{width:28px;height:4px;border-radius:2px;background:#ffffff33}
+.wo-steps i.done{background:#fff}
+.wo-steps i.on{background:linear-gradient(90deg,#fff 50%,#ffffff33 50%);background-size:200% 100%;background-position:100% 0;animation:wo-progress 6.5s linear forwards}
+.wo-skip{min-height:40px;padding:8px 14px;background:#0009;color:#fff;border-color:#ffffff55}
+.wo-skip kbd{font-size:11px;opacity:.7;margin-left:2px}
+@keyframes wo-in{from{opacity:0}}
+@keyframes wo-walk{0%{transform:translateX(-50%) scale(.42);filter:brightness(.25) blur(2px)}25%{filter:brightness(.8)}100%{transform:translateX(-50%) scale(1);filter:brightness(1) drop-shadow(0 30px 40px #000)}}
+@keyframes wo-bob{50%{translate:0 -6px}}
+@keyframes wo-sweep-l{from{rotate:-22deg}to{rotate:8deg}}
+@keyframes wo-sweep-r{from{rotate:22deg}to{rotate:-8deg}}
+@keyframes wo-pulse{from{opacity:.35}to{opacity:.7}}
+@keyframes wo-drift{to{transform:translateX(4%)}}
+@keyframes wo-flash{0%,93%,100%{opacity:0}95%{opacity:1}}
+@keyframes wo-plate{from{opacity:0;transform:translateX(-40px)}}
+@keyframes wo-progress{to{background-position:0 0}}
+@media (max-width:640px){.wo-fighter{height:62vh;bottom:22%}.wo-plate{bottom:16px;left:12px;padding:12px 14px}.wo-event{display:none}.wo-tunnel{width:80vw}}
+@media (prefers-reduced-motion:reduce){.wo-stage,.wo-crowd i,.wo-beam,.wo-haze,.wo-fighter,.wo-plate,.wo-steps i.on{animation:none!important}.wo-fighter{transform:translateX(-50%)}}

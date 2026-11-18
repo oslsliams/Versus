@@ -1,6 +1,7 @@
 'use client';
 // VERSUS live fights: full-screen playable fight. You are the red corner.
-import {useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
+import {Walkout} from './walkout';
 import {Pause, Play, FastForward, Maximize, Minimize, X} from 'lucide-react';
 import type {Stats, Style} from '../../lib/career/engine';
 import {DT, NO_INPUT, ROUND_SECONDS, aiInput, createFight, damageTaken, makeBrain, step, type Input, type LiveFight as Fight} from '../../lib/fight3d/engine';
@@ -37,6 +38,9 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
   const fc: FightCard = {...base, you: {...base.you, model: mRed}, opp: {...base.opp, model: mBlue}};
   const fcRef = useRef(fc); fcRef.current = fc;
   const [started, setStarted] = useState(false);
+  const [walk, setWalk] = useState(false);              // the walkouts play between the tale of the tape and the first bell
+  const walkRef = useRef(false); walkRef.current = walk;
+  const beginFight = useCallback(() => setStarted(true), []);
   const [comm, setComm] = useState<(Line & {key: number}) | null>(null);
   const [corner, setCorner] = useState<string[] | null>(null);
   const startedRef = useRef(false); startedRef.current = started;
@@ -53,7 +57,7 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
   const pausedRef = useRef(false), done = useRef(false), readyRef = useRef(false);
   readyRef.current = ready;
   // AI-vs-AI watch mode skips the tape after a beat
-  useEffect(() => { if (watch && ready && !started) { const id = setTimeout(() => setStarted(true), 2500); return () => clearTimeout(id); } }, [watch, ready, started]);
+  useEffect(() => { if (watch && ready && !started) { const id = setTimeout(() => setWalk(true), 2500); return () => clearTimeout(id); } }, [watch, ready, started]);
   pausedRef.current = paused;
 
   useEffect(() => {
@@ -129,7 +133,7 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
       const sub = h.sub; if (sub) sub.style.width = `${Math.min(100, (gs === 'top' ? me.sub : them.sub) * 100)}%`;
     };
     const down = (e: KeyboardEvent) => {
-      if (!startedRef.current) { if ((e.code === 'Enter' || e.code === 'Space') && readyRef.current) { e.preventDefault(); setStarted(true); } return; }
+      if (!startedRef.current) { if ((e.code === 'Enter' || e.code === 'Space') && readyRef.current && !walkRef.current) { e.preventDefault(); setWalk(true); } return; }
       if (e.code === 'Escape' || e.code === 'KeyP') { setPaused(p => !p); return; }
       const k = KEYMAP[e.code]; if (!k) return;
       e.preventDefault();
@@ -160,7 +164,7 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
 
   return <div className="lf" ref={shell} role="application" aria-label={`Live fight: ${you.name} versus ${opp.name}`}>
     <canvas ref={canvas}/>
-    {!started && !error && <TaleOfTape card={fc} ready={ready} loading={loading} onStart={() => setStarted(true)}/>}
+    {!started && !error && (walk ? <Walkout card={fc} onDone={beginFight}/> : <TaleOfTape card={fc} ready={ready} loading={loading} onStart={() => setWalk(true)}/>)}
 
     <div className="lf-top">
       {[you, opp].map((c, i) => <div key={i} className={`lf-plate ${i ? 'blue' : 'red'}`}>
