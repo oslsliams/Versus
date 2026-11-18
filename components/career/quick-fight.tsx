@@ -36,7 +36,7 @@ export function QuickFight() {
   const [rounds, setRounds] = useState(3);
   const [fighting, setFighting] = useState(0);
   const [watch, setWatch] = useState(false);
-  useEffect(() => { if (new URLSearchParams(location.search).get('watch') === '1') { setWatch(true); setFighting(1); } }, []);
+  useEffect(() => { const q = new URLSearchParams(location.search); const r = Number(q.get('rounds')); if (r === 1 || r === 3 || r === 5) setRounds(r); if (q.get('watch') === '1') { setWatch(true); setFighting(1); } }, []);
   const [result, setResult] = useState<LiveResult | null>(null);
   const you = useMemo(() => withLook(ROSTER[mine]), [mine]);
   const opp = useMemo(() => withLook(ROSTER[theirs === mine ? (mine + 1) % ROSTER.length : theirs]), [theirs, mine]);

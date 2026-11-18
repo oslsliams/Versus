@@ -13,6 +13,7 @@ import {distance, type Fighter, type FightEvent, type LiveFight, type MoveId, ty
 import {Stadium} from './stadium';
 import {applyLook, loadLookAssets, patchShorts, type LookAssets} from './look';
 import {WalkoutDirector} from './walkout-scene';
+import {Finale} from './finale';
 import {REFEREE_LOOK, type Look} from '../../lib/cosmetics';
 
 const PLAT = .9;           // mat height in the arena model
@@ -348,9 +349,13 @@ export class FightView {
   shake = 0; time = 0; camX = 0; camZ = 0; camDist = 3.6; camDir = new THREE.Vector2(0, 1); private disposed = false;
   /** the player's screen axes on the floor (world xz): WASD moves along these */
   axes = {rx: 1, rz: 0, fx: 0, fz: -1};
-  cage: {mesh: THREE.Object3D; x: number; z: number}[] = [];
+  cage: {mesh: THREE.Mesh; x: number; z: number; o: number; fence: boolean}[] = [];
   /** the walkout (locker room -> tunnel -> cage), run before the first bell; null once it's over */
   director: WalkoutDirector | null = null;
+  /** KO replay + decision ceremony */
+  finale: Finale = new Finale(this);
+  /** camera punch-in on big shots (0..1) and the direction of the kick */
+  private punch = 0; private kick = new THREE.Vector3();
   assets: Assets;
   stadium: Stadium; private introAmt = 1;
   /** the referee: moves like a fighter (same rig and step loops) but is driven here, not by the engine */
@@ -377,7 +382,7 @@ export class FightView {
       const name = `${m.name} ${m.parent?.name ?? ''}`.toLowerCase();
       if (/post|rail|skirt|fence|txt/.test(name)) {
         m.geometry.computeBoundingBox(); const c = new THREE.Vector3(); m.geometry.boundingBox!.getCenter(c); m.localToWorld(c);
-        if (c.y > PLAT - .2 && Math.hypot(c.x, c.z) > 2.5) this.cage.push({mesh: m, x: c.x, z: c.z}); // hidden on the camera's side each frame
+        if (c.y > PLAT - .2 && Math.hypot(c.x, c.z) > 2.5) { m.material = (m.material as THREE.Material).clone(); this.cage.push({mesh: m, x: c.x, z: c.z, o: 1, fence: /fence/.test((m.material as THREE.Material).name)}); }   // see-through on the camera's side (fadeCage)
       }
       const mat = m.material as THREE.MeshStandardMaterial;
       if (mat && /fence/.test(mat.name)) { mat.alphaTest = .5; mat.transparent = false; mat.side = THREE.DoubleSide; }
@@ -479,9 +484,29 @@ export class FightView {
   /** set while the decision is read (change of camera and the hand raise) */
   ceremonyOn = false;
 
+  /** The octagon on the camera's side goes see-through instead of disappearing (like shooting through the chain-link
+   *  on a broadcast): fence panels drop to a faint mesh, pads and posts to ghosted; open = panels to remove entirely (the gate). */
+  fadeCage(camX: number, camZ: number, dt: number, open?: (p: {x: number; z: number}) => boolean) {
+    const cl = Math.hypot(camX, camZ) || 1, k = 1 - Math.exp(-10 * dt);
+    for (const p of this.cage) {
+      const pl = Math.hypot(p.x, p.z) || 1;
+      const near = (p.x * camX + p.z * camZ) / (pl * cl) > .45 && cl > 2.2;
+      const target = open?.(p) ? 0 : near ? (p.fence ? .16 : .28) : 1;
+      p.o += (target - p.o) * k;
+      const m = p.mesh.material as THREE.MeshStandardMaterial, solid = p.o > .985;
+      m.transparent = !solid; m.opacity = solid ? 1 : p.o; m.depthWrite = solid;
+      if (p.fence) m.alphaTest = solid ? .5 : .01;
+      p.mesh.visible = p.o > .02;
+    }
+  }
+  /** where a fighter's head is on screen (px, relative to the canvas) for pop-up text */
+  screenOf(i: 0 | 1) {
+    const r = this.rigs[i], v = new THREE.Vector3(); (r.bones.Head ?? r.root).getWorldPosition(v); v.y += .28; v.project(this.camera);
+    const c = this.renderer.domElement; return {x: (v.x * .5 + .5) * c.clientWidth, y: (-v.y * .5 + .5) * c.clientHeight};
+  }
   makeRig(src: Src, look?: Look, dress?: LookAssets) { return new FighterRig(src, look, dress); }
   /** play the walkouts (sides in walking order); the fight loop waits until director.done */
-  startWalkout(order: (0 | 1)[]) { if (!this.director) this.director = new WalkoutDirector(this, order); return this.director; }
+  startWalkout(order: (0 | 1)[]) { if (!this.director) { this.director = new WalkoutDirector(this, order); if (this.debugCam) this.director.skip(); } return this.director; }
 
   resize(w: number, h: number) { this.renderer.setSize(w, h, false); this.composer.setSize(w, h); this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); }
   degrade() { this.stadium.degrade(); this.renderer.setPixelRatio(1); this.renderer.shadowMap.enabled = false; this.bloom.enabled = false; const c = this.renderer.domElement; this.resize(c.clientWidth, c.clientHeight); }
@@ -490,6 +515,10 @@ export class FightView {
     for (const e of evts) {
       if (e.type === 'whiff' && Math.random() < .55) { this.rigs[e.side === 0 ? 1 : 0].dodge(); continue; }
       this.stadium.excite(e.type === 'ko' || e.type === 'tap' ? 1.6 : e.type === 'kd' ? 1 : e.type === 'hurt' ? .8 : e.type === 'td' ? .45 : e.type === 'sub' ? .5 : e.type === 'hit' ? Math.min(.35, e.power * .4) : 0);
+      // big moments punch the camera in and kick it along the blow
+      const big = e.type === 'ko' ? 1 : e.type === 'kd' ? .9 : e.type === 'hurt' ? .75 : e.type === 'hit' && e.power > .75 ? Math.min(.6, e.power * .45) : 0;
+      if (big > this.punch) { this.punch = big; const a = this.rigs[e.side].root.position, d = this.rigs[e.side === 0 ? 1 : 0].root.position; this.kick.set(d.x - a.x, 0, d.z - a.z).normalize().multiplyScalar(.12 * big); }
+      if (e.type === 'ko') this.finale.markKO(this.time);
       if (e.type === 'hurt') { const d = this.rigs[e.side === 0 ? 1 : 0]; d.flash = 1; d.play('stagger', .05); this.shake = Math.max(this.shake, .14); continue; }
       if (!['hit', 'block', 'ko', 'kd', 'td'].includes(e.type)) continue;
       const n = e.type === 'block' ? 5 : Math.min(16, 5 + Math.round(e.power * 7));
@@ -517,6 +546,7 @@ export class FightView {
     this.time += dt;
     if (this.director && !this.director.done) { this.director.update(g, dt); this.stadium.update(dt, g, this.renderer, {intro: 0}); this.composer.render(dt); return; }
     if (this.director) { this.director.dispose(); this.director = null; this.time = 0; }
+    if (this.finale.update(dt)) { this.stadium.update(dt, g, this.renderer, {intro: 0}); this.composer.render(dt); return; }
     g.f.forEach((f, i) => {
       const r = this.rigs[i];
       // on the ground the top fighter sits in close, hips between the bottom fighter's legs, chest over his chest
@@ -536,6 +566,7 @@ export class FightView {
       for (const w of r.walkout) w.visible = walk;
     });
     this.updateRef(g, dt);
+    if (g.phase === 'fight' || g.phase === 'over') this.finale.record(this.time);
     for (const s of this.sparks) {
       if (s.life <= 0) continue;
       s.life -= dt; s.v.y -= 9 * dt; s.mesh.position.addScaledVector(s.v, dt);
@@ -561,13 +592,22 @@ export class FightView {
     this.axes = {rx: -fz, rz: fx, fx, fz};
     // open the cage on the camera's side
     const cl = Math.hypot(cx, cz) || 1;
-    for (const p of this.cage) { const pl = Math.hypot(p.x, p.z); p.mesh.visible = (p.x * cx + p.z * cz) / (pl * cl) < .45 || cl < 2.2; }
+    this.fadeCage(cx, cz, dt);
     if (this.debugCam === 'board') { this.camera.position.set(3, PLAT + 6, 13); this.camera.lookAt(0, 17.5, 0); }
     else if (this.debugCam === 'board2') { this.camera.position.set(13, PLAT + 6, 3); this.camera.lookAt(0, 17.5, 0); }
     else if (this.debugCam === 'ribbon') { this.camera.position.set(0, PLAT + 3, 6); this.camera.lookAt(0, 10, -26); }
+    else if (this.debugCam?.startsWith('orbit')) {   // debug: ?fightcam=orbit:<deg>:<radius>:<height> looks at the cage from anywhere
+      const [, d = '0', r = '30', h = '14'] = this.debugCam.split(':'); const a = +d * Math.PI / 180;
+      this.camera.position.set(Math.sin(a) * +r, +h, Math.cos(a) * +r); this.camera.lookAt(0, PLAT + 2, 0);
+    }
     else if (this.debugCam) { const h = this.debugCam === 'hand' ? this.rigs[0].bones.LeftHand : this.rigs[0].bones.Head; if (h) { const p = new THREE.Vector3(); h.getWorldPosition(p); const k = this.debugCam === 'hand' ? .55 : 1; this.camera.position.set(p.x + .5 * k, p.y + .05, p.z + .55 * k); this.camera.lookAt(p); } }
     else {
-      this.camera.position.set(cx + sx, PLAT + 1.42 + sy, cz); this.camera.lookAt(this.camX, PLAT + 1.05, this.camZ);
+      // punch: push in toward the action and narrow the lens for a beat, kicked along the direction of the blow
+      this.punch = Math.max(0, this.punch - dt * 1.8);
+      const pk = this.punch * this.punch, push = pk * .28;
+      this.camera.position.set(cx + sx + (this.camX - cx) * push + this.kick.x * pk, PLAT + 1.42 + sy - pk * .12, cz + (this.camZ - cz) * push + this.kick.z * pk);
+      this.camera.lookAt(this.camX, PLAT + 1.05, this.camZ);
+      const fov = 40 - pk * 9; if (Math.abs(this.camera.fov - fov) > .01) { this.camera.fov = fov; this.camera.updateProjectionMatrix(); }
       // opening shot before round 1: a crane move from high over the stands, round past the board, down into the cage
       const INTRO = 3.6, u = g.round === 1 ? this.time / INTRO : 1;
       if (u < 1) {
@@ -590,6 +630,7 @@ export class FightView {
     this.disposed = true;
     for (const r of this.rigs) r.mixer.stopAllAction();
     this.ref?.mixer.stopAllAction();
+    this.finale.dispose();
     this.stadium.dispose();
     this.scene.traverse(o => { const m = o as THREE.Mesh; if (m.isMesh) { m.geometry?.dispose?.(); const mt = m.material; (Array.isArray(mt) ? mt : [mt]).forEach(x => x?.dispose?.()); } });
     this.composer.dispose(); this.renderer.dispose();

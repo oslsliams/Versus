@@ -359,7 +359,7 @@ function ground(g: LiveFight, inputs: [Input, Input], pressed: [Input, Input], d
       // ground and pound: short shots from top, partly covered up, but they add up and the head barely recovers down there
       const dmg = 2.5 * (.55 + top.stats.power / 110) * (1.3 - bot.stats.chin / 170) * (.8 + rand() * .4) * (.62 + .38 * top.stamina / 100);
       bot.hp -= dmg; bot.cap = Math.max(20, bot.cap - dmg * .08); bot.sinceHit = 0; bot.absorbed += dmg;
-      top.points += dmg * .3; top.landed += 1; top.headLanded += 1; top.stamina -= 2.5; bot.escape -= .04;
+      top.points += dmg * .3; top.landed += 1; top.thrown += 1; top.headLanded += 1; top.stamina -= 2.5; bot.escape -= .04;
       ev(g, {type: 'hit', side: top.side, x: bot.x, z: bot.z, power: dmg / 8, target: 'head'});
       if (bot.hp <= 0) { g.slowmo = 1; ev(g, {type: 'ko', side: top.side, x: bot.x, z: bot.z, power: 2, text: 'TKO! Ref stops it'}); return finish(g, top, 'KO/TKO', 'Ground and pound'); }
     }
@@ -452,7 +452,8 @@ export function aiInput(g: LiveFight, me: Fighter, them: Fighter, brain: AIBrain
   // (an AI on its back escapes in ~10 s against good top pressure; a human mashing hard gets out in ~4-5 s)
   if (me.state === 'bottom') { if (rand() < (them.sub > 0 ? (.03 + lvl * .05) * 1.4 : .035 + lvl * .05)) pressed.jab = true; return {held, pressed}; }
   if (me.state === 'top') {
-    if (me.sub === 0 && brain.plan <= 0) { brain.plan = 1.2; if (me.stats.grappling > 55 && them.hp < 85 && rand() < .15 + lvl * .15) pressed.kick = true; }
+    // set it up first: a few seconds of top control and ground and pound before hunting the submission
+    if (me.sub === 0 && brain.plan <= 0) { brain.plan = 1.2; if (me.t > 4 && me.stats.grappling > 55 && them.hp < 85 && rand() < .15 + lvl * .15) pressed.kick = true; }
     // ground and pound ~2/s; while a submission is on, crank it (Normal ~3 presses/s)
     if (rand() < (me.sub > 0 ? .026 + lvl * .065 : .12 + lvl * .1)) pressed.jab = true;
     return {held, pressed};

@@ -236,13 +236,7 @@ export class WalkoutDirector {
     else { const k = 1 - Math.exp(-5 * dt); this.camPos.lerp(cam, k); this.camLook.lerp(look, k); }
     const camera = this.view.camera; camera.position.copy(this.camPos); camera.lookAt(this.camLook);
     // cage panels between the camera and the action get hidden (and the gate opens)
-    const cl = Math.hypot(this.camPos.x, this.camPos.z) || 1;
-    for (const c of this.view.cage) {
-      const pl2 = Math.hypot(c.x, c.z) || 1;
-      const towardCam = (c.x * this.camPos.x + c.z * this.camPos.z) / (pl2 * cl) > .45 && cl > 2.2;
-      const gate = gateOpen && c.z > 2.4 && Math.abs(c.x) < 1.7;
-      c.mesh.visible = !(towardCam || gate);
-    }
+    this.view.fadeCage(this.camPos.x, this.camPos.z, dt, c => gateOpen && c.z > 2.4 && Math.abs(c.x) < 1.7);
     // the referee waits in the middle of the cage
     this.view.updateRef(g, dt);
     this.view.stadium.excite(.06);
@@ -254,6 +248,6 @@ export class WalkoutDirector {
     for (const h of this.houseLights) h.l.intensity = h.i;
     this.view.scene.remove(this.group, this.spot, this.spotTarget, this.rim);
     this.group.traverse(o => { const m = o as THREE.Mesh; if (m.isMesh) { m.geometry.dispose(); (m.material as THREE.Material).dispose(); } });
-    for (const c of this.view.cage) c.mesh.visible = true;
+    for (const c of this.view.cage) { c.o = 1; c.mesh.visible = true; }
   }
 }

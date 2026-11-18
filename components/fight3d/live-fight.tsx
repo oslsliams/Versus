@@ -50,6 +50,17 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
   const hud = useRef<Record<string, HTMLElement | null>>({});
   const held = useRef<Input>({...NO_INPUT}), pressed = useRef<Input>({...NO_INPUT});
   const [callout, setCallout] = useState<{text: string; key: number; tone: string} | null>(null);
+  // juice: pop-up hit bubbles over the fighters, a white flash on the big moments
+  const [bubbles, setBubbles] = useState<{id: number; text: string; x: number; y: number; tone: string}[]>([]);
+  const [flash, setFlash] = useState(0);
+  // the end: KO replay, then the decision (hand raise), then the stats screen
+  const [stage, setStage] = useState<null | 'replay' | 'decision'>(null);
+  const stageRef = useRef<null | 'replay' | 'decision'>(null); stageRef.current = stage;
+  const endRef = useRef<LiveResult | null>(null);
+  const finish = useCallback(() => { if (endRef.current) onEnd(endRef.current); }, [onEnd]);
+  useEffect(() => { if (!bubbles.length) return; const id = setTimeout(() => setBubbles(b => b.slice(1)), 950); return () => clearTimeout(id); }, [bubbles]);
+  // watch mode moves on from the decision by itself
+  useEffect(() => { if (watch && stage === 'decision') { const id = setTimeout(finish, 12000); return () => clearTimeout(id); } }, [watch, stage, finish]);
   const [paused, setPaused] = useState(false);
   const [ground, setGround] = useState<null | 'top' | 'bottom'>(null);
   const [loading, setLoading] = useState(0);
@@ -113,7 +124,8 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
             if (g.phase === 'intro' || g.phase === 'fight') { setCorner(null); if (g.phase === 'fight') roundStart = {landed: [g.f[0].landed, g.f[1].landed], td: [g.f[0].takedowns, g.f[1].takedowns]}; }
             lastPhase = g.phase;
           }
-          for (const e of g.events) if (e.text) setCallout({text: e.text, key: Math.random(), tone: e.type === 'ko' || e.type === 'tap' || e.type === 'hurt' ? 'big' : e.side === 0 ? 'you' : 'opp'});
+          for (const e of g.events) if (e.text && e.type !== 'hit' && e.type !== 'block') setCallout({text: e.text, key: Math.random(), tone: e.type === 'ko' || e.type === 'tap' || e.type === 'hurt' ? 'big' : e.side === 0 ? 'you' : 'opp'});
+          pop(g);
           acc -= DT;
         }
         view!.render(g, frame);
@@ -122,10 +134,38 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
           done.current = true;
           const r = g.result!;
           const line = (f: Fight['f'][number]): FightStatLine => ({sig: f.landed, thrown: f.thrown, tdLanded: f.takedowns, tdAttempts: f.tdAttempts, ctrl: Math.round(f.ctrl), kds: f.knockdowns, head: f.headLanded, body: f.bodyLanded, legs: f.legLanded});
-          onEnd({winner: r.winner === 0 ? 'you' : r.winner === 1 ? 'opp' : 'draw', method: r.method, round: r.round, damageTaken: damageTaken(g.f[0]), cards: g.cards, stats: [line(g.f[0]), line(g.f[1])], how: r.how, time: r.time, card: fcRef.current});
+          endRef.current = {winner: r.winner === 0 ? 'you' : r.winner === 1 ? 'opp' : 'draw', method: r.method, round: r.round, damageTaken: damageTaken(g.f[0]), cards: g.cards, stats: [line(g.f[0]), line(g.f[1])], how: r.how, time: r.time, card: fcRef.current};
+          // knockouts get the slow-motion replay first; everything ends with the hand raise
+          if (r.method === 'KO/TKO' && view!.finale.hasKO && r.winner !== -1) { view!.finale.startReplay(r.winner === 0 ? 1 : 0); setStage('replay'); }
+          else { view!.finale.startCeremony(r.winner); setStage('decision'); }
         }
+        if (stageRef.current === 'replay' && view!.finale.replayDone && view!.finale.mode === 'replay') { view!.finale.startCeremony(g.result!.winner); setStage('decision'); }
       }
       raf = requestAnimationFrame(loop);
+    };
+    // pop-up bubbles: clean shots, counters, body and leg work, checks, and combo counts
+    const streak = [0, 0], streakT = [0, 0];
+    const pop = (g: Fight) => {
+      if (!view) return;
+      const now = performance.now(), add: {id: number; text: string; x: number; y: number; tone: string}[] = [];
+      for (const e of g.events) {
+        const s = e.side, d = (s === 0 ? 1 : 0) as 0 | 1;
+        let text = '', who: 0 | 1 = d;
+        if (e.type === 'hit') {
+          if (now - streakT[s] > 1300) streak[s] = 0; streak[s]++; streakT[s] = now; streak[d] = 0;
+          if (e.text === 'Counter!') text = 'COUNTER!';
+          else if (e.target === 'body' && e.power > .3) text = 'BODY!';
+          else if (e.target === 'legs' && e.power > .3) text = 'LEG KICK!';
+          else if (e.target !== 'body' && e.target !== 'legs' && e.power > 1) text = 'BOOM!';
+          else if (e.target !== 'body' && e.target !== 'legs' && e.power > .6) text = 'CLEAN!';
+          if (streak[s] >= 3) { add.push({id: Math.random(), text: streak[s] + ' HIT COMBO', x: 0, y: 0, tone: 'combo ' + (s === 0 ? 'red' : 'blue')}); const p = view.screenOf(s); add[add.length - 1].x = p.x; add[add.length - 1].y = p.y - 40; }
+        } else if (e.type === 'block' && e.target === 'legs') { text = 'CHECKED!'; who = d; }
+        if (e.type === 'ko' || e.type === 'kd' || e.type === 'hurt') setFlash(Math.random());
+        if (!text) continue;
+        const p = view.screenOf(who);
+        add.push({id: Math.random(), text, x: p.x + (Math.random() - .5) * 40, y: p.y, tone: s === 0 ? 'red' : 'blue'});
+      }
+      if (add.length) setBubbles(b => [...b, ...add].slice(-5));
     };
     const paint = (g: Fight) => {
       const h = hud.current;
@@ -176,7 +216,7 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
     onPointerUp: () => { held.current[k] = false; }, onPointerCancel: () => { held.current[k] = false; }, onPointerLeave: () => { held.current[k] = false; },
   });
 
-  return <div className={`lf${walk && !started ? ' walking' : ''}`} ref={shell} role="application" aria-label={`Live fight: ${you.name} versus ${opp.name}`}>
+  return <div className={`lf${walk && !started ? ' walking' : ''}${stage ? ' finale' : ''}`} ref={shell} role="application" aria-label={`Live fight: ${you.name} versus ${opp.name}`}>
     <canvas ref={canvas}/>
     {!started && !error && (walk ? <WalkoutHud card={fc} step={walkStep} onSkip={skipWalk}/> : <TaleOfTape card={fc} ready={ready} loading={loading} onStart={() => setWalk(true)}/>)}
 
@@ -199,7 +239,11 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
 
     {comm && started && <div key={comm.key} className={`lf-comm ${comm.who}`} aria-live="polite"><b>{VOICES[comm.who]}</b>{comm.text}</div>}
     {corner && <div className="lf-corner" role="status"><span className="eyebrow">Your corner</span><ul>{corner.map((c, i) => <li key={i}>{c}</li>)}</ul></div>}
-    {callout && <div key={callout.key} className={`lf-callout ${callout.tone}`} aria-live="assertive">{callout.text}</div>}
+    {callout && !stage && <div key={callout.key} className={`lf-callout ${callout.tone}`} aria-live="assertive">{callout.text}</div>}
+    {flash > 0 && <div key={flash} className="lf-flash" aria-hidden="true"/>}
+    {!stage && bubbles.map(b => <span key={b.id} className={`lf-bubble ${b.tone}`} style={{left: b.x, top: b.y}} aria-hidden="true">{b.text}</span>)}
+    {stage === 'replay' && <div className="lf-replay" aria-label="Knockout replay"><i/><i/><span className="lf-replay-bug">REPLAY</span><span className="lf-replay-sub">Slow motion</span></div>}
+    {stage === 'decision' && endRef.current && <Decision card={fc} result={endRef.current} onContinue={finish}/>}
     {ground && <div className="lf-ground">
       <span>{ground === 'top' ? 'Top: J / K ground and pound · L start a submission, then mash J / K to crank it' : 'On your back: mash any key to fill Escape (and to fight off submissions)'}</span>
       <span className="lf-meter"><b>Escape</b><span className="lf-mbar"><i className="esc" ref={el => { hud.current.escape = el; }}/></span></span>
@@ -288,4 +332,36 @@ function Verdict({card, result}: {card: FightCard; result: {winner: 'you' | 'opp
   const [v] = useState(() => verdict(card, result));   // pick the quotes once
   const official = result.winner === 'draw' ? 'DRAW' : `${result.method}${result.how ? ` (${result.how.toUpperCase()})` : ''} · ROUND ${result.round}${result.time != null ? ` · ${mmss(Math.round(result.time))}` : ''}`;
   return <div className="tt-verdict"><span className="tt-official">{official}</span><strong>{v.headline}</strong>{v.quotes.map(([who, q]) => <p key={who}><b>{who.split(' ').slice(-1)[0].toUpperCase()}:</b> “{q}”</p>)}</div>;
+}
+
+/** The decision, read like the ring announcer does it, while the referee holds both wrists and then raises the
+ *  winner's hand. Finishes give method, strike, time and round; decisions read the judges' totals (winner's score
+ *  first, the way official results print them: 29-28, 29-28, 30-27); title fights end with "and still" / "and new". */
+function Decision({card, result, onContinue}: {card: FightCard; result: LiveResult; onContinue: () => void}) {
+  const w = result.winner === 'you' ? card.you : result.winner === 'opp' ? card.opp : null;
+  const l = w === card.you ? card.opp : card.you;
+  const corner = result.winner === 'you' ? 'red' : 'blue';
+  const scores = result.cards.map(([a, b]) => result.winner === 'opp' ? `${b}-${a}` : `${a}-${b}`).join(', ');
+  const clock = result.time != null ? mmss(Math.round(result.time)) : '';
+  const tko = result.how === 'Ground and pound' || result.how === 'Leg kicks' || result.how === 'Body shot';
+  const lead = result.method === 'KO/TKO' ? `Referee stops the contest at ${clock} of round ${result.round}.`
+    : result.method === 'SUB' ? `${l.name.split(' ').slice(-1)[0]} taps at ${clock} of round ${result.round}.`
+    : `After ${result.round} rounds, we go to the judges' scorecards.`;
+  const how = result.method === 'KO/TKO' ? `by ${tko ? 'TKO' : 'knockout'}${result.how ? ` (${result.how.toLowerCase()})` : ''}`
+    : result.method === 'SUB' ? `by submission${result.how ? ` (${result.how.toLowerCase()})` : ''}`
+    : result.method === 'SPLIT DEC' ? 'by split decision' : 'by unanimous decision';
+  const titleCall = card.title && w ? (w.rank === 'C' ? 'AND STILL' : 'AND NEW') : null;
+  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); onContinue(); } }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k); }, [onContinue]);
+  return <div className={`lf-decision ${w ? corner : 'draw'}`} role="dialog" aria-label="Official decision">
+    <div className="lf-dec-card">
+      <span className="lf-dec-lead">{lead}</span>
+      {result.method !== 'KO/TKO' && result.method !== 'SUB' && <span className="lf-dec-scores">{scores}</span>}
+      {w ? <>
+        <span className="lf-dec-for">{titleCall ? `${titleCall} ${card.title?.replace(/^VERSUS /, '')}` : `For the winner, ${how}, fighting out of the ${corner} corner`}</span>
+        <strong className="lf-dec-name">{w.nickname ? <small>&ldquo;{w.nickname}&rdquo;</small> : null}{w.name}</strong>
+        {titleCall && <span className="lf-dec-for">{how}</span>}
+      </> : <strong className="lf-dec-name">It&rsquo;s a draw</strong>}
+      <button className="button primary lf-dec-go" onClick={onContinue}>Fight stats <kbd>Enter</kbd></button>
+    </div>
+  </div>;
 }

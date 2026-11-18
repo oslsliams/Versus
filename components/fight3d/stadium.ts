@@ -215,7 +215,7 @@ export class Stadium {
       b.a += dt * b.speed * (1 + wild * 3);
       const tgt = new THREE.Vector3(Math.cos(b.a) * (8 + 14 * (1 - wild * .5)), 0, Math.sin(b.a * 1.3) * (8 + 10 * (1 - wild * .5)));
       b.mesh.lookAt(tgt); b.mesh.rotateX(-Math.PI / 2);
-      (b.mesh.material as THREE.MeshBasicMaterial).opacity = .018 + .022 * wild;
+      (b.mesh.material as THREE.MeshBasicMaterial).opacity = .008 + .02 * wild;   // a hint of haze; they flare up when the place goes off
     }
     // scoreboard redraw ~4x a second
     if ((this.scoreT -= dt) <= 0) { this.scoreT = .25; this.paintScore(g); }
