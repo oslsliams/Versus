@@ -34,7 +34,7 @@ export function CareerGame() {
   const [live, setLive] = useState(false);
   const [mode, setMode] = useState<'career' | 'quick'>('career');
   const [ready, setReady] = useState(false);
-  useEffect(() => { const saved = load<Career>(SAVE); setCareer(saved ? migrate(saved) : null); setFight(load<FightState>(FIGHT)); setReady(true); if (new URLSearchParams(location.search).get('watch') === '1') setMode('quick'); }, []);
+  useEffect(() => { const saved = load<Career>(SAVE); setCareer(saved ? migrate(saved) : null); setFight(load<FightState>(FIGHT)); setReady(true); const q = new URLSearchParams(location.search); if (q.get('watch') === '1' || q.get('mode') === 'quick') setMode('quick'); }, []);
   const update = (c: Career | null) => { setCareer(c); save(SAVE, c); };
   const updateFight = (f: FightState | null) => { setFight(f); save(FIGHT, f); };
   const inFight = live || (!!fight && !!career?.camp);
