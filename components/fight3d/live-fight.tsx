@@ -1,7 +1,7 @@
 'use client';
 // VERSUS live fights: full-screen playable fight. You are the red corner.
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {Walkout} from './walkout';
+import {WalkoutHud, walkOrder} from './walkout';
 import {Pause, Play, FastForward, Maximize, Minimize, X} from 'lucide-react';
 import type {Stats, Style} from '../../lib/career/engine';
 import {DT, NO_INPUT, ROUND_SECONDS, aiInput, createFight, damageTaken, makeBrain, step, type Input, type LiveFight as Fight} from '../../lib/fight3d/engine';
@@ -40,7 +40,9 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
   const [started, setStarted] = useState(false);
   const [walk, setWalk] = useState(false);              // the walkouts play between the tale of the tape and the first bell
   const walkRef = useRef(false); walkRef.current = walk;
-  const beginFight = useCallback(() => setStarted(true), []);
+  const [walkStep, setWalkStep] = useState(0);
+  const viewRef = useRef<FightView | null>(null);
+  const skipWalk = useCallback(() => { viewRef.current?.director?.skip(); }, []);
   const [comm, setComm] = useState<(Line & {key: number}) | null>(null);
   const [corner, setCorner] = useState<string[] | null>(null);
   const startedRef = useRef(false); startedRef.current = started;
@@ -72,12 +74,24 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
       const plain = new URLSearchParams(location.search).has('nolook');   // debug: fight without tattoos/gear
       const assets = await loadFightAssets(red, blue, p => alive && setLoading(p), plain ? undefined : [you.look ? {...you.look, model: red} : undefined, opp.look ? {...opp.look, model: blue} : undefined]);
       if (!alive || !canvas.current) return;
-      try { view = new FightView(canvas.current, g, assets); } catch { setError('Your browser could not start 3D graphics (WebGL). Try another browser or simulate the fight.'); return; }
+      try { view = new FightView(canvas.current, g, assets); viewRef.current = view; } catch { setError('Your browser could not start 3D graphics (WebGL). Try another browser or simulate the fight.'); return; }
       resize(); setReady(true); last = performance.now();
       raf = requestAnimationFrame(loop);
     }).catch(() => alive && setError('The fight assets could not load. Check your connection and try again.'));
     const loop = (now: number) => {
-      if (!startedRef.current) { last = now; raf = requestAnimationFrame(loop); return; }   // tale of the tape is up
+      if (!startedRef.current) {
+        // the walkouts: the 3D director runs the arena until both fighters are in the cage
+        if (walkRef.current && view) {
+          try {
+            const d = view.startWalkout(walkOrder(fcRef.current));
+            view.render(g, Math.min(.25, (now - last) / 1000)); last = now;
+            setWalkStep(d.who);
+            if (d.done) setStarted(true);
+          } catch (err) { console.error('walkout failed, going straight to the fight', err); view.director?.skip(); setStarted(true); }
+          raf = requestAnimationFrame(loop); return;
+        }
+        last = now; raf = requestAnimationFrame(loop); return;   // tale of the tape is up
+      }
       const raw = (now - last) / 1000; last = now;
       const frame = Math.min(.5, raw);
       if (!degraded) { slowFrames = raw > .045 ? slowFrames + 1 : Math.max(0, slowFrames - 1); if (slowFrames > 45) { degraded = true; view?.degrade(); } }
@@ -162,9 +176,9 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
     onPointerUp: () => { held.current[k] = false; }, onPointerCancel: () => { held.current[k] = false; }, onPointerLeave: () => { held.current[k] = false; },
   });
 
-  return <div className="lf" ref={shell} role="application" aria-label={`Live fight: ${you.name} versus ${opp.name}`}>
+  return <div className={`lf${walk && !started ? ' walking' : ''}`} ref={shell} role="application" aria-label={`Live fight: ${you.name} versus ${opp.name}`}>
     <canvas ref={canvas}/>
-    {!started && !error && (walk ? <Walkout card={fc} onDone={beginFight}/> : <TaleOfTape card={fc} ready={ready} loading={loading} onStart={() => setWalk(true)}/>)}
+    {!started && !error && (walk ? <WalkoutHud card={fc} step={walkStep} onSkip={skipWalk}/> : <TaleOfTape card={fc} ready={ready} loading={loading} onStart={() => setWalk(true)}/>)}
 
     <div className="lf-top">
       {[you, opp].map((c, i) => <div key={i} className={`lf-plate ${i ? 'blue' : 'red'}`}>

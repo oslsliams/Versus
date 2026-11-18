@@ -8,7 +8,12 @@ export type Look = {
   /** kit colours; left out = the body's own kit */
   shorts?: string; trim?: string; gloves?: string;
   tattoos: string[]; gear: string[];
+  /** solid-colour layers painted into the skin texture before the ink (the referee's shirt, pants and shoes) */
+  paint?: {id: string; color: string}[];
 };
+/** the referee: all black like real MMA officials (shirt, pants, shoes), dark latex gloves, white REFEREE lettering */
+export const REFEREE_LOOK = (model: FighterModel): Look => ({model, shorts: '#111216', trim: '#111216', gloves: '#1d2a4a', tattoos: [], gear: [],
+  paint: [{id: 'ref_pants', color: '#16171c'}, {id: 'ref_shirt', color: '#0d0e12'}, {id: 'ref_shoes', color: '#0a0a0c'}, {id: 'ref_back', color: '#f2f2f2'}, {id: 'ref_chest', color: '#f2f2f2'}]});
 export type Cosmetic = {id: string; name: string; where: string; price: number};
 
 export const TATTOOS: Cosmetic[] = [

@@ -11,8 +11,9 @@ import {OutputPass} from 'three/examples/jsm/postprocessing/OutputPass.js';
 import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment.js';
 import {distance, type Fighter, type FightEvent, type LiveFight, type MoveId, type Target} from '../../lib/fight3d/engine';
 import {Stadium} from './stadium';
-import {applyLook, loadLookAssets, type LookAssets} from './look';
-import type {Look} from '../../lib/cosmetics';
+import {applyLook, loadLookAssets, patchShorts, type LookAssets} from './look';
+import {WalkoutDirector} from './walkout-scene';
+import {REFEREE_LOOK, type Look} from '../../lib/cosmetics';
 
 const PLAT = .9;           // mat height in the arena model
 const X_SCALE = .82;       // engine metres -> arena metres along the fight line
@@ -72,7 +73,11 @@ function pickMove(m: MoveId, dist: number, combo: number, target: Target): Pick 
 }
 
 type Src = {scene: THREE.Group; clips: THREE.AnimationClip[]};
-type Assets = {arena: THREE.Group; red: Src; blue: Src; crowd: number[] | null; looks?: [Look | undefined, Look | undefined]; dress?: [LookAssets | undefined, LookAssets | undefined]};
+type Assets = {arena: THREE.Group; red: Src; blue: Src; crowd: number[] | null; looks?: [Look | undefined, Look | undefined]; dress?: [LookAssets | undefined, LookAssets | undefined];
+  /** the referee: a third body (never one of the fighters') in the all-black officials' kit */
+  ref?: Src; refLook?: Look; refDress?: LookAssets;
+  /** a body for the walkout crews (cornermen in team shirts) */
+  crew?: Src};
 // original MakeHuman fighter bodies built by scripts/art/build_fighter_mh.py
 export {FIGHTER_MODELS, modelFor, type FighterModel} from '../../lib/fight3d/tape';
 import type {FighterModel} from '../../lib/fight3d/tape';
@@ -93,14 +98,19 @@ export async function loadDress(look: Look | undefined): Promise<LookAssets | un
   return {...la, gear: gear as any};
 }
 export function loadFightAssets(red: FighterModel, blue: FighterModel, onProgress?: (p: number) => void, looks?: [Look | undefined, Look | undefined]): Promise<Assets> {
-  const urls = ['/models/arena.glb', `/models/fighter-${red}.glb`, `/models/fighter-${blue}.glb`];
-  const done = [0, 0, 0];
-  const report = () => onProgress?.(done.reduce((a, b) => a + b, 0) / 3);
+  const pool = (['delacroix', 'takeda', 'volkov', 'okafor', 'bianchi', 'mwangi', 'ashford', 'kalani'] as FighterModel[]).filter(m => m !== red && m !== blue);
+  const refModel = pool[0], crewModel = pool[1];
+  const refLook = REFEREE_LOOK(refModel);
+  const urls = ['/models/arena.glb', `/models/fighter-${red}.glb`, `/models/fighter-${blue}.glb`, `/models/fighter-${refModel}.glb`, `/models/fighter-${crewModel}.glb`];
+  const done = [0, 0, 0, 0, 0];
+  const report = () => onProgress?.(done.reduce((a, b) => a + b, 0) / 5);
   const crowd = fetch('/models/arena-crowd.json').then(r => r.ok ? r.json() as Promise<{seats?: number[]}> : null).then(j => j?.seats ?? null).catch(() => null);
-  const dress = Promise.all([loadDress(looks?.[0]), loadDress(looks?.[1])]);
-  return Promise.all([...urls.map((u, i) => loadGlb(u, p => { done[i] = p; report(); })), crowd, dress])
-    .then(([a, r, b, c, d]) => ({arena: (a as any).scene, red: {scene: (r as any).scene, clips: (r as any).animations}, blue: {scene: (b as any).scene, clips: (b as any).animations}, crowd: c as number[] | null,
-      looks, dress: d as [LookAssets | undefined, LookAssets | undefined]}));
+  const dress = Promise.all([loadDress(looks?.[0]), loadDress(looks?.[1]), loadDress(refLook)]);
+  return Promise.all([...urls.map((u, i) => loadGlb(u, p => { done[i] = p; report(); }).catch(e => { if (i >= 3) return null; throw e; })), crowd, dress])
+    .then(([a, r, b, rf, cw, c, d]) => ({
+      crew: cw ? {scene: (cw as any).scene, clips: (cw as any).animations} : undefined,arena: (a as any).scene, red: {scene: (r as any).scene, clips: (r as any).animations}, blue: {scene: (b as any).scene, clips: (b as any).animations}, crowd: c as number[] | null,
+      looks, dress: [(d as any)[0], (d as any)[1]] as [LookAssets | undefined, LookAssets | undefined],
+      ref: rf ? {scene: (rf as any).scene, clips: (rf as any).animations} : undefined, refLook, refDress: (d as any)[2] as LookAssets | undefined}));
 }
 export {loadGlb};
 
@@ -115,8 +125,22 @@ function inPlace(clip: THREE.AnimationClip) {
   return c;
 }
 
+const _p = new THREE.Vector3(), _c = new THREE.Vector3(), _q = new THREE.Quaternion(), _qa = new THREE.Quaternion(), _wq = new THREE.Quaternion(), _pq = new THREE.Quaternion();
+/** rotate a bone (in world space) so the segment from it to its child points along dir */
+function aimBone(bone: THREE.Bone, child: THREE.Object3D, dir: THREE.Vector3, amt = 1) {
+  bone.getWorldPosition(_p); child.getWorldPosition(_c);
+  const cur = _c.sub(_p).normalize();
+  _q.setFromUnitVectors(cur, dir.clone().normalize());
+  _qa.identity().slerp(_q, amt);
+  bone.getWorldQuaternion(_wq);
+  const parent = bone.parent!; parent.getWorldQuaternion(_pq);
+  bone.quaternion.copy(_pq.invert().multiply(_qa.multiply(_wq)));
+  bone.updateMatrixWorld(true);
+}
+
 export class FighterRig {
   root = new THREE.Group(); body: THREE.Object3D; mixer: THREE.AnimationMixer; walkout: THREE.Object3D[] = []; wobble = 0;
+  rest = new Map<string, THREE.Quaternion>();
   actions = new Map<string, THREE.AnimationAction>(); current: THREE.AnimationAction | null = null; currentKey = '';
   // layered playback: legs run 'idle' underneath while the upper body plays strikes/blocks/reactions
   lower: THREE.AnimationAction | null = null; upperCur: THREE.AnimationAction | null = null; upperKey = ''; split = true;
@@ -154,8 +178,11 @@ export class FighterRig {
       const b = o as THREE.Bone;
       if (b.isBone) this.bones[b.name.replace(/^mixamorig:?/, '')] = b;
     });
+    // the bind pose: upright and facing forward (the walk rebuilds the torso from it)
+    for (const [n, b] of Object.entries(this.bones)) if (b) this.rest.set(n, b.quaternion.clone());
     // kit colours, tattoos and gear (chain / bandana only for the walkout)
     try { this.walkout = applyLook(this.body, look, dress); } catch { this.walkout = []; }
+    try { patchShorts(this.body); } catch { /* cosmetic fix only */ }
     this.root.add(this.body);
     // same-size fighters: MakeHuman's ethnicity blend changes height (1.64-1.88 m), so normalise every
     // body to ~1.80 m from its bind-pose head height, keeping a hint (±1.5%) of natural difference
@@ -195,6 +222,42 @@ export class FighterRig {
     this.toSplit(0);
     this.mixer.update(Math.random() * 2);
   }
+  /** procedural pose on top of the animation: point an arm's upper arm and forearm along world directions
+   *  (amt 0..1 blends from the animated pose). Used for the referee's stance and the hand raise. */
+  poseArm(side: 'Left' | 'Right', upper: THREE.Vector3, fore: THREE.Vector3, amt = 1) {
+    const ua = this.bones[side + 'Arm'], fa = this.bones[side + 'ForeArm'], hd = this.bones[side + 'Hand'];
+    if (!ua || !fa || !hd || amt <= 0) return;
+    aimBone(ua, fa, upper, amt); aimBone(fa, hd, fore, amt);
+  }
+  /** Walking, built on top of whatever the mixer played (there's no walk capture, only fighting-stance footwork):
+   *  torso back to upright, thighs swing from the hip, knees fold on the swing-through, arms swing against the legs.
+   *  mv 0..1 = how much he's moving (0 = standing tall, arms loose). Feet are kept on the floor by liftToFloor(). */
+  walkPose(phase: number, mv: number, armsLoose = true) {
+    const {fwd, left, up} = this.axes(), down = up.clone().negate();
+    for (const n of ['Hips', 'Spine', 'Spine1', 'Spine2', 'Neck', 'Head']) { const b = this.bones[n], r = this.rest.get(n); if (b && r) b.quaternion.copy(r); }
+    this.body.updateMatrixWorld(true);
+    const along = (a: number, base: THREE.Vector3) => base.clone().multiplyScalar(Math.cos(a)).addScaledVector(fwd, Math.sin(a));
+    for (const [s, sg, off] of [['Left', 1, 0], ['Right', -1, Math.PI]] as const) {
+      const ph = phase + off;
+      const a = Math.sin(ph) * .36 * mv, bend = .08 + .72 * Math.pow(Math.max(0, Math.cos(ph)), 1.5) * mv;
+      const ul = this.bones[s + 'UpLeg'], lg = this.bones[s + 'Leg'], ft = this.bones[s + 'Foot'], toe = this.bones[s + 'ToeBase'];
+      if (ul && lg && ft) { aimBone(ul, lg, along(a, down).addScaledVector(left, sg * .05), 1); aimBone(lg, ft, along(a - bend, down), 1); }
+      if (ft && toe) aimBone(ft, toe, fwd.clone().multiplyScalar(.9).addScaledVector(down, .35 + Math.max(0, -Math.sin(ph)) * .25 * mv), 1);
+      if (armsLoose) { const b = -Math.sin(ph) * .3 * mv; this.poseArm(s, along(b, down).addScaledVector(left, sg * .17), along(b + .35, down).addScaledVector(left, sg * .04)); }
+    }
+  }
+  private lift = 0;
+  /** raise or lower the whole body so the lower foot sits on the floor at groundY (smoothed) */
+  liftToFloor(groundY: number, dt: number) {
+    const lf = this.bones.LeftFoot, rf = this.bones.RightFoot; if (!lf || !rf) return;
+    this.root.updateMatrixWorld(true);
+    const footRel = Math.min(lf.getWorldPosition(_p).y, rf.getWorldPosition(_c).y) - this.root.position.y;
+    this.lift += (.085 - footRel - this.lift) * Math.min(1, dt * 14);
+    this.root.position.y = groundY + this.lift;
+    this.root.updateMatrixWorld(true);
+  }
+  /** the character's own axes in the world (model forward is +z, his left is +x) */
+  axes() { const y = this.root.rotation.y; const fwd = new THREE.Vector3(Math.sin(y), 0, Math.cos(y)); return {fwd, left: new THREE.Vector3(0, 1, 0).cross(fwd), up: new THREE.Vector3(0, 1, 0)}; }
   /** whole-body action (kicks, knees, shots, slips, ground game) */
   play(key: string, fade = .12) {
     const next = this.actions.get(key); if (!next) return;
@@ -285,11 +348,18 @@ export class FightView {
   shake = 0; time = 0; camX = 0; camZ = 0; camDist = 3.6; camDir = new THREE.Vector2(0, 1); private disposed = false;
   /** the player's screen axes on the floor (world xz): WASD moves along these */
   axes = {rx: 1, rz: 0, fx: 0, fz: -1};
-  private cage: {mesh: THREE.Object3D; x: number; z: number}[] = [];
+  cage: {mesh: THREE.Object3D; x: number; z: number}[] = [];
+  /** the walkout (locker room -> tunnel -> cage), run before the first bell; null once it's over */
+  director: WalkoutDirector | null = null;
+  assets: Assets;
   stadium: Stadium; private introAmt = 1;
+  /** the referee: moves like a fighter (same rig and step loops) but is driven here, not by the engine */
+  ref: FighterRig | null = null;
+  private refF = {state: 'idle', move: null, t: 0, x: 0, z: 0, hx: 0, hz: 1, cap: 100, rocked: 0, combo: 0, target: 'head'} as unknown as Fighter;
   debugCam = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('fightcam') : null;
 
   constructor(canvas: HTMLCanvasElement, g: LiveFight, assets: Assets) {
+    this.assets = assets;
     this.renderer = new THREE.WebGLRenderer({canvas, antialias: true, powerPreference: 'high-performance'});
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
     this.renderer.shadowMap.enabled = true; this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -322,6 +392,10 @@ export class FightView {
 
     this.rigs = [new FighterRig(assets.red, assets.looks?.[0], assets.dress?.[0]), new FighterRig(assets.blue, assets.looks?.[1], assets.dress?.[1])];
     this.rigs.forEach(r => this.scene.add(r.root));
+    if (assets.ref) {
+      try { this.ref = new FighterRig(assets.ref, assets.refLook, assets.refDress); this.scene.add(this.ref.root); this.ref.root.position.set(0, PLAT, 0); }
+      catch { this.ref = null; }
+    }
     const sparkGeo = new THREE.SphereGeometry(.025, 6, 4);
     for (let i = 0; i < 48; i++) { const mesh = new THREE.Mesh(sparkGeo, new THREE.MeshBasicMaterial({color: '#fff3c4', transparent: true, depthWrite: false})); mesh.visible = false; this.scene.add(mesh); this.sparks.push({mesh, life: 0, v: new THREE.Vector3()}); }
 
@@ -356,6 +430,59 @@ export class FightView {
     s.add(new THREE.AmbientLight('#20263a', .12));
   }
 
+  /** Referee positioning (what real refs do): stay off the fighters' line on the far side from the camera,
+   *  close enough to step in, never in the way; follow them to the ground; rush in on a knockdown or a stoppage. */
+  updateRef(g: LiveFight, dt: number) {
+    const ref = this.ref; if (!ref) return;
+    const [a, b] = g.f;
+    const ax = a.x * X_SCALE, az = a.z * X_SCALE, bx = b.x * X_SCALE, bz = b.z * X_SCALE;
+    const mx = (ax + bx) / 2, mz = (az + bz) / 2;
+    let lx = bx - ax, lz = bz - az; const ll = Math.hypot(lx, lz) || 1; lx /= ll; lz /= ll;
+    // the side of the fight line away from the camera (camDir points from the action toward the camera)
+    let px = -lz, pz = lx; if (px * this.camDir.x + pz * this.camDir.y > 0) { px = -px; pz = -pz; }
+    const grounded = a.state === 'top' || a.state === 'bottom';
+    const down = g.f.find(f => f.state === 'down' || f.state === 'ko');
+    let tx: number, tz: number, speed = 1.7;
+    if (g.phase === 'intro' && g.round === 1 && g.phaseT < 2.6) { tx = 0; tz = 0; }           // centre of the cage for the instructions
+    else if (down) {                                                                           // knockdown / stoppage: get in there
+      const dx = down.x * X_SCALE, dz = down.z * X_SCALE, w = down === a ? b : a;
+      const ux = w.x * X_SCALE - dx, uz = w.z * X_SCALE - dz, ul = Math.hypot(ux, uz) || 1;
+      tx = dx + ux / ul * .55 + px * .35; tz = dz + uz / ul * .55 + pz * .35; speed = 3.2;
+    } else if (g.phase === 'over') { tx = mx + px * .9; tz = mz + pz * .9; }
+    else { const off = grounded ? 1.35 : 2.25; tx = mx + px * off + lx * .35; tz = mz + pz * off + lz * .35; }
+    // stay inside the cage and out of the fighters' way
+    const r = Math.hypot(tx, tz), lim = 4.2 * X_SCALE - .35; if (r > lim) { tx *= lim / r; tz *= lim / r; }
+    const p = ref.root.position;
+    for (const f of [a, b]) { const fx = f.x * X_SCALE, fz = f.z * X_SCALE, d = Math.hypot(tx - fx, tz - fz); if (d < .75 && !down) { tx = fx + (tx - fx) / (d || 1) * .75; tz = fz + (tz - fz) / (d || 1) * .75; } }
+    const dx = tx - p.x, dz = tz - p.z, dist = Math.hypot(dx, dz);
+    const stepLen = Math.min(dist, speed * dt);
+    const moving = dist > .12;
+    if (moving) { p.x += dx / dist * stepLen; p.z += dz / dist * stepLen; }
+    p.y = PLAT;
+    // always watching the action
+    const fx = (down ? down.x * X_SCALE : mx) - p.x, fz = (down ? down.z * X_SCALE : mz) - p.z, fl = Math.hypot(fx, fz) || 1;
+    const rf = this.refF;
+    rf.x = p.x / X_SCALE; rf.z = p.z / X_SCALE; rf.hx = fx / fl; rf.hz = fz / fl;
+    const st = moving ? 'walk' : 'idle';
+    if (rf.state !== st) { rf.state = st as Fighter['state']; rf.t = 0; } else rf.t += dt;
+    let dy = Math.atan2(rf.hx, rf.hz) - ref.root.rotation.y; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+    ref.root.rotation.y += dy * (1 - Math.exp(-8 * dt));
+    ref.sync(rf, a, dt);
+    if (!this.ceremonyOn) {
+      // an official, not a fighter: hands low and loose in front, ready to step in (no guard)
+      const {fwd, left, up} = ref.axes(), urgent = down ? .55 : 0;
+      for (const [s, sg] of [['Left', 1], ['Right', -1]] as const) {
+        ref.poseArm(s, up.clone().multiplyScalar(-.92).addScaledVector(fwd, .3 + urgent).addScaledVector(left, .16 * sg), up.clone().multiplyScalar(-.35 + urgent).addScaledVector(fwd, .9).addScaledVector(left, -.12 * sg));
+      }
+    }
+  }
+  /** set while the decision is read (change of camera and the hand raise) */
+  ceremonyOn = false;
+
+  makeRig(src: Src, look?: Look, dress?: LookAssets) { return new FighterRig(src, look, dress); }
+  /** play the walkouts (sides in walking order); the fight loop waits until director.done */
+  startWalkout(order: (0 | 1)[]) { if (!this.director) this.director = new WalkoutDirector(this, order); return this.director; }
+
   resize(w: number, h: number) { this.renderer.setSize(w, h, false); this.composer.setSize(w, h); this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); }
   degrade() { this.stadium.degrade(); this.renderer.setPixelRatio(1); this.renderer.shadowMap.enabled = false; this.bloom.enabled = false; const c = this.renderer.domElement; this.resize(c.clientWidth, c.clientHeight); }
 
@@ -388,6 +515,8 @@ export class FightView {
   render(g: LiveFight, dt: number) {
     if (this.disposed) return;
     this.time += dt;
+    if (this.director && !this.director.done) { this.director.update(g, dt); this.stadium.update(dt, g, this.renderer, {intro: 0}); this.composer.render(dt); return; }
+    if (this.director) { this.director.dispose(); this.director = null; this.time = 0; }
     g.f.forEach((f, i) => {
       const r = this.rigs[i];
       // on the ground the top fighter sits in close, hips between the bottom fighter's legs, chest over his chest
@@ -406,6 +535,7 @@ export class FightView {
       const walk = g.round === 1 && g.phase === 'intro';
       for (const w of r.walkout) w.visible = walk;
     });
+    this.updateRef(g, dt);
     for (const s of this.sparks) {
       if (s.life <= 0) continue;
       s.life -= dt; s.v.y -= 9 * dt; s.mesh.position.addScaledVector(s.v, dt);
@@ -459,6 +589,7 @@ export class FightView {
   dispose() {
     this.disposed = true;
     for (const r of this.rigs) r.mixer.stopAllAction();
+    this.ref?.mixer.stopAllAction();
     this.stadium.dispose();
     this.scene.traverse(o => { const m = o as THREE.Mesh; if (m.isMesh) { m.geometry?.dispose?.(); const mt = m.material; (Array.isArray(mt) ? mt : [mt]).forEach(x => x?.dispose?.()); } });
     this.composer.dispose(); this.renderer.dispose();

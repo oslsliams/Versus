@@ -209,7 +209,69 @@ TATTOOS = {
     'neck_star':    (.046, .046, lambda c: art_nautical(c, .021), [('plane', 'Neck', (0, .012, .004), (0, -1, 0), (0, 0, 1), (1, 0, 0), True)]),
     'mandala':      (.11, .11, lambda c: art_mandala(c, .052), [('plane', 'LeftArm', (.045, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, -1), False)]),
     'calf_band':    (.32, .06, lambda c: art_diamonds(c, .32, .06), [('wrap', 'RightLeg', .38, 'full')]),
+    # referee kit lettering (painted white over the black shirt at runtime)
+    'ref_back':     (.3, .07, lambda c: text_obj('REFEREE', 'impact.ttf', .06, c, spacing=1.12), [('plane', 'Spine2', (0, 0, .06), (-1, 0, 0), (0, 0, 1), (0, -1, 0), True)]),
+    'ref_chest':    (.09, .03, lambda c: text_obj('REF', 'impact.ttf', .026, c), [('plane', 'Spine2', (.07, 0, .07), (1, 0, 0), (0, 0, 1), (0, 1, 0), True)]),
 }
+
+# ============================================================================ referee kit
+def build_kit():
+    """shirt / pants / shoes masks for the referee, classified per face from the skin weights, baked to UV"""
+    rig, body = load_body('kalani')
+    me = body.data
+    names = {g.index: g.name.replace('mixamorig:', '') for g in body.vertex_groups}
+    W = rig.matrix_world
+    def seg(n):
+        b = rig.data.bones['mixamorig:' + n]; return W @ b.head_local, W @ b.tail_local
+    arms = {s: seg(s + 'Arm') for s in ('Left', 'Right')}
+    shorts = [i for i, m in enumerate(me.materials) if m and m.name.startswith('shorts')]
+    waist = max((body.matrix_world @ me.vertices[v].co).z for p in me.polygons if p.material_index in shorts for v in p.vertices)
+    neck_h, _ = seg('Neck')
+    def dominant(vi):
+        gs = me.vertices[vi].groups
+        return names.get(max(gs, key=lambda g: g.weight).group, '') if gs else ''
+    def classify(p):
+        cos = [body.matrix_world @ me.vertices[v].co for v in p.vertices]
+        z = sum(c.z for c in cos) / len(cos); ctr = sum(cos, Vector()) / len(cos)
+        doms = [dominant(v) for v in p.vertices]; d = max(set(doms), key=doms.count)
+        if d in ('Foot', 'ToeBase') or d.endswith('Foot') or d.endswith('ToeBase'): return 'shoes'
+        if z < waist + .005 and (d in ('Hips',) or 'UpLeg' in d or d.endswith('Leg')): return 'pants'
+        if d.endswith('Arm') and not d.endswith('ForeArm'):
+            h, t = arms['Left' if d.startswith('Left') else 'Right']
+            along = (ctr - h).dot((t - h).normalized()) / (t - h).length
+            return 'shirt' if along < .5 else None
+        if d in ('Hips', 'Spine', 'Spine1', 'Spine2', 'LeftShoulder', 'RightShoulder') and z >= waist - .005: return 'shirt'
+        if d == 'Neck' and z < neck_h.z + .015: return 'shirt'
+        return None
+    cls = [classify(p) for p in me.polygons]
+    attr = me.color_attributes.new('kit', 'FLOAT_COLOR', 'CORNER')
+    bake = bpy.data.images.new('kitbake', TEX, TEX, alpha=False); bake.colorspace_settings.name = 'Non-Color'
+    for m in me.materials:
+        if not m: continue
+        m.use_nodes = True; nt = m.node_tree
+        for n in list(nt.nodes): nt.nodes.remove(n)
+        out = nt.nodes.new('ShaderNodeOutputMaterial'); em = nt.nodes.new('ShaderNodeEmission'); at = nt.nodes.new('ShaderNodeAttribute'); at.attribute_name = 'kit'
+        nt.links.new(at.outputs['Color'], em.inputs['Color']); nt.links.new(em.outputs[0], out.inputs[0])
+        tx = nt.nodes.new('ShaderNodeTexImage'); tx.image = bake; nt.nodes.active = tx
+    sc = bpy.context.scene; sc.render.engine = 'CYCLES'; sc.cycles.device = 'CPU'; sc.cycles.samples = 1
+    man = json.load(open(os.path.join(OUT, 'tattoos.json')))
+    for region in ('shirt', 'pants', 'shoes'):
+        for p, c in zip(me.polygons, cls):
+            val = 1.0 if c == region else 0.0
+            for li in p.loop_indices: attr.data[li].color = (val, val, val, 1)
+        me.update()
+        for o in bpy.data.objects: o.select_set(False)
+        body.select_set(True); bpy.context.view_layer.objects.active = body
+        bpy.ops.object.bake(type='EMIT', use_selected_to_active=False, margin=6, use_clear=True)
+        px = np.empty(TEX * TEX * 4, dtype=np.float32); bake.pixels.foreach_get(px); m = px.reshape(TEX, TEX, 4)[:, :, 0]
+        ys, xs = np.nonzero(m > .03)
+        x0, x1, y0, y1 = xs.min(), xs.max(), ys.min(), ys.max(); w, h = int(x1 - x0 + 1), int(y1 - y0 + 1)
+        img = bpy.data.images.new('kit_' + region, w, h, alpha=True)
+        o = np.zeros((h, w, 4), np.float32); o[:, :, 3] = np.clip(m[y0:y1 + 1, x0:x1 + 1], 0, 1); img.pixels.foreach_set(o.ravel())
+        img.filepath_raw = os.path.join(OUT, 'tattoos', f'ref_{region}.png'); img.file_format = 'PNG'; img.save()
+        man['tattoos'][f'ref_{region}'] = {'x': int(x0), 'y': int(TEX - (y0 + h)), 'w': w, 'h': h}
+        print('KIT', region, man['tattoos'][f'ref_{region}'])
+    json.dump(man, open(os.path.join(OUT, 'tattoos.json'), 'w'), indent=1)
 
 def render_art(tid, W, H, draw, path):
     sc = bpy.data.scenes.new('art_' + tid); coll = sc.collection
@@ -457,5 +519,6 @@ def build_gear(name):
     print('GEAR', name, os.path.getsize(path))
 
 if 'tattoos' in DO: build_tattoos()
+if 'kit' in DO or 'tattoos' in DO: build_kit()
 if 'gear' in DO:
     for b in BODIES: build_gear(b)
