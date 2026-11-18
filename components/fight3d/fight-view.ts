@@ -9,8 +9,10 @@ import {RenderPass} from 'three/examples/jsm/postprocessing/RenderPass.js';
 import {UnrealBloomPass} from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import {OutputPass} from 'three/examples/jsm/postprocessing/OutputPass.js';
 import {RoomEnvironment} from 'three/examples/jsm/environments/RoomEnvironment.js';
-import {distance, type Fighter, type FightEvent, type LiveFight, type MoveId} from '../../lib/fight3d/engine';
+import {distance, type Fighter, type FightEvent, type LiveFight, type MoveId, type Target} from '../../lib/fight3d/engine';
 import {Stadium} from './stadium';
+import {applyLook, loadLookAssets, type LookAssets} from './look';
+import type {Look} from '../../lib/cosmetics';
 
 const PLAT = .9;           // mat height in the arena model
 const X_SCALE = .82;       // engine metres -> arena metres along the fight line
@@ -57,16 +59,20 @@ const ONE_SHOT = ['jab_head', 'jab_body', 'cross_head', 'cross_body', 'lead_hook
   'hit_head', 'hit_head_l', 'hit_head_r', 'hit_body', 'hit_leg', 'stagger', 'victory', 'ground_back', 'knocked', 'shoot', 'sprawl'];
 const UPPER_ONLY = ['jab_head', 'cross_head', 'lead_hook', 'rear_hook', 'lead_uppercut', 'rear_uppercut', 'lead_elbow', 'block_high', 'hit_head', 'hit_head_l', 'hit_head_r', 'idle'];
 const isUpperTrack = (t: THREE.KeyframeTrack) => /(Spine|Neck|Head|Shoulder|Arm|Hand)/.test(t.name.split('.')[0]);
-function pickMove(m: MoveId, dist: number, combo: number): Pick {
+function pickMove(m: MoveId, dist: number, combo: number, target: Target): Pick {
   const range = dist < 1.12 ? 'close' : dist > 1.4 ? 'long' : 'mid';
-  const opts = MOVE_ANIMS[m].map(p => ({p, w: p.weight * (p.range === 'any' || p.range === range ? 1 : .15) * (combo > 0 && /hook|body|upper/.test(p.anim) ? 1.6 : 1)}));
+  // the animation has to match where the strike is aimed (head kick, body kick, leg kick, body punch)
+  const fits = (p: Pick) => m === 'kick' ? (target === 'head' ? p.anim === 'kick_high' : target === 'legs' ? !!p.leg : !!p.body)
+    : m === 'upper' ? true : target === 'body' ? !!p.body : !p.body;
+  const pool = MOVE_ANIMS[m].filter(fits);
+  const opts = (pool.length ? pool : MOVE_ANIMS[m]).map(p => ({p, w: p.weight * (p.range === 'any' || p.range === range ? 1 : .15) * (combo > 0 && /hook|body|upper/.test(p.anim) ? 1.6 : 1)}));
   let r = Math.random() * opts.reduce((a, o) => a + o.w, 0);
   for (const o of opts) { r -= o.w; if (r <= 0) return o.p; }
   return opts[0].p;
 }
 
 type Src = {scene: THREE.Group; clips: THREE.AnimationClip[]};
-type Assets = {arena: THREE.Group; red: Src; blue: Src; crowd: number[] | null};
+type Assets = {arena: THREE.Group; red: Src; blue: Src; crowd: number[] | null; looks?: [Look | undefined, Look | undefined]; dress?: [LookAssets | undefined, LookAssets | undefined]};
 // original MakeHuman fighter bodies built by scripts/art/build_fighter_mh.py
 export {FIGHTER_MODELS, modelFor, type FighterModel} from '../../lib/fight3d/tape';
 import type {FighterModel} from '../../lib/fight3d/tape';
@@ -80,14 +86,23 @@ function loadGlb(url: string, onProgress: (p: number) => void) {
   }
   return p.then(g => { onProgress(1); return g; });
 }
-export function loadFightAssets(red: FighterModel, blue: FighterModel, onProgress?: (p: number) => void): Promise<Assets> {
+/** a look's extras: tattoo masks and (if any gear is worn) the gear meshes fitted to that body */
+export async function loadDress(look: Look | undefined): Promise<LookAssets | undefined> {
+  if (!look) return undefined;
+  const [la, gear] = await Promise.all([loadLookAssets(look), look.gear.length ? loadGlb(`/cosmetics/gear-${look.model}.glb`, () => {}).catch(() => null) : Promise.resolve(null)]);
+  return {...la, gear: gear as any};
+}
+export function loadFightAssets(red: FighterModel, blue: FighterModel, onProgress?: (p: number) => void, looks?: [Look | undefined, Look | undefined]): Promise<Assets> {
   const urls = ['/models/arena.glb', `/models/fighter-${red}.glb`, `/models/fighter-${blue}.glb`];
   const done = [0, 0, 0];
   const report = () => onProgress?.(done.reduce((a, b) => a + b, 0) / 3);
   const crowd = fetch('/models/arena-crowd.json').then(r => r.ok ? r.json() as Promise<{seats?: number[]}> : null).then(j => j?.seats ?? null).catch(() => null);
-  return Promise.all([...urls.map((u, i) => loadGlb(u, p => { done[i] = p; report(); })), crowd])
-    .then(([a, r, b, c]) => ({arena: (a as any).scene, red: {scene: (r as any).scene, clips: (r as any).animations}, blue: {scene: (b as any).scene, clips: (b as any).animations}, crowd: c as number[] | null}));
+  const dress = Promise.all([loadDress(looks?.[0]), loadDress(looks?.[1])]);
+  return Promise.all([...urls.map((u, i) => loadGlb(u, p => { done[i] = p; report(); })), crowd, dress])
+    .then(([a, r, b, c, d]) => ({arena: (a as any).scene, red: {scene: (r as any).scene, clips: (r as any).animations}, blue: {scene: (b as any).scene, clips: (b as any).animations}, crowd: c as number[] | null,
+      looks, dress: d as [LookAssets | undefined, LookAssets | undefined]}));
 }
+export {loadGlb};
 
 function inPlace(clip: THREE.AnimationClip) {
   const c = clip.clone();
@@ -100,8 +115,8 @@ function inPlace(clip: THREE.AnimationClip) {
   return c;
 }
 
-class FighterRig {
-  root = new THREE.Group(); body: THREE.Object3D; mixer: THREE.AnimationMixer;
+export class FighterRig {
+  root = new THREE.Group(); body: THREE.Object3D; mixer: THREE.AnimationMixer; walkout: THREE.Object3D[] = []; wobble = 0;
   actions = new Map<string, THREE.AnimationAction>(); current: THREE.AnimationAction | null = null; currentKey = '';
   // layered playback: legs run 'idle' underneath while the upper body plays strikes/blocks/reactions
   lower: THREE.AnimationAction | null = null; upperCur: THREE.AnimationAction | null = null; upperKey = ''; split = true;
@@ -111,21 +126,22 @@ class FighterRig {
   flash = 0; skinMats: THREE.MeshStandardMaterial[] = [];
   lastPick: Pick | null = null; lastState = ''; lastMove: MoveId | null = null;
   /** react to a landed strike, choosing the reaction from what hit us */
-  hit(power: number, by: Pick | null) {
+  hit(power: number, by: Pick | null, target?: Target) {
     if (['down', 'ko', 'bottom', 'top'].includes(this.lastState)) return;
     if (power > 1.1) this.play('stagger', .05);
-    else if (by?.leg) this.play('hit_leg', .05);
-    else if (by?.body) this.play('hit_body', .05);
+    else if (target === 'legs' || (!target && by?.leg)) this.play('hit_leg', .05);
+    else if (target === 'body' || (!target && by?.body)) this.play('hit_body', .05);
     else this.playUpper(['hit_head', 'hit_head_l', 'hit_head_r'][Math.floor(Math.random() * 3)], .04);
   }
   dodge() { if (['idle', 'walk'].includes(this.lastState)) this.play(['slip_out', 'slip_in', 'roll'][Math.floor(Math.random() * 3)], .06); }
   blocked(by: Pick | null) { if (by?.leg) this.play('check', .05); else if (by?.body) this.play('block_body', .05); else this.playUpper('block_high', .05); }
-  constructor(src: Src) {
+  constructor(src: Src, look?: Look, dress?: LookAssets) {
     this.body = cloneSkinned(src.scene);
     this.body.traverse(o => {
       const m = o as THREE.Mesh;
       if (m.isMesh) {
         m.castShadow = true; m.receiveShadow = true; m.frustumCulled = false;
+        if (/^Icosphere/.test(m.name)) m.visible = false;
         const clone = (x: THREE.Material) => {
           const c = x.clone() as THREE.MeshStandardMaterial;
           if (/body|skin/i.test(c.name)) this.skinMats.push(c);
@@ -138,6 +154,8 @@ class FighterRig {
       const b = o as THREE.Bone;
       if (b.isBone) this.bones[b.name.replace(/^mixamorig:?/, '')] = b;
     });
+    // kit colours, tattoos and gear (chain / bandana only for the walkout)
+    try { this.walkout = applyLook(this.body, look, dress); } catch { this.walkout = []; }
     this.root.add(this.body);
     // same-size fighters: MakeHuman's ethnicity blend changes height (1.64-1.88 m), so normalise every
     // body to ~1.80 m from its bind-pose head height, keeping a hint (±1.5%) of natural difference
@@ -216,7 +234,7 @@ class FighterRig {
   sync(f: Fighter, opp: Fighter, dt: number) {
     const st = f.state;
     if (st === 'attack' && (this.lastState !== 'attack' || this.lastMove !== f.move || f.t < .02)) {
-      const pick = pickMove(f.move!, distance(f, opp), f.combo);
+      const pick = pickMove(f.move!, distance(f, opp), f.combo, f.target);
       this.lastPick = pick;
       const key = pick.anim;
       if (this.actions.has(key)) { if (key.startsWith('u:')) this.playUpper(key, .05); else this.play(key, .06); }
@@ -252,7 +270,11 @@ class FighterRig {
     this.mixer.timeScale = st === 'top' ? 1.6 : 1;
     this.mixer.update(dt);
     this.flash = Math.max(0, this.flash - dt * 4);
-    for (const m of this.skinMats) m.emissive?.setRGB(this.flash * .5, this.flash * .05, this.flash * .05);
+    // the damage shows: skin reddens and bruises as his ceiling drops; a hit flashes
+    const worn = THREE.MathUtils.clamp((100 - f.cap) / 75, 0, 1);
+    for (const m of this.skinMats) { m.emissive?.setRGB(this.flash * .5, this.flash * .05, this.flash * .05); m.color.setRGB(1, 1 - worn * .2, 1 - worn * .24); }
+    // rocked: the legs go and he sways
+    this.wobble += ((f.rocked > 0 && !['down', 'ko', 'top', 'bottom'].includes(st) ? Math.min(1, f.rocked / 1.5) : 0) - this.wobble) * Math.min(1, dt * 6);
   }
 }
 
@@ -298,7 +320,7 @@ export class FightView {
     const lowSpec = typeof navigator !== 'undefined' && ((navigator.hardwareConcurrency ?? 8) <= 4 || /Mobi|Android/i.test(navigator.userAgent));
     this.stadium = new Stadium(this.scene, arena, assets.crowd, [g.f[0].name, g.f[1].name], lowSpec);
 
-    this.rigs = [new FighterRig(assets.red), new FighterRig(assets.blue)];
+    this.rigs = [new FighterRig(assets.red, assets.looks?.[0], assets.dress?.[0]), new FighterRig(assets.blue, assets.looks?.[1], assets.dress?.[1])];
     this.rigs.forEach(r => this.scene.add(r.root));
     const sparkGeo = new THREE.SphereGeometry(.025, 6, 4);
     for (let i = 0; i < 48; i++) { const mesh = new THREE.Mesh(sparkGeo, new THREE.MeshBasicMaterial({color: '#fff3c4', transparent: true, depthWrite: false})); mesh.visible = false; this.scene.add(mesh); this.sparks.push({mesh, life: 0, v: new THREE.Vector3()}); }
@@ -340,13 +362,14 @@ export class FightView {
   events(evts: FightEvent[]) {
     for (const e of evts) {
       if (e.type === 'whiff' && Math.random() < .55) { this.rigs[e.side === 0 ? 1 : 0].dodge(); continue; }
-      this.stadium.excite(e.type === 'ko' || e.type === 'tap' ? 1.6 : e.type === 'kd' ? 1 : e.type === 'td' ? .45 : e.type === 'sub' ? .5 : e.type === 'hit' ? Math.min(.35, e.power * .4) : 0);
+      this.stadium.excite(e.type === 'ko' || e.type === 'tap' ? 1.6 : e.type === 'kd' ? 1 : e.type === 'hurt' ? .8 : e.type === 'td' ? .45 : e.type === 'sub' ? .5 : e.type === 'hit' ? Math.min(.35, e.power * .4) : 0);
+      if (e.type === 'hurt') { const d = this.rigs[e.side === 0 ? 1 : 0]; d.flash = 1; d.play('stagger', .05); this.shake = Math.max(this.shake, .14); continue; }
       if (!['hit', 'block', 'ko', 'kd', 'td'].includes(e.type)) continue;
       const n = e.type === 'block' ? 5 : Math.min(16, 5 + Math.round(e.power * 7));
       this.burst(e.x * X_SCALE, e.z * X_SCALE, PLAT + (e.type === 'td' ? .3 : 1.5), n, e.type === 'block' ? '#9fc4ff' : e.type === 'ko' || e.type === 'kd' ? '#ffd27a' : '#fff3c4');
       this.shake = Math.max(this.shake, e.type === 'ko' ? .3 : e.type === 'kd' ? .18 : e.type === 'block' ? .02 : Math.min(.1, e.power * .07));
       const attacker = this.rigs[e.side], defender = this.rigs[e.side === 0 ? 1 : 0];
-      if (e.type === 'hit') { defender.flash = 1; defender.hit(e.power, attacker.lastPick); }
+      if (e.type === 'hit') { defender.flash = Math.min(1, .5 + e.power * .5); defender.hit(e.power, attacker.lastPick, e.target); }
       else if (e.type === 'kd' || e.type === 'ko') defender.flash = 1;
       else if (e.type === 'block') this.rigs[e.side].blocked(this.rigs[e.side === 0 ? 1 : 0].lastPick);
     }
@@ -378,6 +401,10 @@ export class FightView {
       let dy = yaw - r.root.rotation.y; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
       r.root.rotation.y += dy * (1 - Math.exp(-12 * dt));
       r.sync(f, o, dt);
+      r.root.rotation.z = Math.sin(this.time * 5.3 + i) * .055 * r.wobble; r.root.rotation.x = Math.sin(this.time * 3.1 + i) * .03 * r.wobble;
+      // walkout gear (chain, bandana) comes off before the first bell
+      const walk = g.round === 1 && g.phase === 'intro';
+      for (const w of r.walkout) w.visible = walk;
     });
     for (const s of this.sparks) {
       if (s.life <= 0) continue;

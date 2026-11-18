@@ -144,3 +144,16 @@ html.lf-lock,html.lf-lock body{overflow:hidden}
 @media (max-width:860px){.lf-comm{bottom:auto;top:96px;font-size:13px}}
 .lf-score .lf-sname{display:inline-flex;flex-direction:row;align-items:center;white-space:nowrap}
 .lf-score .lf-srank{flex:none}
+/* damage: head bar keeps a dark "ceiling" on the right for damage he can't recover this fight; HEAD/BODY/LEGS chips */
+.lf-hp{position:relative}
+.lf-cap{position:absolute;top:0;right:0;height:100%;width:0;background:repeating-linear-gradient(135deg,#3a0d12 0 4px,#59141b 4px 8px);transition:width .3s}
+.lf-plate.blue .lf-cap{right:auto;left:0}
+.lf-dmg{display:flex;gap:4px;align-items:center;font:800 10px/1 var(--font-sans,system-ui);letter-spacing:.08em}
+.lf-plate.blue .lf-dmg{justify-content:flex-end}
+.lf-dmg b{padding:3px 6px;border-radius:2px;background:#ffffff14;color:#c9cfdb;transition:background .2s,color .2s}
+.lf-dmg b[data-lvl="mid"]{background:#f7c84a;color:#1d1500}
+.lf-dmg b[data-lvl="bad"]{background:#e5413a;color:#fff}
+.lf-dmg em{display:none;font-style:normal;padding:3px 6px;background:#fff;color:#c4111f;animation:lf-gas .5s steps(2) infinite}
+.lf-dmg em[data-on="1"]{display:inline-block}
+@media (prefers-reduced-motion:reduce){.lf-dmg em{animation:none}}
+.tt-official{font:800 12px/1 var(--font-sans,system-ui);letter-spacing:.12em;color:#9aa3b5}

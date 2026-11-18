@@ -4,7 +4,8 @@ import {useCallback, useEffect, useMemo, useState} from 'react';
 import {Swords, RotateCcw, Users, Eye} from 'lucide-react';
 import {overall, type Stats, type Style} from '../../lib/career/engine';
 import {FightStats, LiveFightGame, type Corner, type LiveResult} from '../fight3d/live-fight';
-import {tape, type FightCard} from '../../lib/fight3d/tape';
+import {modelFor, tape, type FightCard} from '../../lib/fight3d/tape';
+import type {Look} from '../../lib/cosmetics';
 
 const S = (striking: number, power: number, speed: number, wrestling: number, grappling: number, cardio: number, chin: number, iq: number): Stats => ({striking, power, speed, wrestling, grappling, cardio, chin, iq});
 // quick-fight division: Kalani holds the belt, everyone else is ranked
@@ -19,6 +20,14 @@ export const ROSTER: (Corner & {nickname: string; blurb: string; rank: string})[
   {name: 'Hugo Delacroix', nickname: 'Slow Burn', style: 'All-rounder', color: '#d9a7ff', stats: S(70, 66, 68, 68, 74, 90, 72, 86), rank: '#1', blurb: 'Wins the fourth and fifth round every time.'},
 ];
 const LEVELS = [{label: 'Easy', v: .12}, {label: 'Normal', v: .5}, {label: 'Hard', v: .74}] as const;
+// every roster fighter has his own ink and tape (kit colours stay the body's own)
+const INK: Record<string, Pick<Look, 'tattoos' | 'gear'>> = {
+  'Dante Okafor': {tattoos: ['script_fore', 'neck_star'], gear: ['ankle']}, 'Ilya Volkov': {tattoos: ['back_script'], gear: ['knee']},
+  'Ryo Takeda': {tattoos: ['mandala'], gear: ['tape']}, 'Marcus Ashford': {tattoos: ['chest_wings', 'sleeve', 'sleeve_fore'], gear: ['ankle']},
+  'Sione Kalani': {tattoos: ['sleeve', 'sleeve_fore', 'tribal_band', 'calf_band'], gear: ['ankle']}, 'Enzo Bianchi': {tattoos: ['rib_script'], gear: ['ankle', 'tape']},
+  'Kofi Mwangi': {tattoos: ['stomach_word'], gear: ['knee']}, 'Hugo Delacroix': {tattoos: ['tribal_band', 'back_script'], gear: []},
+};
+const withLook = <T extends {name: string}>(f: T) => ({...f, look: {model: modelFor(f.name), ...(INK[f.name] ?? {tattoos: [], gear: []})} as Look});
 
 export function QuickFight() {
   const [mine, setMine] = useState(0);
@@ -29,10 +38,10 @@ export function QuickFight() {
   const [watch, setWatch] = useState(false);
   useEffect(() => { if (new URLSearchParams(location.search).get('watch') === '1') { setWatch(true); setFighting(1); } }, []);
   const [result, setResult] = useState<LiveResult | null>(null);
-  const you = useMemo(() => ROSTER[mine], [mine]);
-  const opp = useMemo(() => ROSTER[theirs === mine ? (mine + 1) % ROSTER.length : theirs], [theirs, mine]);
+  const you = useMemo(() => withLook(ROSTER[mine]), [mine]);
+  const opp = useMemo(() => withLook(ROSTER[theirs === mine ? (mine + 1) % ROSTER.length : theirs]), [theirs, mine]);
   const onEnd = useCallback((r: LiveResult) => setResult(r), []);
-  const fightCard = useMemo<FightCard>(() => ({event: 'VERSUS FIGHT NIGHT', billing: 'Main event', title: you.rank === 'C' || opp.rank === 'C' ? 'VERSUS LIGHTWEIGHT CHAMPIONSHIP' : undefined, you: tape(you, opp.stats), opp: tape(opp, you.stats)}), [you, opp]);
+  const fightCard = useMemo<FightCard>(() => ({event: 'VERSUS FIGHT NIGHT', billing: 'Main event', title: you.rank === 'C' || opp.rank === 'C' ? 'VERSUS LIGHTWEIGHT CHAMPIONSHIP' : undefined, you: tape(you, opp), opp: tape(opp, you)}), [you, opp]);
 
   if (fighting) return <div className="bn-page cg">
     {!result ? <LiveFightGame key={fighting} card={fightCard} you={you} opp={opp} rounds={rounds} difficulty={LEVELS[level].v} onEnd={onEnd} watch={watch} onQuit={() => { setResult(null); setFighting(0); }}/>
@@ -40,7 +49,7 @@ export function QuickFight() {
         <img src={result.winner === 'you' ? '/art/trophy.webp' : '/art/gem.webp'} alt="" width={130} height={130}/>
         <div>
           <span className="eyebrow">{result.winner === 'you' ? 'Victory' : result.winner === 'opp' ? 'Defeat' : 'Draw'}</span>
-          <h2>{result.winner === 'you' ? `${you.name} wins by ${result.method}` : result.winner === 'opp' ? `${opp.name} wins by ${result.method}` : 'Scored a draw'} · R{result.round}</h2>
+          <h2>{result.winner === 'you' ? `${you.name} wins by ${result.method}` : result.winner === 'opp' ? `${opp.name} wins by ${result.method}` : 'Scored a draw'}{result.how ? ` (${result.how})` : ''} · R{result.round}</h2>
           {['DEC', 'SPLIT DEC', 'DRAW'].includes(result.method) && <p className="muted">Scorecards: {result.cards.map(([a, b]) => `${a}–${b}`).join(', ')}</p>}
           <div className="bn-ctas"><button className="button primary" onClick={() => { setResult(null); setFighting(n => n + 1); }}><RotateCcw size={16} aria-hidden="true"/>Rematch</button><button className="button outline" onClick={() => { setResult(null); setFighting(0); }}><Users size={16} aria-hidden="true"/>Change fighters</button></div>
         </div>

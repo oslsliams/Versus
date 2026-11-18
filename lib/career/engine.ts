@@ -1,5 +1,6 @@
 // VERSUS career mode: the rules. Pure functions over a plain save object so the
 // game is easy to test and to store (localStorage now, an account later).
+import type {Look} from '../cosmetics';
 
 export type StatKey = 'striking' | 'power' | 'wrestling' | 'grappling' | 'cardio' | 'chin' | 'speed' | 'iq';
 export type Stats = Record<StatKey, number>;
@@ -26,10 +27,16 @@ export type FightRecord = {week: number; age: number; opponent: string; opponent
 export type Tag = 'rematch' | 'grudge' | 'short' | 'eliminator';
 export type Offer = {id: string; opponentId: string; tier: number; purse: number; winBonus: number; weeksOut: number; rounds: 3 | 5; title: boolean; note: string; tag?: Tag};
 /** event: the card it's on ('VERSUS 214'); billing: where on the card; edge: how fired up the opponent is (live fight difficulty) */
-export type Camp = Omit<Offer, 'weeksOut'> & {weeksLeft: number; event?: string; billing?: string; edge?: number; pressDone?: boolean};
+export type Camp = Omit<Offer, 'weeksOut'> & {weeksLeft: number; event?: string; billing?: string; edge?: number; pressDone?: boolean;
+  /** 0 home gym, 1 pro camp, 2 elite camp (bought with money: better fitness gains, sparring partners, scouting) */
+  level?: number; scouted?: boolean; cutDone?: boolean; missedWeight?: boolean};
 export type Rival = {id: string; heat: number; why: string};
-export type Choice = {kind: 'press'; title: string; text: string; options: {id: 'trash' | 'respect' | 'mind'; label: string; hint: string}[]};
+export type Choice = {kind: 'press' | 'event'; id?: string; from?: string; title: string; text: string; options: {id: string; label: string; hint: string}[]; target?: string};
 export type LogEntry = {week: number; text: string; tone?: 'good' | 'bad' | 'big'};
+export type Post = {week: number; handle: string; text: string; likes: number; you?: boolean};
+export type Milestone = {week: number; age: number; text: string};
+export type CoachKey = 'striking' | 'wrestling' | 'bjj' | 'sc';
+export type Payout = {gross: number; manager: number; gym: number; camp: number; net: number; bonus: number};
 export type Career = {
   version: 1; seed: number;
   name: string; nickname: string; country: string; division: Division; style: Style; color: string;
@@ -42,6 +49,11 @@ export type Career = {
   // storylines (optional so older saves load; migrate() fills them in)
   rivals?: Rival[]; choice?: Choice | null; eventNo?: [number, number, number]; bonuses?: {potn: number; fotn: number};
   lineage?: {week: number; name: string; how: string}[]; coachWeeks?: number;
+  // the person behind the fighter (optional: migrate() fills them in on older saves)
+  look?: Look; backstory?: string; gym?: string; owned?: string[];
+  team?: Partial<Record<CoachKey, number>>;       // hired coaches: 1 = local, 2 = elite (weekly salary)
+  fitness?: number; followers?: number; feed?: Post[]; milestones?: Milestone[];
+  earnings?: number; lastPayout?: Payout | null; payBump?: number; homecoming?: boolean; streak?: number;
 };
 
 /* ---------------------------------------------------------------- random */
@@ -76,38 +88,86 @@ function makeNPC(r: () => number, tier: number, i: number): NPC {
 }
 
 /* --------------------------------------------------------------- create */
-export function createCareer(input: {name: string; nickname: string; country: string; division: Division; style: Style; color: string}, seed = Date.now()): Career {
+/** where you came from: a head start in one area and the first line of your story */
+export const BACKSTORIES: Record<string, {label: string; blurb: string; bonus: Partial<Stats>; money?: number; hype?: number; line: string}> = {
+  wrestler: {label: 'College wrestler', blurb: 'Four years on a wrestling scholarship. Takes people down for a living.', bonus: {wrestling: 6, cardio: 3}, line: 'The college wrestler who traded singlets for four-ounce gloves.'},
+  street: {label: 'Street fighter', blurb: 'Learned in car parks and backyards. Hits hard, takes a shot.', bonus: {power: 5, chin: 4, iq: -2}, hype: 6, line: 'The backyard brawler with a viral knockout reel.'},
+  kickboxer: {label: 'Kickboxing champ', blurb: 'National amateur kickboxing title. Sharp on the feet.', bonus: {striking: 6, speed: 3}, line: 'A national kickboxing champion trying a new sport.'},
+  bjj: {label: 'Jiu-jitsu prodigy', blurb: 'Black belt at 20. Wants every fight on the mat.', bonus: {grappling: 7, iq: 2}, line: 'The jiu-jitsu prodigy who got his black belt at 20.'},
+  late: {label: 'Late starter', blurb: 'Walked into a gym at 19 after a desk job. Smart, saved some money.', bonus: {iq: 4, cardio: 2}, money: 2500, line: 'A late starter who quit a desk job to chase this.'},
+};
+/** your home gym: training there makes some stats grow faster */
+export const GYMS: Record<string, {label: string; blurb: string; boost: StatKey[]}> = {
+  ironside: {label: 'Ironside Wrestling Club', blurb: 'Grinding room. Wrestling and cardio grow faster.', boost: ['wrestling', 'cardio']},
+  neon: {label: 'Neon Muay Thai', blurb: 'Pad work all day. Striking and power grow faster.', boost: ['striking', 'power']},
+  lockdown: {label: 'Lockdown Jiu-Jitsu', blurb: 'Mat rats. Grappling and fight IQ grow faster.', boost: ['grappling', 'iq']},
+  apex: {label: 'Apex Performance', blurb: 'Sports science lab. Speed, cardio and chin grow faster.', boost: ['speed', 'cardio', 'chin']},
+};
+export function createCareer(input: {name: string; nickname: string; country: string; division: Division; style: Style; color: string; backstory?: string; gym?: string; look?: Look}, seed = Date.now()): Career {
   const r = rng(seed);
   const roster: NPC[] = [];
   for (let tier = 0; tier < 3; tier++) for (let i = 0; i < 16; i++) roster.push(makeNPC(r, tier, i));
   const major = roster.filter(n => n.tier === 2).sort((a, b) => overall(b.stats) - overall(a.stats));
+  const bs = BACKSTORIES[input.backstory ?? ''];
+  const stats = statsFor(r, 38, input.style);
+  if (bs) for (const [k, v] of Object.entries(bs.bonus)) stats[k as StatKey] = clamp(stats[k as StatKey] + (v ?? 0));
   const c: Career = {
     version: 1, seed, ...input,
-    stats: statsFor(r, 38, input.style), potential: 82 + Math.floor(r() * 14),
+    stats, potential: 82 + Math.floor(r() * 14),
     record: [0, 0, 0], finishes: {ko: 0, sub: 0, dec: 0},
     week: 1, age: 21, energy: 100, health: 100, injuryWeeks: 0, hype: 5, money: 500,
     tier: 0, rank: null, champ: false, defenses: 0, tierWins: 0,
     roster, rankings: major.slice(1).map(n => n.id), champion: major[0].id,
     offers: [], camp: null, history: [], log: [], retired: false, nextOfferWeek: 1,
   };
+  if (bs) { c.money += bs.money ?? 0; c.hype += bs.hype ?? 0; }
   c.log.push({week: 1, text: `${input.name} signs with the ${TIERS[0].name}. Every legend starts in a basement.`, tone: 'big'});
   migrate(c);   // seeds the title lineage with the reigning champion
+  milestone(c, bs ? bs.line : `${input.name} turns pro at 21.`);
+  if (input.gym && GYMS[input.gym]) milestone(c, `Joins ${GYMS[input.gym].label}.`);
+  post(c, '@BasementBrawlHQ', `New signing: ${input.name}${input.nickname ? ` "${input.nickname}"` : ''} out of ${input.country}. ${bs ? bs.line : 'Raw, hungry, 21.'}`, 40);
   return withOffers(c, r);
 }
 
 /* -------------------------------------------------------------- weekly */
-export type Action = {type: 'train'; focus: StatKey} | {type: 'spar'} | {type: 'rest'} | {type: 'promote'};
+export type Action = {type: 'train'; focus: StatKey} | {type: 'spar'} | {type: 'rest'} | {type: 'promote'} | {type: 'tape'};
 export const ACTIONS = {
-  train: {label: 'Train', energy: -18, blurb: 'Big gains in one stat. Tiring.'},
-  spar: {label: 'Spar', energy: -12, blurb: 'Small gains in a few stats. Small knock risk.'},
+  train: {label: 'Train', energy: -18, blurb: 'Big gains in one stat. Builds fight fitness in camp. Tiring.'},
+  spar: {label: 'Spar', energy: -12, blurb: 'Small gains in a few stats, builds fitness. Small knock risk.'},
   rest: {label: 'Rest', energy: +35, blurb: 'Recover energy and heal up.'},
-  promote: {label: 'Promote', energy: -8, blurb: 'Interviews and socials. Hype = more offers, bigger names, reach fights.'},
+  promote: {label: 'Promote', energy: -8, blurb: 'Interviews and socials. Hype = more offers, bigger names, reach fights. Costs fitness in camp.'},
+  tape: {label: 'Study tape', energy: -5, blurb: 'Break down his last fights. You learn his habits and he becomes easier to read on fight night.'},
 } as const;
+
+/* ------------------------------------------------------------ the team */
+/** coaches you pay every week; they speed up growth in their stats */
+export const COACHES: Record<CoachKey, {label: string; stats: StatKey[]; pay: [number, number, number]}> = {
+  striking: {label: 'Striking coach', stats: ['striking', 'power'], pay: [0, 180, 1400]},
+  wrestling: {label: 'Wrestling coach', stats: ['wrestling'], pay: [0, 160, 1200]},
+  bjj: {label: 'Jiu-jitsu coach', stats: ['grappling', 'iq'], pay: [0, 160, 1200]},
+  sc: {label: 'Strength & conditioning', stats: ['cardio', 'speed', 'chin'], pay: [0, 200, 1500]},
+};
+export const LIVING = [140, 380, 1100];                 // rent and food, per week, by league
+export const CAMP_LEVELS = [{label: 'Home gym', price: 0, mult: 1}, {label: 'Pro camp', price: [700, 3500, 14000], mult: 1.35}, {label: 'Elite camp', price: [1800, 9000, 38000], mult: 1.7}] as const;
+export const campPrice = (c: Career, level: number) => level === 0 ? 0 : (CAMP_LEVELS[level].price as readonly number[])[c.tier];
+export const physioPrice = (c: Career) => [250, 900, 2600][c.tier];
+export const prPrice = (c: Career) => [400, 2500, 12000][c.tier];
+export const weeklyCost = (c: Career) => LIVING[c.tier] + (Object.entries(c.team ?? {}) as [CoachKey, number][]).reduce((s, [k, lvl]) => s + COACHES[k].pay[lvl ?? 0], 0);
+export const fitnessLabel = (f: number) => f >= 88 ? 'Peak' : f >= 70 ? 'Sharp' : f >= 45 ? 'Fit' : 'Out of shape';
+/** what you actually bring on fight night: camp fitness (and a bad weight cut) moves the numbers */
+export function fightStats(c: Career): Stats {
+  const s = {...c.stats}; const d = ((c.fitness ?? 55) - 60) / 40;
+  s.cardio = clamp(s.cardio + d * 8); s.chin = clamp(s.chin + d * 3); s.speed = clamp(s.speed + d * 3); s.power = clamp(s.power + d * 2);
+  if (c.camp?.missedWeight) { s.cardio = clamp(s.cardio - 6); s.chin = clamp(s.chin - 3); }
+  return s;
+}
 
 const growth = (age: number) => age < 26 ? 1.25 : age < 30 ? 1 : age < 33 ? .7 : .4;
 function gain(c: Career, k: StatKey, amount: number) {
   const room = Math.max(0, c.potential - c.stats[k]) / c.potential;
-  const coach = (c.coachWeeks ?? 0) > 0 ? 1.3 : 1;
+  const visitor = (c.coachWeeks ?? 0) > 0 ? 1.3 : 1;
+  const hired = (Object.entries(c.team ?? {}) as [CoachKey, number][]).find(([key, lvl]) => lvl && COACHES[key].stats.includes(k));
+  const coach = visitor * (hired ? (hired[1] === 2 ? 1.45 : 1.2) : 1) * (c.gym && GYMS[c.gym]?.boost.includes(k) ? 1.15 : 1);
   const g = Math.max(0, Math.round(amount * coach * growth(c.age) * (room > 0 ? .15 + room * 1.4 : .05) * 10) / 10);
   c.stats[k] = clamp(Math.round((c.stats[k] + g) * 10) / 10, 1, 99);
   return g;
@@ -118,9 +178,22 @@ export function takeAction(prev: Career, a: Action): Career {
   const c: Career = migrate(structuredClone(prev));
   const r = rng(c.seed + c.week * 7919);
   const tired = c.energy < 30;
-  if (c.injuryWeeks > 0 && a.type !== 'rest' && a.type !== 'promote') {
-    c.log.unshift({week: c.week, text: 'Still injured. The doctors say rest or promote only.', tone: 'bad'});
+  if (c.injuryWeeks > 0 && a.type !== 'rest' && a.type !== 'promote' && a.type !== 'tape') {
+    c.log.unshift({week: c.week, text: 'Still injured. The doctors say rest, promote or study tape only.', tone: 'bad'});
     return c;
+  }
+  // fight fitness: built in camp by hard weeks (more with a paid camp), lost to media weeks and time off
+  const mult = c.camp ? CAMP_LEVELS[c.camp.level ?? 0].mult : 0;
+  const fit = c.camp ? ({train: 9, spar: 7, rest: -1, promote: -5, tape: 1} as const)[a.type] * (a.type === 'train' || a.type === 'spar' ? mult : 1) : 0;
+  c.fitness = Math.max(0, Math.min(100, (c.fitness ?? 55) + fit));
+  if (a.type === 'tape') {
+    c.energy = Math.max(0, c.energy + ACTIONS.tape.energy);
+    if (c.camp) {
+      const n = npc(c, c.camp.opponentId)!;
+      if (!c.camp.scouted) { c.camp.scouted = true; c.log.unshift({week: c.week, text: `Film study on ${n.name}: ${tendency(n)} You'll see it coming on fight night.`, tone: 'good'}); }
+      else { gain(c, 'iq', .6); c.log.unshift({week: c.week, text: `More film on ${n.name}. Fight IQ up a little.`}); }
+    } else { const g = gain(c, 'iq', .9); c.log.unshift({week: c.week, text: `You study the best in the division. Fight IQ +${g.toFixed(1)}.`}); }
+    return advanceWeek(c, r);
   }
   if (a.type === 'train') {
     const g = gain(c, a.focus, (1 + r()) * (tired ? .5 : 1));
@@ -141,9 +214,57 @@ export function takeAction(prev: Career, a: Action): Career {
   } else {
     const h = 4 + Math.round(r() * 5) + c.tier * 2, cash = 100 + c.tier * 400 + Math.round(c.hype * 8);
     c.hype = Math.min(100, c.hype + h); c.money += cash; c.energy = Math.max(0, c.energy + ACTIONS.promote.energy);
+    c.followers = (c.followers ?? 0) + Math.round(150 + c.hype * 40 * (1 + c.tier));
     c.log.unshift({week: c.week, text: `Media day: +${h} hype, +$${cash.toLocaleString()}.`});
+    if (r() < .5) post(c, c.camp ? '@' + handleOf(npc(c, c.camp.opponentId)!.name) : '@CageSideNews', c.camp ? `Saw ${c.name}'s interview. Talk is cheap. See you in the cage.` : `${c.name} on the media rounds today. Says he's "ready for anyone they put in front of me."`, Math.round(30 + c.hype * 12));
   }
   return advanceWeek(c, r);
+}
+
+/** what the tape shows about a fighter (style habits the player can look for) */
+function tendency(n: NPC) {
+  const s = n.stats;
+  if (n.style === 'Wrestler') return s.cardio > 70 ? 'he shoots when you throw the cross, and he never tires. Sprawl on his level change.' : 'he shoots early and fades late. Survive the first round and he is yours.';
+  if (n.style === 'Grappler') return 'he pulls you into scrambles and hunts the neck. Don\'t follow him to the mat.';
+  if (n.style === 'Striker') return s.chin < 55 ? 'he drops his right hand after the jab, and the chin is suspect. Counter him.' : 'he walks forward behind a high guard. Go to the body and the legs.';
+  return s.iq > 70 ? 'no obvious holes, but he fades if you push the pace early.' : 'he gets lazy with his guard in exchanges. Hooks will land.';
+}
+
+/* ------------------------------------------------------------- spending */
+export type Purchase = {type: 'physio'} | {type: 'pr'} | {type: 'camp'; level: number} | {type: 'coach'; key: CoachKey; level: number} | {type: 'cosmetic'; id: string; price: number} | {type: 'look'; look: Look};
+/** spend money: everything here changes something you can feel (gains, fitness, health, hype, how you look) */
+export function buy(prev: Career, p: Purchase): Career {
+  const c: Career = migrate(structuredClone(prev));
+  const pay = (n: number, what: string) => { if (c.money < n) { c.log.unshift({week: c.week, text: `Not enough money for ${what}.`, tone: 'bad'}); return false; } c.money -= n; return true; };
+  if (p.type === 'physio') {
+    if (!pay(physioPrice(c), 'the physio')) return c;
+    const weeks = Math.min(c.injuryWeeks, 2); c.injuryWeeks -= weeks; c.health = Math.min(100, c.health + 35); c.energy = Math.min(100, c.energy + 15);
+    c.log.unshift({week: c.week, text: `Physio and recovery block: +35 health${weeks ? `, back ${weeks} week${weeks > 1 ? 's' : ''} sooner` : ''}.`, tone: 'good'});
+  } else if (p.type === 'pr') {
+    if (!pay(prPrice(c), 'a PR push')) return c;
+    const h = 6 + c.tier * 2; c.hype = clamp(c.hype + h, 0, 100); c.followers = (c.followers ?? 0) + 2000 * (1 + c.tier);
+    c.log.unshift({week: c.week, text: `Your PR team runs a campaign: +${h} hype.`, tone: 'good'});
+    post(c, '@MMAWire', `${c.name} is everywhere this week. Feature interview, billboard, the works.`, 900 + c.hype * 30);
+  } else if (p.type === 'camp') {
+    if (!c.camp) return c;
+    const cur = c.camp.level ?? 0; if (p.level <= cur) return c;
+    if (!pay(campPrice(c, p.level) - campPrice(c, cur), CAMP_LEVELS[p.level].label.toLowerCase())) return c;
+    c.camp.level = p.level;
+    if (p.level === 2) c.camp.scouted = true;
+    c.log.unshift({week: c.week, text: p.level === 2 ? 'Elite camp booked: altitude, hand-picked sparring partners who fight like him, a full film team.' : 'Pro camp booked: better sparring partners and a proper strength block.', tone: 'good'});
+  } else if (p.type === 'coach') {
+    c.team ??= {};
+    if (p.level === 0) { delete c.team[p.key]; c.log.unshift({week: c.week, text: `You part ways with your ${COACHES[p.key].label.toLowerCase()}.`}); }
+    else { if (c.money < COACHES[p.key].pay[p.level] * 2) { c.log.unshift({week: c.week, text: 'You need at least two weeks of his salary in the bank.', tone: 'bad'}); return c; } c.team[p.key] = p.level; c.log.unshift({week: c.week, text: `Hired: ${p.level === 2 ? 'an elite' : 'a local'} ${COACHES[p.key].label.toLowerCase()} ($${COACHES[p.key].pay[p.level].toLocaleString()}/week).`, tone: 'good'}); }
+  } else if (p.type === 'cosmetic') {
+    c.owned ??= [];
+    if (c.owned.includes(p.id)) return c;
+    if (!pay(p.price, 'that')) return c;
+    c.owned.push(p.id); c.log.unshift({week: c.week, text: `New ink / gear: paid $${p.price.toLocaleString()}.`});
+  } else if (p.type === 'look') {
+    c.look = p.look;
+  }
+  return c;
 }
 
 function injuryRoll(c: Career, r: () => number, chance: number, minor = false) {
@@ -159,6 +280,15 @@ function advanceWeek(c: Career, r: () => number): Career {
   if (c.injuryWeeks > 0) c.injuryWeeks -= 1;
   c.health = Math.min(100, c.health + 4);
   c.hype = Math.max(0, c.hype - .5);
+  if (!c.camp) c.fitness = Math.round(((c.fitness ?? 55) + (55 - (c.fitness ?? 55)) * .25) * 10) / 10;   // out of camp, fitness drifts back to normal
+  c.followers = Math.max(0, Math.round((c.followers ?? 0) + c.hype * (3 + c.tier * 6)));
+  // the bills: rent and food, and every coach on the payroll
+  const bill = weeklyCost(c); c.money -= bill;
+  if (c.money < 0) {
+    if (c.team && Object.keys(c.team).length && c.money < -LIVING[c.tier] * 4) { c.team = {}; c.log.unshift({week: c.week, text: 'You can\'t make payroll. Your coaches walk out.', tone: 'bad'}); }
+    else if (c.week % 3 === 0) c.log.unshift({week: c.week, text: `You're $${Math.abs(Math.round(c.money)).toLocaleString()} in debt. Your manager says take the next fight offered.`, tone: 'bad'});
+    c.energy = Math.max(0, c.energy - 4);   // working a side job
+  }
   if (c.camp) c.camp.weeksLeft = Math.max(0, c.camp.weeksLeft - 1);
   c.offers = c.offers.map(o => ({...o, weeksOut: o.weeksOut})).filter(() => !c.camp);
   if (c.week % 52 === 0) ageUp(c, r);
@@ -169,7 +299,8 @@ function advanceWeek(c: Career, r: () => number): Career {
 
 function ageUp(c: Career, r: () => number) {
   c.age += 1;
-  if (c.age >= 32) for (const k of ['speed', 'cardio', 'chin', 'power'] as StatKey[]) c.stats[k] = clamp(c.stats[k] - (1 + Math.floor(r() * (c.age - 30))));
+  // regression with age (20% slower than it used to be): speed, cardio, chin and power fade from 32
+  if (c.age >= 32) for (const k of ['speed', 'cardio', 'chin', 'power'] as StatKey[]) c.stats[k] = clamp(Math.round((c.stats[k] - (1 + Math.floor(r() * (c.age - 30))) * .8) * 10) / 10);
   for (const n of c.roster) n.age += 1;
   c.log.unshift({week: c.week, text: c.age >= 32 ? `Turns ${c.age}. The body is starting to send invoices.` : `Turns ${c.age}.`, tone: c.age >= 32 ? 'bad' : undefined});
 }
@@ -239,7 +370,8 @@ function withOffers(c: Career, r: () => number): Career {
 
 function offer(c: Career, r: () => number, opponentId: string, title: boolean, tier = c.tier, tag?: Tag): Offer {
   const bump = tag === 'rematch' || tag === 'grudge' ? 1.4 : tag === 'eliminator' ? 1.3 : tag === 'short' ? 1.5 : 1;
-  const base = [800, 6000, 40000][tier] * (1 + c.hype / 100) * (title ? 3 : 1) * bump;
+  // show money roughly doubles with a win (show + win bonus, like real contracts); hype and a better deal push it up
+  const base = [800, 6000, 40000][tier] * (1 + c.hype / 100) * (title ? 3 : 1) * bump * (c.payBump ?? 1);
   const o = npc(c, opponentId)!;
   const gap = overall(o.stats) - overall(c.stats);
   const note = tag === 'rematch' ? (title ? 'Title rematch' : 'Rematch') : tag === 'grudge' ? (title ? 'Grudge title fight' : 'Grudge match') : tag === 'eliminator' ? 'Title eliminator' : tag === 'short' ? 'Short notice'
@@ -256,9 +388,12 @@ export function acceptOffer(prev: Career, id: string): Career {
   c.eventNo![o.tier] += 1 + (c.week % 3);
   const event = `${PROMOTIONS[o.tier]} ${c.eventNo![o.tier]}`;
   const billing = o.title ? 'Main event' : o.tag === 'grudge' || o.tag === 'rematch' || o.tag === 'eliminator' || c.hype >= 60 ? 'Co-main event' : c.hype >= 30 || o.tier === 2 ? 'Main card' : 'Prelims';
-  c.camp = {...rest, weeksLeft: weeksOut, event, billing, edge: 0};
+  c.camp = {...rest, weeksLeft: weeksOut, event, billing, edge: 0, level: 0};
+  if (c.homecoming) { c.camp.purse = Math.round(c.camp.purse * 1.2 / 50) * 50; c.camp.edge = -.03; c.homecoming = false; c.camp.note += ' · Hometown card'; }
+  c.fitness = Math.min(c.fitness ?? 55, 60);
   const n = npc(c, o.opponentId)!;
-  c.log.unshift({week: c.week, text: `Signed: ${c.name} vs ${n.name}, ${billing.toLowerCase()} of ${event}${o.title ? ' for the belt' : ''}.`, tone: 'big'});
+  c.log.unshift({week: c.week, text: `Signed: ${c.name} vs ${n.name}, ${billing.toLowerCase()} of ${event}${o.title ? ' for the belt' : ''}. Camp starts now: train hard to peak on fight night.`, tone: 'big'});
+  post(c, '@MMAWire', `BREAKING: ${c.name} vs ${n.name} is official for ${event}${o.title ? ' with the belt on the line' : ''}. ${o.tag === 'grudge' ? 'These two do NOT like each other.' : o.tag === 'rematch' ? 'Run it back.' : ''}`.trim(), 300 + c.hype * 25);
   if (o.tag === 'grudge' || o.tag === 'rematch') c.log.unshift({week: c.week, text: `${n.name}: "${pick(rng(c.seed + c.week), TRASH)}"`, tone: 'bad'});
   return c;
 }
@@ -270,7 +405,7 @@ export function declineOffer(prev: Career, id: string): Career {
 }
 
 /* --------------------------------------------------------- after a fight */
-export type FightOutcome = {winner: 'you' | 'opp' | 'draw'; method: 'KO/TKO' | 'SUB' | 'DEC' | 'SPLIT DEC' | 'DRAW'; round: number; damageTaken: number};
+export type FightOutcome = {winner: 'you' | 'opp' | 'draw'; method: 'KO/TKO' | 'SUB' | 'DEC' | 'SPLIT DEC' | 'DRAW'; round: number; damageTaken: number; how?: string};
 
 export function applyResult(prev: Career, out: FightOutcome): Career {
   const c: Career = migrate(structuredClone(prev));
@@ -278,8 +413,14 @@ export function applyResult(prev: Career, out: FightOutcome): Career {
   const opp = npc(c, camp.opponentId)!;
   const r = rng(c.seed + c.week * 104729);
   const won = out.winner === 'you', lost = out.winner === 'opp';
-  const purse = camp.purse + (won ? camp.winBonus : 0);
-  c.money += purse;
+  let purse = camp.purse + (won ? camp.winBonus : 0);
+  if (camp.missedWeight) purse = Math.round(purse * .8);           // 20% of the purse to the other corner
+  // the cut: your manager and your gym take theirs off the top, like real fighters' purses
+  const manager = Math.round(purse * .1), gymCut = Math.round(purse * .1);
+  c.money += purse - manager - gymCut;
+  c.earnings = (c.earnings ?? 0) + purse;
+  c.lastPayout = {gross: purse, manager, gym: gymCut, camp: campPrice(c, camp.level ?? 0), net: purse - manager - gymCut, bonus: 0};
+  c.streak = won ? Math.max(1, (c.streak ?? 0) + 1) : lost ? Math.min(-1, (c.streak ?? 0) - 1) : 0;
   if (won) { c.record[0] += 1; opp.record[1] += 1; c.tierWins += 1; if (out.method === 'KO/TKO') c.finishes.ko += 1; else if (out.method === 'SUB') c.finishes.sub += 1; else c.finishes.dec += 1; }
   else if (lost) { c.record[1] += 1; opp.record[0] += 1; } else c.record[2] += 1;
   c.hype = clamp(c.hype + (won ? (out.method === 'DEC' || out.method === 'SPLIT DEC' ? 8 : 15) + (camp.title ? 15 : 0) : lost ? -12 : 2), 0, 100);
@@ -293,8 +434,26 @@ export function applyResult(prev: Career, out: FightOutcome): Career {
   // post-fight bonuses, like the real thing
   const finish = out.method === 'KO/TKO' || out.method === 'SUB';
   const bonus = [2000, 12000, 50000][camp.tier];
-  if (won && finish && r() < .45) { c.money += bonus; c.hype = clamp(c.hype + 4, 0, 100); c.bonuses!.potn += 1; c.log.unshift({week: c.week, text: `Performance of the Night! +$${bonus.toLocaleString()}.`, tone: 'big'}); }
-  else if (out.damageTaken > 35 && (won || out.method !== 'KO/TKO') && r() < .3) { c.money += bonus; c.bonuses!.fotn += 1; c.log.unshift({week: c.week, text: `Fight of the Night with ${opp.name}. Both of you take home +$${bonus.toLocaleString()}.`, tone: 'big'}); }
+  if (won && finish && r() < .45) { c.money += bonus; c.lastPayout!.bonus = bonus; c.hype = clamp(c.hype + 4, 0, 100); c.bonuses!.potn += 1; c.log.unshift({week: c.week, text: `Performance of the Night! +$${bonus.toLocaleString()}.`, tone: 'big'}); }
+  else if (out.damageTaken > 35 && (won || out.method !== 'KO/TKO') && r() < .3) { c.money += bonus; c.lastPayout!.bonus = bonus; c.bonuses!.fotn += 1; c.log.unshift({week: c.week, text: `Fight of the Night with ${opp.name}. Both of you take home +$${bonus.toLocaleString()}.`, tone: 'big'}); }
+  // the internet reacts
+  const howTxt = out.how ? ` (${out.how.toLowerCase()})` : '';
+  c.followers = Math.max(0, (c.followers ?? 0) + (won ? (finish ? 6000 : 2500) * (1 + c.tier * 2) : -800));
+  if (won && finish) post(c, '@CageSideNews', `${c.name.toUpperCase()} ${out.method === 'SUB' ? 'TAPS' : 'FLATTENS'} ${opp.name.toUpperCase()}${howTxt.toUpperCase()} IN ROUND ${out.round}!! 🤯`, 4000 + c.hype * 120);
+  else if (won) post(c, '@MMAWire', `${c.name} gets past ${opp.name} on the scorecards at ${camp.event ?? 'the event'}. ${out.method === 'SPLIT DEC' ? 'Plenty of people had it the other way.' : 'Clear win.'}`, 900 + c.hype * 40);
+  else if (lost) post(c, '@FightTwitterKing', `${opp.name} ${out.method === 'KO/TKO' ? 'sleeps' : out.method === 'SUB' ? 'chokes out' : 'beats'} ${c.name}. Told y'all the hype was fake.`, 2500 + c.hype * 60);
+  if (won) post(c, '@' + handleOf(c.name), pick(r, ['Thank you God, thank you to my team. We\'re just getting started.', 'Told you. Nobody believed but us.', 'Back to the gym tomorrow. The work never stops.', 'Who\'s next? 👀']), 1500 + c.hype * 90, true);
+  // milestones of a career
+  const fights = c.record[0] + c.record[1] + c.record[2];
+  if (fights === 1) milestone(c, `Pro debut at ${camp.event ?? 'the regional scene'}: ${won ? 'a win' : lost ? 'a loss' : 'a draw'} against ${opp.name}.`);
+  if (won && c.record[0] === 1) milestone(c, `First professional win: ${opp.name} by ${out.method}${howTxt}.`);
+  if (won && finish && c.finishes.ko + c.finishes.sub === 1) milestone(c, `First finish: ${opp.name}${howTxt}, round ${out.round}.`);
+  if (lost && c.record[1] === 1) milestone(c, `First loss: ${opp.name} by ${out.method}. How he responds defines him.`);
+  if (c.record[0] === 10 && won) milestone(c, `Ten professional wins.`);
+  if (c.streak && c.streak >= 5 && won) milestone(c, `${c.streak}-fight win streak.`);
+  if (won && camp.title) milestone(c, c.champ ? `Title defense: beats ${opp.name}.` : `Champion: beats ${opp.name} for the VERSUS ${c.division} title.`);
+  // the mic: after a win the cage-side interviewer asks who's next
+  if (won && !c.retired) c.choice = micChoice(c, opp);
   // storylines: losses breed rivals, close split decisions breed rematches, wins over rivals settle them
   const heatBefore = heatOf(c, opp.id);
   if (won && heatBefore >= 40) { setHeat(c, opp.id, 0, ''); c.hype = clamp(c.hype + 8, 0, 100); c.log.unshift({week: c.week, text: `Rivalry settled. ${c.name} gets the last word over ${opp.name}.`, tone: 'big'}); }
@@ -322,9 +481,11 @@ export function applyResult(prev: Career, out: FightOutcome): Career {
   const reachWin = won && camp.tier > c.tier;   // beat someone from the league above: straight call-up
   if (c.tier < 2 && won && (reachWin || (c.tierWins >= (c.tier === 0 ? 3 : 2) && c.hype >= (c.tier === 0 ? 20 : 35)))) {
     c.tier += 1; c.tierWins = 0;
+    milestone(c, c.tier === 2 ? `Signs with the VERSUS Championship, the big show, at ${c.age}.` : `Called up to the ${TIERS[c.tier].name}.`);
     if (c.tier === 2) { c.rankings = c.rankings.slice(0, 14); c.rankings.push('you'); syncRank(c); }
     c.log.unshift({week: c.week, text: `Contract offer accepted: ${c.name} moves up to the ${TIERS[c.tier].name}!`, tone: 'big'});
   }
+  if (c.rank && c.rank <= 15 && !(c.milestones ?? []).some(m => m.text.startsWith('Ranked'))) milestone(c, `Ranked #${c.rank} in the ${c.division} division for the first time.`);
   c.camp = null;
   c.nextOfferWeek = c.week + Math.max(1, 3 - Math.floor(c.hype / 34)) + Math.round(out.damageTaken / 20) + c.injuryWeeks;   // hyped fighters get the phone call sooner
   return withOffers(c, r);
@@ -348,10 +509,19 @@ export function legacy(c: Career) {
 export function migrate(c: Career): Career {
   c.rivals ??= []; c.choice ??= null; c.eventNo ??= [112, 38, 207]; c.bonuses ??= {potn: 0, fotn: 0};
   c.lineage ??= []; c.coachWeeks ??= 0;
+  c.owned ??= []; c.team ??= {}; c.fitness ??= 55; c.followers ??= 200 + c.record[0] * 900; c.feed ??= []; c.milestones ??= [];
+  c.earnings ??= c.history.reduce((s, h) => s + h.purse, 0); c.lastPayout ??= null; c.payBump ??= 1; c.streak ??= 0;
   if (!c.lineage.length && c.champion && c.champion !== 'you') { const ch = npc(c, c.champion); if (ch) c.lineage.push({week: c.week, name: ch.name, how: 'reigning champion'}); }
   return c;
 }
 export const heatOf = (c: Career, id: string) => (c.rivals ?? []).find(x => x.id === id)?.heat ?? 0;
+export const handleOf = (name: string) => name.replace(/[^A-Za-z]/g, '').slice(0, 14) + (name.length % 3 === 0 ? 'MMA' : name.length % 3 === 1 ? '_' + (10 + name.length * 7 % 89) : 'Official');
+function post(c: Career, handle: string, text: string, likes: number, you = false) {
+  c.feed ??= [];
+  c.feed.unshift({week: c.week, handle, text, likes: Math.max(3, Math.round(likes * (.7 + ((c.week * 7 + text.length) % 60) / 100))), you});
+  c.feed = c.feed.slice(0, 30);
+}
+function milestone(c: Career, text: string) { c.milestones ??= []; c.milestones.unshift({week: c.week, age: c.age, text}); }
 const beaten = (c: Career, id: string) => c.history.some(h => h.opponentId === id);
 function setHeat(c: Career, id: string, heat: number, why: string) {
   c.rivals ??= [];
@@ -442,6 +612,8 @@ function storyWeek(c: Career, r: () => number) {
         c.log.unshift({week: c.week, text: `${n.name} is out with an injury. ${sub.name} "${sub.nickname}" steps in on short notice at ${camp.event}.`, tone: 'bad'});
       }
     }
+    // camp life: decisions still land on your phone in the early weeks
+    if (!c.choice && camp.weeksLeft >= 2 && r() < .3) { const ch = lifeEvent(c, r); if (ch) c.choice = ch; }
     // the week before: press conference (the player chooses how to play it)
     if (camp.weeksLeft === 1 && !camp.pressDone && !c.choice) {
       c.choice = {kind: 'press', title: `${camp.event} press conference`, text: `${n.name} is at the other podium${heatOf(c, n.id) >= 40 ? ' and there is real bad blood' : ''}. The cameras are on you.`,
@@ -451,16 +623,29 @@ function storyWeek(c: Career, r: () => number) {
           {id: 'mind', label: 'Mind games', hint: 'Coin flip: rattle him, or it backfires'},
         ]};
     }
-    // fight week: weigh-ins
-    if (camp.weeksLeft === 0) {
+    // fight week: the weight cut (how it goes depends on fitness, and money can make it easy)
+    if (camp.weeksLeft === 0 && !camp.cutDone) {
+      if (c.choice?.kind === 'press') resolvePress(c, r, 'respect');
+      camp.cutDone = true;
+      const over = Math.max(1, Math.round(6 - (c.fitness ?? 55) / 20 + r() * 2));
+      if (over >= 3 && !c.choice) {
+        c.choice = {kind: 'event', id: 'cut', from: 'Coach', title: `Fight week: ${over} lb over`, text: `It's the night before weigh-ins and you're ${over} pounds over the ${c.division.toLowerCase()} limit. Your coach looks worried. ${(c.fitness ?? 55) < 45 ? 'Your conditioning in camp wasn\'t where it needed to be.' : ''}`,
+          options: [
+            {id: 'sauna', label: 'Sauna all night', hint: 'Usually works. Leaves you drained (fitness down).'},
+            {id: 'nutri', label: `Hire a cut specialist ($${[300, 1500, 6000][c.tier].toLocaleString()})`, hint: 'Makes weight clean and recovers well.'},
+            {id: 'fine', label: 'Miss weight, pay the fine', hint: 'Lose 20% of your purse. You fight fresh, but the crowd boos.'},
+          ]};
+      }
       if (c.choice?.kind === 'press') resolvePress(c, r, 'respect');
       if (r() < .1) { const fine = Math.round(camp.purse * .2 / 50) * 50; c.money += fine; c.log.unshift({week: c.week, text: `Weigh-ins: ${n.name} misses weight by 1.5 lb and forfeits 20% of his purse to you (+$${fine.toLocaleString()}).`, tone: 'good'}); }
       else c.log.unshift({week: c.week, text: `Weigh-ins: both fighters make weight. The face-off ${heatOf(c, n.id) >= 40 ? 'has to be separated by security' : 'is intense'}.`});
     }
     return;
   }
-  if (c.injuryWeeks > 0 || r() > .11) return;
-  // occasional events between fights
+  if (c.injuryWeeks > 0) return;
+  // life between fights: a decision lands on your phone most weeks (UFC 6 style: choices with risk and reward)
+  if (!c.choice && r() < .38) { const ch = lifeEvent(c, r); if (ch) { c.choice = ch; return; } }
+  if (r() > .08) return;
   const e = r();
   if (e < .3 && c.hype >= 20) { const cash = [300, 2500, 15000][c.tier]; c.money += cash; c.log.unshift({week: c.week, text: `${pick(r, ['Ironclad Nutrition', 'Riptide Energy', 'Apex Gloves', 'Halo Apparel'])} signs ${c.name} to a sponsorship deal (+$${cash.toLocaleString()}).`, tone: 'good'}); }
   else if (e < .55) { c.hype = clamp(c.hype + 5, 0, 100); c.log.unshift({week: c.week, text: pick(r, ['A training clip of yours goes viral overnight (+5 hype).', 'You go viral for a fan meet-and-greet (+5 hype).', 'A big podcast has you on for two hours (+5 hype).']), tone: 'good'}); }
@@ -490,9 +675,141 @@ function resolvePress(c: Career, r: () => number, choice: 'trash' | 'respect' | 
     c.log.unshift({week: c.week, text: `Press conference: the mind games backfire. ${n.name} laughs it off and the crowd is with him (-3 hype).`, tone: 'bad'});
   }
 }
-/** the player's answer to a story choice (press conference) */
-export function resolveChoice(prev: Career, option: 'trash' | 'respect' | 'mind'): Career {
+/** the player's answer to a story choice (press conference, a life event, the weight cut, the mic) */
+export function resolveChoice(prev: Career, option: string): Career {
   const c: Career = migrate(structuredClone(prev));
-  if (c.choice?.kind === 'press') resolvePress(c, rng(c.seed + c.week * 613), option);
+  const r = rng(c.seed + c.week * 613 + option.length * 31);
+  if (c.choice?.kind === 'press') resolvePress(c, r, option as 'trash' | 'respect' | 'mind');
+  else if (c.choice?.kind === 'event') resolveEvent(c, r, c.choice, option);
   return c;
+}
+
+/* ================================================================ life events */
+// Each event is a message on your phone with two or three ways to play it. Some are safe, some are
+// a dice roll (the hint says so). Effects touch hype, followers, money, energy, health, fitness, stats
+// and rivalries, so the choices shape the career rather than decorate it.
+type Eff = {hype?: number; money?: number; energy?: number; health?: number; fitness?: number; followers?: number; stat?: [StatKey, number][]; injury?: number; heat?: number; coach?: number; text: string; tone?: LogEntry['tone']; post?: [string, string, number]};
+type Opt = {id: string; label: string; hint: string} & ({eff: Eff} | {roll: number; win: Eff; lose: Eff});
+type LifeEvent = {id: string; from: string; when: (c: Career) => boolean; weight: number; build: (c: Career, r: () => number, target?: string) => {title: string; text: string; options: Opt[]; target?: string}};
+const T = (c: Career, xs: [number, number, number]) => xs[c.tier];
+const LIFE: LifeEvent[] = [
+  {id: 'commercial', from: 'Manager', weight: 1, when: c => c.hype >= 15, build: c => ({title: 'A commercial shoot', text: `Riptide Energy wants you in a TV spot. Two long days on set, $${T(c, [600, 4000, 25000]).toLocaleString()}.`, options: [
+    {id: 'yes', label: 'Do the shoot', hint: `+$${T(c, [600, 4000, 25000]).toLocaleString()}, followers. Tiring, costs fitness.`, eff: {money: T(c, [600, 4000, 25000]), energy: -12, fitness: -4, followers: 3000, hype: 2, text: 'Two days on set. The ad drops and your face is on every phone.', tone: 'good'}},
+    {id: 'no', label: 'Stay in the gym', hint: 'Your coach approves.', eff: {fitness: 3, text: 'You turn the ad down. Coach nods: "That\'s why you\'ll be champion."'}}]})},
+  {id: 'hills', from: 'Coach', weight: 1, when: () => true, build: () => ({title: '5am hill sprints', text: 'Coach wants you on the hill at 5am every day this week. "Champions are made when nobody\'s watching."', options: [
+    {id: 'yes', label: 'Every morning', hint: 'Cardio up, tiring.', eff: {stat: [['cardio', 1.2]], energy: -15, fitness: 5, text: 'Seven sunrises on that hill. Your lungs feel brand new.', tone: 'good'}},
+    {id: 'no', label: 'Sleep in', hint: 'Rested, coach is disappointed.', eff: {energy: 10, text: 'You sleep in. Coach doesn\'t say anything. He doesn\'t have to.'}}]})},
+  {id: 'dm', from: 'Rival', weight: 1.4, when: c => c.record[0] + c.record[1] >= 1, build: (c, r, t) => { const n = (t && npc(c, t)) || pick(r, c.roster.filter(x => x.tier === c.tier)); return {target: n.id, title: `@${handleOf(n.name)} is talking`, text: `${n.name} posts a clip of your last fight with the caption "glass chin, paper heart." It's everywhere.`, options: [
+    {id: 'clap', label: 'Clap back', hint: 'Dice roll: go viral, or look bad. Heats up the rivalry.', roll: .55, win: {hype: 8, followers: 6000, heat: 18, text: `Your reply to ${n.name} gets more likes than his post. The fans want the fight.`, tone: 'good', post: ['@FightTwitterKing', `${c.name} just ended ${n.name}'s whole career on here 💀`, 5000]}, lose: {hype: -4, heat: 12, text: `Your reply to ${n.name} gets ratioed. Even your mum thought it was cringe.`, tone: 'bad'}},
+    {id: 'call', label: 'Call him out for a fight', hint: 'Rivalry heats up: he becomes an offer soon.', eff: {heat: 30, hype: 3, text: `"Sign the contract, ${n.name.split(' ')[0]}." The matchmakers noticed.`, tone: 'big'}},
+    {id: 'ignore', label: 'Ignore it', hint: 'Classy. Small hype bump.', eff: {hype: 2, text: 'You don\'t reply. The fans respect it.'}}]}; }},
+  {id: 'brother', from: 'Family', weight: .7, when: () => true, build: () => ({title: 'Your little brother\'s debut', text: 'Your brother has his first amateur fight this weekend, three hours away. He asked if you\'d corner him.', options: [
+    {id: 'yes', label: 'Corner him', hint: 'Costs energy. Good for the soul (and the clip).', eff: {energy: -14, hype: 4, health: 6, followers: 2500, text: 'He wins. You cry more than he does. The video of you in his corner goes around.', tone: 'good'}},
+    {id: 'no', label: 'Stay and train', hint: 'Fitness up. He understands. Mostly.', eff: {fitness: 4, text: 'You FaceTime him after. He lost. He says it\'s fine.', tone: 'bad'}}]})},
+  {id: 'hospital', from: 'Fan', weight: .6, when: c => c.tier >= 1, build: () => ({title: 'A message from a hospital', text: 'A nurse writes: a kid on the children\'s ward has your posters all over his room. Any chance you could visit?', options: [
+    {id: 'visit', label: 'Visit him', hint: 'A day out of the gym. Big hype.', eff: {energy: -6, hype: 7, followers: 9000, text: 'You spend the afternoon with him. You leave him your gloves.', tone: 'good', post: ['@VERSUSofficial', 'Real ones show up. ❤️', 8000]}},
+    {id: 'video', label: 'Send a video', hint: 'Small bump.', eff: {hype: 2, text: 'You record a video message. His mum says he watched it fifty times.'}}]})},
+  {id: 'vet', from: 'Gym', weight: 1, when: () => true, build: c => ({title: 'A veteran wants hard rounds', text: `A former title challenger is passing through ${c.gym && GYMS[c.gym] ? GYMS[c.gym].label : 'the gym'} and wants five hard rounds with you.`, options: [
+    {id: 'spar', label: 'Spar him', hint: 'Dice roll: big gains, or a beating and a week out.', roll: .6, win: {stat: [['striking', 1.4], ['iq', 1]], energy: -15, text: 'You hold your own with him for five rounds. He tells your coach you\'re the real deal.', tone: 'good'}, lose: {health: -18, injury: 1, energy: -15, text: 'He takes you apart. You learn a lot. You also need a week off.', tone: 'bad'}},
+    {id: 'no', label: 'Light drilling only', hint: 'Safe, small gain.', eff: {stat: [['iq', .5]], text: 'You drill technique with him instead. Useful.'}}]})},
+  {id: 'podcast', from: 'Manager', weight: 1, when: () => true, build: () => ({title: 'Three-hour podcast', text: 'The biggest fight podcast wants you for a long-form episode. They like to push buttons.', options: [
+    {id: 'go', label: 'Go on', hint: 'Dice roll: usually great for hype, sometimes a controversy.', roll: .75, win: {hype: 7, followers: 7000, energy: -6, text: 'Three hours flies by. Your story about sleeping in your car before your debut goes viral.', tone: 'good'}, lose: {hype: -5, energy: -6, text: 'You say something dumb about another fighter\'s family. It does not go well.', tone: 'bad', post: ['@MMAWire', 'Backlash after controversial podcast comments.', 2000]}},
+    {id: 'pass', label: 'Pass', hint: 'Nothing happens.', eff: {text: 'You pass on the podcast.'}}]})},
+  {id: 'crypto', from: 'Manager', weight: .7, when: c => c.hype >= 25, build: c => ({title: 'A sketchy sponsor', text: `A crypto exchange nobody has heard of offers $${T(c, [2500, 15000, 90000]).toLocaleString()} to wear their logo on your shorts.`, options: [
+    {id: 'take', label: 'Take the money', hint: 'Dice roll: easy money, or a scandal when it collapses.', roll: .6, win: {money: T(c, [2500, 15000, 90000]), text: 'The money clears. Nobody asks questions.', tone: 'good'}, lose: {money: T(c, [2500, 15000, 90000]) / 2, hype: -10, text: 'The exchange collapses a month later. Your name is in every article.', tone: 'bad'}},
+    {id: 'no', label: 'Turn it down', hint: 'A little respect.', eff: {hype: 1, text: 'You turn it down. Probably smart.'}}]})},
+  {id: 'party', from: 'Friends', weight: .9, when: () => true, build: () => ({title: 'Birthday at the club', text: 'Your best friend\'s birthday is tonight. "One drink. Come on. You never come out anymore."', options: [
+    {id: 'go', label: 'Go out', hint: 'Dice roll: a good night, or photos leak and camp suffers.', roll: .65, win: {energy: 8, health: 4, text: 'One drink turns into a great night. You needed that.', tone: 'good'}, lose: {hype: -5, fitness: -8, energy: -10, text: 'Photos of you at 3am end up online. Your coach is furious.', tone: 'bad'}},
+    {id: 'stay', label: 'Stay in', hint: 'Fitness up.', eff: {fitness: 3, text: 'You send a voice note and go to bed at nine.'}}]})},
+  {id: 'docu', from: 'Manager', weight: .6, when: c => c.tier >= 1 && !!c.camp, build: () => ({title: 'A documentary crew', text: 'A streaming service wants to follow your camp for a four-part documentary.', options: [
+    {id: 'yes', label: 'Let them in', hint: 'Huge hype and followers. Cameras everywhere cost energy.', eff: {hype: 10, followers: 15000, energy: -12, fitness: -3, text: 'The cameras roll for the whole camp. The trailer drops on fight week.', tone: 'big'}},
+    {id: 'no', label: 'Closed camp', hint: 'Focus.', eff: {fitness: 4, text: 'Closed doors. All business.'}}]})},
+  {id: 'clinic', from: 'Gym', weight: .6, when: c => c.health < 85 || c.energy < 60, build: c => ({title: 'A new recovery clinic', text: `A clinic offers you an experimental recovery program: cryo, hyperbaric chamber, IV drips. $${T(c, [400, 2500, 12000]).toLocaleString()}.`, options: [
+    {id: 'try', label: 'Try it', hint: 'Dice roll: it works wonders, or it makes you ill.', roll: .72, win: {money: -T(c, [400, 2500, 12000]), health: 30, energy: 25, text: 'You feel ten years younger.', tone: 'good'}, lose: {money: -T(c, [400, 2500, 12000]), energy: -20, text: 'You react badly to the IV and spend three days in bed.', tone: 'bad'}},
+    {id: 'no', label: 'Ice bath and sleep', hint: 'The old way.', eff: {energy: 8, text: 'Ice bath, ten hours of sleep. The classics.'}}]})},
+  {id: 'oldcoach', from: 'Old coach', weight: .5, when: c => (c.coachWeeks ?? 0) === 0, build: c => ({title: 'Your first coach calls', text: `The coach who taught you your first jab wants to come back and work your corner. He asks for $${T(c, [500, 3000, 15000]).toLocaleString()} for the next two months.`, options: [
+    {id: 'yes', label: 'Bring him back', hint: 'Training gains up for 8 weeks.', eff: {money: -T(c, [500, 3000, 15000]), coach: 8, text: 'He walks into the gym and it feels like being 15 again.', tone: 'good'}},
+    {id: 'no', label: 'Not now', hint: 'Save the money.', eff: {text: 'You tell him maybe after the next fight.'}}]})},
+  {id: 'homecoming', from: 'Manager', weight: .5, when: c => !c.camp && c.tier >= 1 && !c.homecoming, build: c => ({title: 'Fight at home?', text: `The promotion is planning a card in ${c.country}. They want you on it.`, options: [
+    {id: 'yes', label: 'Bring it home', hint: 'Your next fight: +20% purse and the crowd on your side.', eff: {hype: 5, text: 'Your next fight will be in front of your people.', tone: 'big'}},
+    {id: 'no', label: 'Fight wherever', hint: 'No change.', eff: {text: 'You tell them to put you wherever the fight makes sense.'}}]})},
+  {id: 'streamer', from: 'Fan', weight: .7, when: c => c.hype >= 20, build: () => ({title: 'Streamer collab', text: 'A massive streamer wants you to teach him to fight, live, in front of 200,000 people.', options: [
+    {id: 'yes', label: 'Go live', hint: 'Followers. Dice roll: he could clip you looking silly.', roll: .7, win: {followers: 25000, hype: 5, energy: -5, text: 'You catch him with a soft body shot on stream and chat explodes. Great content.', tone: 'good'}, lose: {followers: 10000, hype: -2, energy: -5, text: 'He lands a lucky jab and the clip "streamer drops pro fighter" goes everywhere.', tone: 'bad'}},
+    {id: 'no', label: 'Not my thing', hint: 'Nothing happens.', eff: {text: 'You pass.'}}]})},
+  {id: 'altitude', from: 'Coach', weight: .6, when: c => !!c.camp && (c.camp.level ?? 0) < 2, build: c => ({title: 'Altitude block', text: `Coach found a spot in the mountains for a two-week altitude block. $${T(c, [600, 3500, 15000]).toLocaleString()}.`, options: [
+    {id: 'yes', label: 'Go up the mountain', hint: 'Cardio up, fitness way up.', eff: {money: -T(c, [600, 3500, 15000]), stat: [['cardio', 1.5]], fitness: 12, energy: -8, text: 'Two weeks at altitude. Your heart rate barely moves now.', tone: 'good'}},
+    {id: 'no', label: 'Train at home', hint: 'Save the money.', eff: {text: 'You stay home.'}}]})},
+  {id: 'contract', from: 'Manager', weight: .5, when: c => c.tier >= 1 && (c.streak ?? 0) >= 2 && (c.payBump ?? 1) < 1.6, build: () => ({title: 'Contract talks', text: 'You\'re on a win streak. The promotion wants to extend your deal. Your manager thinks you could hold out for more.', options: [
+    {id: 'sign', label: 'Sign the extension', hint: 'Purses +15% from now on.', eff: {text: 'New deal signed. Purses up 15%.', tone: 'good'}},
+    {id: 'hold', label: 'Hold out for more', hint: 'Dice roll: +35%, or they freeze you out for a few weeks.', roll: .5, win: {hype: 3, text: 'They blink. Purses up 35%.', tone: 'big'}, lose: {hype: -4, text: 'The promotion goes quiet. No offers for a while.', tone: 'bad'}}]})},
+  {id: 'charity', from: 'Manager', weight: .5, when: c => c.hype >= 10, build: c => ({title: 'Charity exhibition', text: 'A charity boxing night wants you for a three-round exhibition. Headgear, big gloves, good cause.', options: [
+    {id: 'yes', label: 'Do it', hint: `+$${T(c, [800, 5000, 20000]).toLocaleString()}, hype. Small knock risk.`, roll: .85, win: {money: T(c, [800, 5000, 20000]), hype: 4, energy: -10, text: 'Fun night, money raised, and you put on a show.', tone: 'good'}, lose: {money: T(c, [800, 5000, 20000]), injury: 1, energy: -10, text: 'You tweak your hand on a headgear. A week off.', tone: 'bad'}},
+    {id: 'no', label: 'Decline politely', hint: 'Nothing happens.', eff: {text: 'You decline.'}}]})},
+  {id: 'nick', from: 'Fans', weight: .5, when: c => !c.nickname && c.record[0] >= 2, build: (c, r, t) => { const n = t ?? pick(r, ['The Problem', 'Hurricane', 'Iceman', 'The Reaper', 'Wolf', 'Lights Out', 'Smokey']); return {target: n, title: 'The fans picked a nickname', text: `After your last fight, fans keep calling you "${n}". It's trending.`, options: [
+    {id: 'yes', label: `Embrace "${n}"`, hint: 'It\'s yours now. +hype', eff: {hype: 4, text: `"${n}" ${c.name}. It sticks.`, tone: 'good'}},
+    {id: 'no', label: 'No nicknames', hint: 'Nothing happens.', eff: {text: 'You stay just your name.'}}]}; }},
+];
+
+function lifeEvent(c: Career, r: () => number): Choice | null {
+  const pool = LIFE.filter(e => e.when(c));
+  let x = r() * pool.reduce((s, e) => s + e.weight, 0);
+  const e = pool.find(ev => (x -= ev.weight) <= 0) ?? pool[0]; if (!e) return null;
+  const b = e.build(c, r);
+  return {kind: 'event', id: e.id, from: e.from, title: b.title, text: b.text, target: b.target, options: b.options.map(o => ({id: o.id, label: o.label, hint: o.hint}))};
+}
+
+function applyEff(c: Career, e: Eff, target?: string) {
+  if (e.hype) c.hype = clamp(c.hype + e.hype, 0, 100);
+  if (e.money) c.money += Math.round(e.money);
+  if (e.energy) c.energy = Math.max(0, Math.min(100, c.energy + e.energy));
+  if (e.health) c.health = Math.max(5, Math.min(100, c.health + e.health));
+  if (e.fitness) c.fitness = Math.max(0, Math.min(100, (c.fitness ?? 55) + e.fitness));
+  if (e.followers) c.followers = Math.max(0, (c.followers ?? 0) + e.followers * (1 + c.tier));
+  if (e.stat) for (const [k, v] of e.stat) gain(c, k, v);
+  if (e.coach) c.coachWeeks = Math.max(c.coachWeeks ?? 0, e.coach);
+  if (e.heat && target && npc(c, target)) addHeat(c, target, e.heat, 'a war of words online');
+  if (e.injury) { c.injuryWeeks = Math.max(c.injuryWeeks, e.injury); if (c.camp && c.camp.weeksLeft <= e.injury) { c.log.unshift({week: c.week, text: 'The injury costs you the fight. The bout is off.', tone: 'bad'}); c.camp = null; } }
+  c.log.unshift({week: c.week, text: e.text, tone: e.tone});
+  if (e.post) post(c, e.post[0], e.post[1], e.post[2]);
+}
+
+function resolveEvent(c: Career, r: () => number, ch: Choice, option: string) {
+  c.choice = null;
+  if (ch.id === 'cut') {
+    const camp = c.camp; if (!camp) return;
+    const n = npc(c, camp.opponentId)!;
+    if (option === 'nutri') { c.money -= [300, 1500, 6000][c.tier]; c.log.unshift({week: c.week, text: `The cut specialist gets you on weight with an hour to spare. You rehydrate perfectly.`, tone: 'good'}); }
+    else if (option === 'sauna') {
+      if (r() < .82) { c.fitness = Math.max(0, (c.fitness ?? 55) - 12); c.log.unshift({week: c.week, text: 'Four hours in the sauna. You make weight on the last try, but you feel flat.'}); }
+      else { camp.missedWeight = true; c.hype = clamp(c.hype - 6, 0, 100); c.log.unshift({week: c.week, text: `You come in a pound and a half heavy anyway. 20% of your purse goes to ${n.name}, and you're drained.`, tone: 'bad'}); }
+    } else { camp.missedWeight = true; c.fitness = Math.min(100, (c.fitness ?? 55) + 5); c.hype = clamp(c.hype - 8, 0, 100); c.log.unshift({week: c.week, text: `You miss weight on purpose. The crowd boos at the weigh-ins and 20% of your purse goes to ${n.name}.`, tone: 'bad'}); post(c, '@CageSideNews', `${c.name} misses weight. Unprofessional.`, 3000); }
+    // fitness from the camp and the cut is what you take into the cage
+    return;
+  }
+  if (ch.id === 'mic') {
+    const n = ch.target ? npc(c, ch.target) : undefined;
+    if (option === 'champ' && c.champion && c.champion !== 'you') { const champ = npc(c, c.champion)!; addHeat(c, champ.id, 30, 'called him out on the mic'); c.hype = clamp(c.hype + 7, 0, 100); c.log.unshift({week: c.week, text: `On the mic: "${champ.name.split(' ')[0]}, I'm coming for that belt." The arena erupts.`, tone: 'big'}); post(c, '@MMAWire', `${c.name} calls out champion ${champ.name} after his win!`, 6000); }
+    else if (option === 'rival' && n) { addHeat(c, n.id, 30, 'called out after your win'); c.hype = clamp(c.hype + 5, 0, 100); c.log.unshift({week: c.week, text: `On the mic: "${n.name}, you've been talking. Sign the contract."`, tone: 'big'}); post(c, '@' + handleOf(n.name), `Say less. 🖊️`, 4000); }
+    else if (option === 'money') { c.payBump = Math.min(1.6, (c.payBump ?? 1) * 1.08); c.log.unshift({week: c.week, text: 'On the mic: "Pay me!" The crowd loves it. So does your manager. Purses up a little.', tone: 'good'}); }
+    else { c.hype = clamp(c.hype + 2, 0, 100); c.log.unshift({week: c.week, text: 'On the mic you thank your team, your family and the fans. Classy.'}); }
+    return;
+  }
+  const ev = LIFE.find(e => e.id === ch.id); if (!ev) return;
+  const opt = ev.build(c, r, ch.target).options.find(o => o.id === option);
+  if (!opt) return;
+  if ('eff' in opt) applyEff(c, opt.eff, ch.target);
+  else { const win = r() < opt.roll; applyEff(c, win ? opt.win : opt.lose, ch.target); if (ch.id === 'contract') { if (win) c.payBump = Math.min(1.6, (c.payBump ?? 1) * 1.35); else c.nextOfferWeek = c.week + 4; } }
+  if (ch.id === 'contract' && option === 'sign') c.payBump = Math.min(1.6, (c.payBump ?? 1) * 1.15);
+  if (ch.id === 'homecoming' && option === 'yes') c.homecoming = true;
+  if (ch.id === 'nick' && option === 'yes' && ch.target) c.nickname = ch.target;
+}
+
+/** after a win: the octagon interview */
+function micChoice(c: Career, opp: NPC): Choice {
+  const rival = (c.rivals ?? []).map(x => npc(c, x.id)).find(n => n && n.id !== opp.id && n.tier === c.tier);
+  const opts: Choice['options'] = [];
+  if (c.tier === 2 && !c.champ && c.champion && c.champion !== 'you') opts.push({id: 'champ', label: `Call out the champ`, hint: 'Big hype, makes an enemy of the champion.'});
+  if (rival) opts.push({id: 'rival', label: `Call out ${rival.name}`, hint: 'Sets up a grudge match.'});
+  opts.push({id: 'money', label: '"Pay me!"', hint: 'Purses up a little.'}, {id: 'thanks', label: 'Thank the team', hint: 'Small hype bump.'});
+  return {kind: 'event', id: 'mic', from: 'Octagon interview', title: 'The mic is yours', text: `You just beat ${opp.name}. The interviewer puts the microphone in your face: "What's next?"`, options: opts.slice(0, 3), target: rival?.id};
 }

@@ -3,14 +3,23 @@
 import {useEffect, useRef, useState} from 'react';
 import {Pause, Play, FastForward, Maximize, Minimize, X} from 'lucide-react';
 import type {Stats, Style} from '../../lib/career/engine';
-import {DT, NO_INPUT, ROUND_SECONDS, aiInput, createFight, makeBrain, step, type Input, type LiveFight as Fight} from '../../lib/fight3d/engine';
+import {DT, NO_INPUT, ROUND_SECONDS, aiInput, createFight, damageTaken, makeBrain, step, type Input, type LiveFight as Fight} from '../../lib/fight3d/engine';
 import type {FightView} from './fight-view';
-import {pairModels, tape as makeTape, withModels, type FightCard, type Tape} from '../../lib/fight3d/tape';
+import {pairModels, tape as makeTape, withModels, FIGHTER_MODELS, type FightCard, type FighterModel, type Tape} from '../../lib/fight3d/tape';
 import {Commentator, VOICES, announce, cornerAdvice, verdict, type Line} from '../../lib/fight3d/commentary';
+import type {Look} from '../../lib/cosmetics';
 
-export type Corner = {name: string; color: string; style: Style; stats: Stats};
-export type FightStatLine = {sig: number; thrown: number; tdLanded: number; tdAttempts: number; ctrl: number; kds: number};
-export type LiveResult = {winner: 'you' | 'opp' | 'draw'; method: 'KO/TKO' | 'SUB' | 'DEC' | 'SPLIT DEC' | 'DRAW'; round: number; damageTaken: number; cards: [number, number][]; stats?: [FightStatLine, FightStatLine]};
+export type Corner = {name: string; color: string; style: Style; stats: Stats; look?: Look};
+export type FightStatLine = {sig: number; thrown: number; tdLanded: number; tdAttempts: number; ctrl: number; kds: number; head?: number; body?: number; legs?: number};
+export type LiveResult = {winner: 'you' | 'opp' | 'draw'; method: 'KO/TKO' | 'SUB' | 'DEC' | 'SPLIT DEC' | 'DRAW'; round: number; damageTaken: number; cards: [number, number][]; stats?: [FightStatLine, FightStatLine]; how?: string; time?: number; card?: FightCard};
+
+/** bodies for both corners: a fighter's own look wins, otherwise a stable pick, never the same body twice */
+export function cornerModels(you: Corner, opp: Corner): [FighterModel, FighterModel] {
+  const [a, b] = pairModels(you.name, opp.name);
+  const red = you.look?.model ?? a; let blue = opp.look?.model ?? b;
+  if (blue === red) blue = opp.look?.model && !you.look?.model ? blue : FIGHTER_MODELS[(FIGHTER_MODELS.indexOf(red) + 3) % FIGHTER_MODELS.length];
+  return [red, blue];
+}
 
 type Btn = Exclude<keyof Input, 'mx' | 'mz'>;
 // WASD / arrows move around the octagon (relative to the camera); Shift blocks (and sprawls)
@@ -23,9 +32,10 @@ const last = (n: string) => n.split(' ').slice(-1)[0].toUpperCase();
 
 export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQuit, watch = false, card}: {you: Corner; opp: Corner; rounds: number; difficulty: number; onEnd: (r: LiveResult) => void; onSim?: () => void; onQuit?: () => void; watch?: boolean; card?: FightCard}) {
   // the broadcast card: event, billing and the tale of the tape (built from the corners if the caller has nothing richer)
-  const [mRed, mBlue] = pairModels(you.name, opp.name);
-  const base: FightCard = card ?? {event: 'VERSUS FIGHT NIGHT', billing: 'Main event', you: makeTape(you, opp.stats), opp: makeTape(opp, you.stats)};
-  const fc: FightCard = withModels(base); void mRed; void mBlue;
+  const [mRed, mBlue] = cornerModels(you, opp);
+  const base: FightCard = card ?? {event: 'VERSUS FIGHT NIGHT', billing: 'Main event', you: makeTape(you, opp), opp: makeTape(opp, you)};
+  const fc: FightCard = {...base, you: {...base.you, model: mRed}, opp: {...base.opp, model: mBlue}};
+  const fcRef = useRef(fc); fcRef.current = fc;
   const [started, setStarted] = useState(false);
   const [comm, setComm] = useState<(Line & {key: number}) | null>(null);
   const [corner, setCorner] = useState<string[] | null>(null);
@@ -54,8 +64,9 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
     let roundStart = {landed: [0, 0] as [number, number], td: [0, 0] as [number, number]}, lastPhase = g.phase;
     const resize = () => { if (view && shell.current) view.resize(shell.current.clientWidth, shell.current.clientHeight); };
     import('./fight-view').then(async ({FightView, loadFightAssets}) => {
-      const [red, blue] = pairModels(you.name, opp.name);
-      const assets = await loadFightAssets(red, blue, p => alive && setLoading(p));
+      const [red, blue] = cornerModels(you, opp);
+      const plain = new URLSearchParams(location.search).has('nolook');   // debug: fight without tattoos/gear
+      const assets = await loadFightAssets(red, blue, p => alive && setLoading(p), plain ? undefined : [you.look ? {...you.look, model: red} : undefined, opp.look ? {...opp.look, model: blue} : undefined]);
       if (!alive || !canvas.current) return;
       try { view = new FightView(canvas.current, g, assets); } catch { setError('Your browser could not start 3D graphics (WebGL). Try another browser or simulate the fight.'); return; }
       resize(); setReady(true); last = performance.now();
@@ -84,7 +95,7 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
             if (g.phase === 'intro' || g.phase === 'fight') { setCorner(null); if (g.phase === 'fight') roundStart = {landed: [g.f[0].landed, g.f[1].landed], td: [g.f[0].takedowns, g.f[1].takedowns]}; }
             lastPhase = g.phase;
           }
-          for (const e of g.events) if (e.text) setCallout({text: e.text, key: Math.random(), tone: e.type === 'ko' || e.type === 'tap' ? 'big' : e.side === 0 ? 'you' : 'opp'});
+          for (const e of g.events) if (e.text) setCallout({text: e.text, key: Math.random(), tone: e.type === 'ko' || e.type === 'tap' || e.type === 'hurt' ? 'big' : e.side === 0 ? 'you' : 'opp'});
           acc -= DT;
         }
         view!.render(g, frame);
@@ -92,8 +103,8 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
         if (g.phase === 'over' && g.phaseT > 2.6 && !done.current) {
           done.current = true;
           const r = g.result!;
-          const line = (f: Fight['f'][number]): FightStatLine => ({sig: f.landed, thrown: f.thrown, tdLanded: f.takedowns, tdAttempts: f.tdAttempts, ctrl: Math.round(f.ctrl), kds: f.knockdowns});
-          onEnd({winner: r.winner === 0 ? 'you' : r.winner === 1 ? 'opp' : 'draw', method: r.method, round: r.round, damageTaken: Math.round(100 - Math.max(0, g.f[0].hp)), cards: g.cards, stats: [line(g.f[0]), line(g.f[1])]});
+          const line = (f: Fight['f'][number]): FightStatLine => ({sig: f.landed, thrown: f.thrown, tdLanded: f.takedowns, tdAttempts: f.tdAttempts, ctrl: Math.round(f.ctrl), kds: f.knockdowns, head: f.headLanded, body: f.bodyLanded, legs: f.legLanded});
+          onEnd({winner: r.winner === 0 ? 'you' : r.winner === 1 ? 'opp' : 'draw', method: r.method, round: r.round, damageTaken: damageTaken(g.f[0]), cards: g.cards, stats: [line(g.f[0]), line(g.f[1])], how: r.how, time: r.time, card: fcRef.current});
         }
       }
       raf = requestAnimationFrame(loop);
@@ -103,6 +114,9 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
       g.f.forEach((f, i) => {
         const hp = h['hp' + i], st = h['st' + i];
         if (hp) { hp.style.width = `${Math.max(0, f.hp)}%`; hp.dataset.low = f.hp < 30 ? '1' : ''; }
+        const cap = h['cap' + i]; if (cap) cap.style.width = `${100 - f.cap}%`;
+        for (const [k, v] of [['hd', f.hp], ['bd', f.body], ['lg', f.legs]] as const) { const el = h[k + i]; if (el) el.dataset.lvl = v > 66 ? 'ok' : v > 33 ? 'mid' : 'bad'; }
+        const rk = h['rk' + i]; if (rk) rk.dataset.on = f.rocked > 0 ? '1' : '';
         if (st) { st.style.width = `${f.stamina}%`; st.dataset.low = f.stamina < 30 ? '1' : ''; }
         const sn = h['sn' + i]; if (sn) { const s = Math.round(f.stamina); sn.textContent = s < 12 ? `GASSED ${s}` : `STAMINA ${s}`; sn.dataset.low = s < 30 ? '1' : ''; }
       });
@@ -150,7 +164,8 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
 
     <div className="lf-top">
       {[you, opp].map((c, i) => <div key={i} className={`lf-plate ${i ? 'blue' : 'red'}`}>
-        <span className="lf-bars"><span className="lf-hp"><i ref={el => { hud.current['hp' + i] = el; }}/></span><span className="lf-st"><i ref={el => { hud.current['st' + i] = el; }}/></span><b className="lf-stn" ref={el => { hud.current['sn' + i] = el; }}>STAMINA 100</b></span>
+        <span className="lf-bars"><span className="lf-hp"><i ref={el => { hud.current['hp' + i] = el; }}/><b className="lf-cap" title="Damage he can't recover from this fight" ref={el => { hud.current['cap' + i] = el; }}/></span>
+          <span className="lf-dmg" aria-hidden="true"><b ref={el => { hud.current['hd' + i] = el; }}>HEAD</b><b ref={el => { hud.current['bd' + i] = el; }}>BODY</b><b ref={el => { hud.current['lg' + i] = el; }}>LEGS</b><em ref={el => { hud.current['rk' + i] = el; }}>ROCKED</em></span><span className="lf-st"><i ref={el => { hud.current['st' + i] = el; }}/></span><b className="lf-stn" ref={el => { hud.current['sn' + i] = el; }}>STAMINA 100</b></span>
         <span className="lf-name">{(i ? fc.opp : fc.you).rank && <b className={`lf-rank ${(i ? fc.opp : fc.you).rank === 'C' ? 'champ' : ''}`}>{(i ? fc.opp : fc.you).rank}</b>}{c.name.toUpperCase()}</span>
       </div>)}
     </div>
@@ -181,7 +196,8 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
       <button className="button primary" onClick={() => setPaused(false)}><Play size={16} aria-hidden="true"/>Resume</button>
       {onSim && <button className="button outline" onClick={onSim}><FastForward size={16} aria-hidden="true"/>Simulate the rest</button>}
       {onQuit && <button className="button outline" onClick={onQuit}><X size={16} aria-hidden="true"/>Leave the fight</button>}
-      <p className="lf-keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move around the cage · <kbd>Shift</kbd> block (tap as they shoot to sprawl) · <kbd>J</kbd> jab · <kbd>K</kbd> cross / hook · <kbd>L</kbd> kick · <kbd>I</kbd> elbow · <kbd>Space</kbd> takedown</p>
+      <p className="lf-keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move around the cage · <kbd>Shift</kbd> block (tap as they shoot to sprawl, block a leg kick to check it) · <kbd>J</kbd> jab · <kbd>K</kbd> cross / hook · <kbd>L</kbd> kick (body) · <kbd>I</kbd> elbow / hook · <kbd>Space</kbd> takedown</p>
+      <p className="lf-keys">Aim: hold <kbd>W</kbd> + <kbd>L</kbd> for a head kick, <kbd>S</kbd> + <kbd>L</kbd> for a leg kick, <kbd>S</kbd> + a punch to go to the body. Hooks, elbows and head kicks knock people out; counters (hitting him as he throws) hit hardest. Body shots drain his gas tank, leg kicks slow him down.</p>
     </div>}
     {error && <div className="lf-pause"><h2>Can't start the fight</h2><p>{error}</p>{onSim && <button className="button primary" onClick={onSim}>Simulate the fight</button>}{onQuit && <button className="button outline" onClick={onQuit}>Back</button>}</div>}
 
@@ -189,7 +205,7 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
       <div className="lf-dpad"><button {...touch('up')} aria-label="Move in">▲</button><button {...touch('left')} aria-label="Move left">◀</button><button {...touch('block')} aria-label="Block">Block</button><button {...touch('right')} aria-label="Move right">▶</button><button {...touch('down')} aria-label="Move out">▼</button></div>
       <div className="lf-btns"><button className="jab" {...touch('jab')}>Jab</button><button className="cross" {...touch('cross')}>Cross</button><button className="kick" {...touch('kick')}>Kick</button><button className="upper" {...touch('upper')}>Elbow</button><button className="shoot" {...touch('shoot')}>Shoot</button></div>
     </div>
-    {ready && !paused && <p className="lf-hint"><kbd>J</kbd> jab <kbd>K</kbd> cross <kbd>L</kbd> kick <kbd>I</kbd> elbow <kbd>Space</kbd> takedown <kbd>Shift</kbd> block / sprawl <kbd>WASD</kbd> move <kbd>Esc</kbd> menu</p>}
+    {ready && !paused && <p className="lf-hint"><kbd>J</kbd> jab <kbd>K</kbd> cross <kbd>L</kbd> kick <kbd>I</kbd> hook <kbd>W</kbd>/<kbd>S</kbd>+strike head / body-legs <kbd>Space</kbd> takedown <kbd>Shift</kbd> block / sprawl <kbd>Esc</kbd> menu</p>}
   </div>;
 }
 
@@ -210,7 +226,8 @@ function Side({t, side, stance}: {t: Tape; side: 'red' | 'blue'; stance?: boolea
 }
 /** pre-fight tale of the tape (broadcast style), doubles as the loading screen */
 function TaleOfTape({card, ready, loading, onStart}: {card: FightCard; ready: boolean; loading: number; onStart: () => void}) {
-  const rows: [string, string, string][] = [['AGE', String(card.you.age), String(card.opp.age)], ['HEIGHT', card.you.height, card.opp.height], ['WEIGHT', card.you.weight, card.opp.weight], ['REACH', card.you.reach, card.opp.reach], ['STYLE', card.you.style, card.opp.style]];
+  const rows: [string, string, string][] = [['RECORD', card.you.record, card.opp.record], ['AGE', String(card.you.age), String(card.opp.age)], ['HEIGHT', card.you.height, card.opp.height], ['WEIGHT', card.you.weight, card.opp.weight], ['REACH', card.you.reach, card.opp.reach], ['STYLE', card.you.style, card.opp.style],
+    ['ODDS', card.you.odds, card.opp.odds], ...(card.you.prob != null ? [['WIN CHANCE', `${Math.round(card.you.prob * 100)}%`, `${Math.round((1 - card.you.prob) * 100)}%`] as [string, string, string]] : [])];
   return <div className="tt" role="dialog" aria-label="Tale of the tape">
     <Side t={card.you} side="red" stance/>
     <div className="tt-mid">
@@ -227,10 +244,12 @@ function TaleOfTape({card, ready, loading, onStart}: {card: FightCard; ready: bo
 }
 const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 /** post-fight statistics (broadcast style) */
-export function FightStats({card: raw, stats, result}: {card: FightCard; stats: [FightStatLine, FightStatLine]; result?: {winner: 'you' | 'opp' | 'draw'; method: string; round: number}}) {
-  const card = withModels(raw);
+export function FightStats({card: raw, stats, result}: {card: FightCard; stats: [FightStatLine, FightStatLine]; result?: {winner: 'you' | 'opp' | 'draw'; method: string; round: number; how?: string; time?: number; card?: FightCard}}) {
+  const card = result?.card ?? withModels(raw);
+  const pct = (a: number, b: number) => b ? ` (${Math.round(a / b * 100)}%)` : '';
   const rows: [string, string, string][] = [
-    ['SIGNIFICANT STRIKES', `${stats[0].sig}`, `${stats[1].sig}`], ['STRIKES THROWN', `${stats[0].thrown}`, `${stats[1].thrown}`],
+    ['SIGNIFICANT STRIKES', `${stats[0].sig}${pct(stats[0].sig, stats[0].thrown)}`, `${stats[1].sig}${pct(stats[1].sig, stats[1].thrown)}`], ['STRIKES THROWN', `${stats[0].thrown}`, `${stats[1].thrown}`],
+    ...(stats[0].head != null ? [['HEAD / BODY / LEGS', `${stats[0].head}/${stats[0].body}/${stats[0].legs}`, `${stats[1].head}/${stats[1].body}/${stats[1].legs}`] as [string, string, string]] : []),
     ['KNOCKDOWNS', `${stats[0].kds}`, `${stats[1].kds}`], ['TAKEDOWNS LANDED', `${stats[0].tdLanded}`, `${stats[1].tdLanded}`],
     ['TAKEDOWNS ATTEMPTED', `${stats[0].tdAttempts}`, `${stats[1].tdAttempts}`], ['GROUND CONTROL TIME', mmss(stats[0].ctrl), mmss(stats[1].ctrl)],
   ];
@@ -247,7 +266,8 @@ export function FightStats({card: raw, stats, result}: {card: FightCard; stats: 
     <Side t={b} side="blue"/>
   </section>;
 }
-function Verdict({card, result}: {card: FightCard; result: {winner: 'you' | 'opp' | 'draw'; method: string; round: number}}) {
+function Verdict({card, result}: {card: FightCard; result: {winner: 'you' | 'opp' | 'draw'; method: string; round: number; how?: string; time?: number}}) {
   const [v] = useState(() => verdict(card, result));   // pick the quotes once
-  return <div className="tt-verdict"><strong>{v.headline}</strong>{v.quotes.map(([who, q]) => <p key={who}><b>{who.split(' ').slice(-1)[0].toUpperCase()}:</b> “{q}”</p>)}</div>;
+  const official = result.winner === 'draw' ? 'DRAW' : `${result.method}${result.how ? ` (${result.how.toUpperCase()})` : ''} · ROUND ${result.round}${result.time != null ? ` · ${mmss(Math.round(result.time))}` : ''}`;
+  return <div className="tt-verdict"><span className="tt-official">{official}</span><strong>{v.headline}</strong>{v.quotes.map(([who, q]) => <p key={who}><b>{who.split(' ').slice(-1)[0].toUpperCase()}:</b> “{q}”</p>)}</div>;
 }

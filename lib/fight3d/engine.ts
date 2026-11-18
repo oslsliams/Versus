@@ -2,21 +2,48 @@
 // Fighters move freely on the octagon floor (x, z in metres) and always turn to face each other
 // while free; a committed strike keeps its heading, so stepping off the line makes it miss.
 // Stats (0-100) from career mode shape speed, damage, stamina, takedowns and submissions.
+//
+// Damage model (built from fight data and knockout biomechanics, see DAMAGE below):
+//  - three pools: HEAD (the knockout meter), BODY and LEGS, each 0-100.
+//  - head health recovers between exchanges, but only up to a ceiling (cap) that every clean shot,
+//    every wobble and every knockdown lowers for the rest of the fight. Hurt a man and he stays hurtable.
+//  - head at 0 = knockdown. How bad depends on how far past zero the last shot went, how often he's
+//    been down, power vs chin. Most knockdowns end the fight (UFC: one knockdown lifts a KO from ~15%
+//    to ~63%), the rest leave him wobbled.
+//  - flash knockouts: rotational shots (hooks, uppercuts, elbows, head kicks) can switch the lights off
+//    at any health. Walking into a shot (a counter) and a cracked chin multiply it.
+//  - body damage drains stamina and slows its recovery; a body pool at 0 folds him (liver shot).
+//  - leg damage slows his feet, saps punching power and weakens his shots; legs at 0 drop him.
 import type {Stats, Style} from '../career/engine';
 
 export type MoveId = 'jab' | 'cross' | 'kick' | 'upper';
+export type Target = 'head' | 'body' | 'legs';
 export type FState = 'idle' | 'walk' | 'attack' | 'block' | 'stun' | 'down' | 'getup' | 'shoot' | 'sprawl' | 'sprawled' | 'top' | 'bottom' | 'ko' | 'win';
-/** mx/mz: world-space movement wish (-1..1). left/right/up/down: the player's raw keys (screen space, mapped by the view). */
+/** mx/mz: world-space movement wish (-1..1). left/right/up/down: the player's raw keys (screen space, mapped by the view).
+ *  up/down held as a strike starts pick the target: up + kick = head kick, down + kick = leg kick, down + punch = body shot. */
 export type Input = {mx: number; mz: number; left: boolean; right: boolean; up: boolean; down: boolean; block: boolean; jab: boolean; cross: boolean; kick: boolean; upper: boolean; shoot: boolean};
 export const NO_INPUT: Input = {mx: 0, mz: 0, left: false, right: false, up: false, down: false, block: false, jab: false, cross: false, kick: false, upper: false, shoot: false};
 export const DT = 1 / 60;
 
-const MOVES: Record<MoveId, {start: number; active: number; rec: number; range: number; dmg: number; cost: number; push: number; heavy: boolean}> = {
-  jab: {start: .15, active: .06, rec: .2, range: 1.18, dmg: 1.7, cost: 3, push: .15, heavy: false},
-  cross: {start: .18, active: .07, rec: .28, range: 1.28, dmg: 3.6, cost: 6, push: .3, heavy: true},
-  kick: {start: .3, active: .09, rec: .38, range: 1.55, dmg: 4.4, cost: 9, push: .45, heavy: true},
-  upper: {start: .17, active: .07, rec: .3, range: 1.08, dmg: 5, cost: 8, push: .35, heavy: true},
+const MOVES: Record<MoveId, {start: number; active: number; rec: number; range: number; cost: number; push: number; heavy: boolean}> = {
+  jab: {start: .15, active: .06, rec: .2, range: 1.18, cost: 3, push: .15, heavy: false},
+  cross: {start: .18, active: .07, rec: .28, range: 1.28, cost: 6, push: .3, heavy: true},
+  kick: {start: .3, active: .09, rec: .38, range: 1.55, cost: 9, push: .45, heavy: true},
+  upper: {start: .17, active: .07, rec: .3, range: 1.08, cost: 8, push: .35, heavy: true},
 };
+/** DAMAGE: points off each pool for a clean shot from an average-power fighter (power 50, fresh).
+ *  rot = how much rotational head acceleration the strike makes: hooks/uppercuts/elbows and head kicks
+ *  spin the head (the main driver of knockouts); a jab barely does. */
+const DMG: Record<MoveId, Record<Target, number> & {rot: number}> = {
+  jab: {head: 3.2, body: 2, legs: 0, rot: .12},
+  cross: {head: 7.2, body: 4.2, legs: 0, rot: .55},
+  upper: {head: 8.5, body: 5, legs: 0, rot: 1},
+  kick: {head: 12.5, body: 6.5, legs: 8, rot: 1.25},
+};
+let FLASH = .0055;
+export const __tune = (k: {flash?: number}) => { if (k.flash != null) FLASH = k.flash; };
+/** what each strike can aim at */
+export const targetFor = (m: MoveId, up: boolean, down: boolean): Target => m === 'kick' ? (up ? 'head' : down ? 'legs' : 'body') : down ? 'body' : 'head';
 // hold-to-combo strings, by the button held (classic MMA combinations; 'upper' plays hooks/uppercuts/elbows)
 const COMBOS: Record<MoveId, MoveId[]> = {jab: ['jab', 'jab', 'cross', 'upper'], cross: ['cross', 'upper', 'cross', 'kick'], kick: ['kick', 'jab', 'cross', 'kick'], upper: ['upper', 'cross', 'upper']};
 const SHOOT = {start: .26, active: .16, rec: .45, range: 1.4, cost: 12};
@@ -28,18 +55,23 @@ const ALIGN = .8;                   // a strike lands only if the target is with
 export type Fighter = {
   name: string; color: string; style: Style; stats: Stats; side: 0 | 1;
   x: number; z: number; hx: number; hz: number; state: FState; t: number; move: MoveId | null; hitDone: boolean;
-  hp: number; stamina: number; kdRound: number; invuln: number; queued: MoveId | null; combo: number;
+  /** hp = head health (the knockout meter); cap = the most it can recover to this fight */
+  hp: number; cap: number; body: number; legs: number; rocked: number; sinceHit: number; target: Target; legDowns: number;
+  stamina: number; kdRound: number; invuln: number; queued: MoveId | null; combo: number;
   escape: number; sub: number; subClock: number; gnpCd: number; mashCd: number;
   landed: number; points: number; takedowns: number; knockdowns: number;
   /** hold-to-combo: the button that started the current flurry; fight stats for the post-fight screen */
   comboKey: MoveId | null; thrown: number; tdAttempts: number; ctrl: number;
+  headLanded: number; bodyLanded: number; legLanded: number; absorbed: number;
 };
-export type FightEvent = {type: 'hit' | 'block' | 'whiff' | 'kd' | 'ko' | 'td' | 'sprawl' | 'sub' | 'escape' | 'tap' | 'bell' | 'tired'; side: 0 | 1; x: number; z: number; power: number; text?: string};
+export type FightEvent = {type: 'hit' | 'block' | 'whiff' | 'kd' | 'ko' | 'td' | 'sprawl' | 'sub' | 'escape' | 'tap' | 'bell' | 'tired' | 'hurt'; side: 0 | 1; x: number; z: number; power: number; text?: string; target?: Target};
 export type Phase = 'intro' | 'fight' | 'break' | 'over';
 export type LiveFight = {
   f: [Fighter, Fighter]; round: number; rounds: number; clock: number; phase: Phase; phaseT: number;
   slowmo: number; hitstop: number; events: FightEvent[]; cards: [number, number][]; seed: number;
-  result: null | {winner: 0 | 1 | -1; method: 'KO/TKO' | 'SUB' | 'DEC' | 'SPLIT DEC' | 'DRAW'; round: number};
+  result: null | {winner: 0 | 1 | -1; method: 'KO/TKO' | 'SUB' | 'DEC' | 'SPLIT DEC' | 'DRAW'; round: number; how?: string; time?: number};
+  /** how the pending stoppage happened (set when a knockdown is waved off, read when he hits the floor) */
+  how?: string;
 };
 
 let seedState = 1;
@@ -47,7 +79,10 @@ const rand = () => { seedState = (seedState * 1664525 + 1013904223) >>> 0; retur
 
 export function createFight(a: {name: string; color: string; style: Style; stats: Stats}, b: {name: string; color: string; style: Style; stats: Stats}, rounds: number, seed = Date.now()): LiveFight {
   seedState = seed >>> 0 || 1;
-  const mk = (p: typeof a, side: 0 | 1, x: number): Fighter => ({...p, side, x, z: 0, hx: side === 0 ? 1 : -1, hz: 0, state: 'idle', t: 0, move: null, hitDone: false, hp: 100, stamina: 100, kdRound: 0, invuln: 0, queued: null, combo: 0, escape: 0, sub: 0, subClock: 0, gnpCd: 0, mashCd: 0, landed: 0, points: 0, takedowns: 0, knockdowns: 0, comboKey: null, thrown: 0, tdAttempts: 0, ctrl: 0});
+  const mk = (p: typeof a, side: 0 | 1, x: number): Fighter => ({...p, side, x, z: 0, hx: side === 0 ? 1 : -1, hz: 0, state: 'idle', t: 0, move: null, hitDone: false,
+    hp: 100, cap: 100, body: 100, legs: 100, rocked: 0, sinceHit: 9, target: 'head', legDowns: 0,
+    stamina: 100, kdRound: 0, invuln: 0, queued: null, combo: 0, escape: 0, sub: 0, subClock: 0, gnpCd: 0, mashCd: 0, landed: 0, points: 0, takedowns: 0, knockdowns: 0,
+    comboKey: null, thrown: 0, tdAttempts: 0, ctrl: 0, headLanded: 0, bodyLanded: 0, legLanded: 0, absorbed: 0});
   return {f: [mk(a, 0, -1.6), mk(b, 1, 1.6)], round: 1, rounds, clock: ROUND_SECONDS, phase: 'intro', phaseT: 0, slowmo: 0, hitstop: 0, events: [], cards: [[0, 0], [0, 0], [0, 0]], seed, result: null};
 }
 
@@ -57,12 +92,15 @@ export const rel = (f: {x: number; z: number}, o: {x: number; z: number}) => {
   return {ux: dx / d, uz: dz / d, d};
 };
 export const distance = (a: Fighter, b: Fighter) => rel(a, b).d;
-const spd = (f: Fighter) => (.78 + f.stats.speed / 220) * (.75 + .25 * f.stamina / 100);
+/** speed factor: base speed, gas tank, damaged legs, and a wobble all slow a fighter down */
+const spd = (f: Fighter) => (.78 + f.stats.speed / 220) * (.75 + .25 * f.stamina / 100) * (.64 + .36 * f.legs / 100) * (f.rocked > 0 ? .62 : 1);
 const setState = (f: Fighter, s: FState) => { f.state = s; f.t = 0; };
 const busy = (f: Fighter) => !['idle', 'walk', 'block'].includes(f.state);
 const ev = (g: LiveFight, e: Omit<FightEvent, 'z'> & {z?: number}) => g.events.push({z: 0, ...e});
 export const moveTiming = (f: Fighter, m: MoveId) => { const k = 1 / spd(f); const d = MOVES[m]; return {start: d.start * k, active: d.active, rec: d.rec * k, range: d.range}; };
 const push = (o: Fighter, ux: number, uz: number, amt: number) => { o.x += ux * amt; o.z += uz * amt; };
+/** 0-100: how much damage he carries out of the fight (career: health, medical suspensions) */
+export const damageTaken = (f: Fighter) => Math.round(Math.min(100, (100 - f.cap) * 1.5 + (100 - f.body) * .12 + (100 - f.legs) * .12 + (f.hp <= 0 ? 15 : 0)));
 
 /* ------------------------------------------------------------------ step */
 export function step(g: LiveFight, inputs: [Input, Input], pressed: [Input, Input]) {
@@ -78,9 +116,17 @@ export function step(g: LiveFight, inputs: [Input, Input], pressed: [Input, Inpu
 
   g.clock -= dt;
   const [a, b] = g.f;
-  for (const f of g.f) { f.t += dt; f.invuln = Math.max(0, f.invuln - dt); f.gnpCd -= dt; f.mashCd -= dt; }
-  // stamina regen (half while blocking, none while throwing or stuck under a sprawl)
-  for (const f of g.f) if (!['attack', 'shoot', 'sprawled'].includes(f.state)) f.stamina = Math.min(100, f.stamina + dt * (4 + f.stats.cardio / 9) * (f.state === 'block' ? .5 : 1));
+  for (const f of g.f) {
+    f.t += dt; f.invuln = Math.max(0, f.invuln - dt); f.gnpCd -= dt; f.mashCd -= dt; f.sinceHit += dt;
+    if (f.rocked > 0) f.rocked = Math.max(0, f.rocked - dt);
+    // recovery between exchanges: the head clears (up to its ceiling), the body slowly, the legs barely
+    if (f.sinceHit > 1 && f.state !== 'down' && f.state !== 'ko') {
+      f.hp = Math.min(f.cap, f.hp + dt * (1.6 + f.stats.cardio / 35) * (f.state === 'bottom' ? .3 : 1));
+      f.body = Math.min(100, f.body + dt * .7); f.legs = Math.min(100, f.legs + dt * .12);
+    }
+  }
+  // stamina regen (half while blocking, none while throwing or stuck under a sprawl); a beaten body and a wobble slow it
+  for (const f of g.f) if (!['attack', 'shoot', 'sprawled'].includes(f.state)) f.stamina = Math.min(100, f.stamina + dt * (4 + f.stats.cardio / 9) * (f.state === 'block' ? .5 : 1) * (.45 + .55 * f.body / 100) * (f.rocked > 0 ? .5 : 1));
 
   if (a.state === 'top' || a.state === 'bottom') ground(g, inputs, pressed, dt);
   else {
@@ -110,7 +156,7 @@ function standUp(g: LiveFight, f: Fighter, o: Fighter, inp: Input, prs: Input, d
         setState(f, 'shoot'); f.hitDone = false; f.stamina = Math.max(0, f.stamina - SHOOT.cost); return;
       }
       const m: MoveId | null = prs.jab ? 'jab' : prs.cross ? 'cross' : prs.kick ? 'kick' : prs.upper ? 'upper' : null;
-      if (m && f.stamina > 4) { setState(f, 'attack'); f.move = m; f.hitDone = false; f.stamina -= MOVES[m].cost; f.comboKey = m; f.combo = 0; f.thrown += 1; return; }
+      if (m && f.stamina > 4) { setState(f, 'attack'); f.move = m; f.target = targetFor(m, inp.up, inp.down); f.hitDone = false; f.stamina -= MOVES[m].cost; f.comboKey = m; f.combo = 0; f.thrown += 1; return; }
       if (m) ev(g, {type: 'tired', side: f.side, x: f.x, z: f.z, power: .3, text: 'Out of gas!'});
       if (inp.block) { if (f.state !== 'block') setState(f, 'block'); return; }
       let mx = inp.mx, mz = inp.mz; const ml = Math.hypot(mx, mz);
@@ -135,12 +181,12 @@ function standUp(g: LiveFight, f: Fighter, o: Fighter, inp: Input, prs: Input, d
       if (f.t < tm.start * .5) { const r = rel(f, o); f.hx += (r.ux - f.hx) * .2; f.hz += (r.uz - f.hz) * .2; const l = Math.hypot(f.hx, f.hz) || 1; f.hx /= l; f.hz /= l; }
       if (!f.hitDone && f.t >= tm.start) { f.hitDone = true; resolveHit(g, f, o, f.move!); }
       // combo: a strike pressed during this one chains in early, before full recovery
-      if (f.queued && f.hitDone && f.t >= tm.start + tm.active + tm.rec * .35 && f.stamina > MOVES[f.queued].cost) {
+      if (f.queued && f.hitDone && f.t >= tm.start + tm.active + tm.rec * .35 && f.stamina > MOVES[f.queued].cost && f.state === 'attack') {
         const m = f.queued; f.queued = null; f.combo = Math.min(4, f.combo + 1);
         const r = rel(f, o); f.hx = r.ux; f.hz = r.uz;
-        setState(f, 'attack'); f.move = m; f.hitDone = false; f.stamina -= MOVES[m].cost; f.thrown += 1; return;
+        setState(f, 'attack'); f.move = m; f.target = targetFor(m, inp.up, inp.down); f.hitDone = false; f.stamina -= MOVES[m].cost; f.thrown += 1; return;
       }
-      if (f.t >= tm.start + tm.active + tm.rec) { setState(f, 'idle'); f.move = null; f.combo = 0; f.queued = null; f.comboKey = null; }
+      if (f.state === 'attack' && f.t >= tm.start + tm.active + tm.rec) { setState(f, 'idle'); f.move = null; f.combo = 0; f.queued = null; f.comboKey = null; }
       return;
     }
     case 'shoot': {
@@ -155,8 +201,9 @@ function standUp(g: LiveFight, f: Fighter, o: Fighter, inp: Input, prs: Input, d
           // the window is tight: the guard has to come down into the sprawl in the last quarter second (the shot itself takes ~0.3 s)
           const perfect = o.state === 'block' && o.t < .12, early = o.state === 'block' && !perfect && o.t < .25;
           const timedSprawl = perfect || early || o.state === 'sprawl';
-          const turtled = o.state === 'block' && !timedSprawl;   // a guard held up the whole time does nothing against a shot
-          const chance = .5 + (f.stats.wrestling - o.stats.wrestling) / 120 + (100 - o.stamina) / 450 + (o.state === 'attack' ? .22 : 0)
+          // dead legs can't drive through a shot, and can't sprawl either; a wobbled man is easy to take down
+          const chance = .5 + (f.stats.wrestling - o.stats.wrestling) / 120 + (100 - o.stamina) / 450 + (o.state === 'attack' ? .22 : 0) + (o.rocked > 0 ? .2 : 0)
+            - (100 - f.legs) / 400 + (100 - o.legs) / 500
             - (timedSprawl ? (perfect ? .22 : .09) * (.55 + .45 * o.stamina / 100) + (o.stats.wrestling - 60) / 300 : 0) - (gassed ? .2 : 0);   // a tired sprawl is a weak sprawl
           if (rand() < chance) { takedown(g, f, o); return; }
           // stuffed: the shooter is stuck on his knees under the sprawl, gassed and open
@@ -171,49 +218,107 @@ function standUp(g: LiveFight, f: Fighter, o: Fighter, inp: Input, prs: Input, d
       return;
     }
     case 'sprawl': if (f.t > .3) setState(f, 'idle'); return;
-    case 'sprawled': if (f.t > 1.0) { setState(f, 'idle'); f.hitDone = false; } return;
-    case 'stun': if (f.t > .38) setState(f, 'idle'); return;
-    case 'down': if (f.t > 1.7) { if (f.hp <= 0) return finish(g, o, 'KO/TKO'); setState(f, 'getup'); } return;
+    case 'sprawled': if (f.t > .8) { setState(f, 'idle'); f.hitDone = false; } return;
+    case 'stun': if (f.t > (f.rocked > 0 ? .7 : .34)) setState(f, 'idle'); return;
+    case 'down': if (f.t > 1.7) { if (f.hp <= 0) return finish(g, o, 'KO/TKO', g.how); setState(f, 'getup'); } return;
     case 'getup': if (f.t > .5) { setState(f, 'idle'); f.invuln = .5; } return;
     default: return;
   }
 }
 
 function resolveHit(g: LiveFight, f: Fighter, o: Fighter, m: MoveId) {
-  const d = MOVES[m];
+  const d = MOVES[m], tgt = f.target;
   const r = rel(f, o), aligned = f.hx * r.ux + f.hz * r.uz > ALIGN;
   const wx = f.x + f.hx * .8, wz = f.z + f.hz * .8;
   if (!aligned || r.d > d.range || ['down', 'ko', 'getup'].includes(o.state) || o.invuln > 0) { ev(g, {type: 'whiff', side: f.side, x: wx, z: wz, power: .2}); return; }
-  // a level change ducks straight punches (uppercuts and knees/kicks still catch a shot)
-  if (o.state === 'shoot' && (m === 'jab' || m === 'cross')) { ev(g, {type: 'whiff', side: f.side, x: wx, z: wz, power: .2, text: o.side === 0 || f.side === 0 ? 'Ducked under!' : undefined}); return; }
-  const tired = .65 + .35 * f.stamina / 100;
-  let dmg = d.dmg * (.55 + f.stats.power / 100) * (1.25 - o.stats.chin / 200) * tired * (.85 + rand() * .3);
+  // a level change ducks straight punches to the head (uppercuts, knees and kicks still catch a shot)
+  if (o.state === 'shoot' && tgt === 'head' && (m === 'jab' || m === 'cross')) { ev(g, {type: 'whiff', side: f.side, x: wx, z: wz, power: .2, text: o.side === 0 || f.side === 0 ? 'Ducked under!' : undefined}); return; }
+  // power: the stat, sturdy legs under the shot, and what's left in the tank
+  const P = (.55 + f.stats.power / 110) * (.85 + .15 * f.legs / 100);
+  const tired = .62 + .38 * f.stamina / 100;
+  const base = DMG[m][tgt] * P * tired * (.85 + rand() * .3);
   const hx = (f.x + o.x) / 2, hz = (f.z + o.z) / 2;
-  // blocking only works facing the attacker; a high guard doesn't stop every low kick
+  o.sinceHit = 0;
+  // blocking only works facing the attacker
   const facingIt = o.hx * -r.ux + o.hz * -r.uz > .3;
-  const underGuard = o.state === 'block' && facingIt && m === 'kick' && rand() < .35;
-  const guarded = o.state === 'block' && facingIt && !underGuard;
-  if (underGuard) dmg *= .55;   // a chopped leg, not a clean head shot
-  if (guarded) {
-    o.stamina = Math.max(0, o.stamina - dmg * 1.1); o.hp -= dmg * .16; push(o, r.ux, r.uz, d.push * .25); g.hitstop = .03;
-    ev(g, {type: 'block', side: o.side, x: hx, z: hz, power: dmg / 10});
-    if (o.stamina <= 0) { setState(o, 'stun'); ev(g, {type: 'tired', side: o.side, x: o.x, z: o.z, power: .4, text: 'Guard broken, gassed!'}); }
+  if (o.state === 'block' && facingIt) {
+    if (tgt === 'legs') {   // a checked leg kick: shin on shin, the kicker pays too
+      o.legs = Math.max(1, o.legs - base * (o.rocked > 0 ? .5 : .22)); f.legs = Math.max(1, f.legs - base * .35);
+      ev(g, {type: 'block', side: o.side, x: hx, z: hz, power: base / 12, text: f.side === 0 || o.side === 0 ? 'Checked!' : undefined, target: tgt}); g.hitstop = .04;
+      return;
+    }
+    // a high guard covers the head well, the body badly; a wobbled guard leaks
+    const leak = tgt === 'body' ? .5 : o.rocked > 0 ? .45 : .12;
+    o.stamina = Math.max(0, o.stamina - base * .85);
+    push(o, r.ux, r.uz, d.push * .2); g.hitstop = .03;
+    ev(g, {type: 'block', side: o.side, x: hx, z: hz, power: base / 12, target: tgt});
+    if (tgt === 'head') { o.hp -= base * leak; o.cap = Math.max(20, o.cap - base * leak * .08); if (o.hp <= 0) knockdown(g, f, o, 'Punches through the guard', 0); }
+    else hurtBody(g, f, o, m, base * leak, 1);
+    if (o.stamina <= 0 && o.state === 'block') { setState(o, 'stun'); ev(g, {type: 'tired', side: o.side, x: o.x, z: o.z, power: .4, text: 'Guard broken, gassed!'}); }
     return;
   }
   const open = o.state === 'sprawled';          // caught under a stuffed shot
-  const counter = o.state === 'attack' || open ? 1.2 : 1;
-  dmg *= counter * (1 + f.combo * .05) * .238;  // tuned for 1:30 rounds
-  o.hp -= dmg; push(o, r.ux, r.uz, d.push * (d.heavy ? .7 : .4) * (open ? .3 : 1)); f.landed += 1; f.points += dmg;   // a snap back, not a shove across the cage
-  g.hitstop = d.heavy ? .085 : .045;
-  ev(g, {type: 'hit', side: f.side, x: hx, z: hz, power: dmg / 10, text: counter > 1 ? 'Counter!' : undefined});
-  const kdChance = d.heavy && !underGuard ? .005 + (f.stats.power - o.stats.chin) / 800 + Math.max(0, 40 - o.hp) / 520 + (counter > 1 ? .03 : 0) + (m === 'upper' ? .04 : 0) : .0;
-  if (o.hp <= 0 || rand() < kdChance) {
-    o.kdRound += 1; f.knockdowns += 1; f.points += 12;
-    setState(o, 'down'); o.move = null;
-    const stoppage = o.hp <= 0 || o.kdRound >= 3 || (o.hp < 15 && rand() < .5);
-    if (stoppage) { o.hp = Math.min(o.hp, 0); g.slowmo = 1.1; ev(g, {type: 'ko', side: f.side, x: o.x, z: o.z, power: 2, text: 'KNOCKOUT!'}); }
-    else { o.hp = Math.max(o.hp, 6); ev(g, {type: 'kd', side: f.side, x: o.x, z: o.z, power: 1.4, text: 'Knockdown!'}); }
-  } else if (!open) setState(o, 'stun');
+  // walking into a shot doubles up the force: counters are where the big knockouts come from
+  const counter = o.state === 'attack' ? 1.3 : open ? 1.2 : 1;
+  let dmg = base * counter * (1 + f.combo * .06) * (o.rocked > 0 ? 1.2 : 1);
+  f.landed += 1; o.absorbed += dmg;
+  push(o, r.ux, r.uz, d.push * (.25 + Math.min(.6, dmg / 30)) * (open ? .3 : 1));   // a snap back, not a shove across the cage
+  g.hitstop = dmg > 12 ? .1 : d.heavy ? .075 : .045;
+  if (tgt === 'head') {
+    f.headLanded += 1; f.points += dmg * .3;
+    const chin = 1.3 - o.stats.chin / 170;     // chin 50 = x1.0, chin 90 = x0.77, chin 30 = x1.12
+    dmg *= chin;
+    const before = o.hp;
+    o.hp -= dmg; o.cap = Math.max(20, o.cap - dmg * .1);
+    ev(g, {type: 'hit', side: f.side, x: hx, z: hz, power: dmg / 12, text: counter > 1.25 && dmg > 9 ? 'Counter!' : undefined, target: tgt});
+    // flash knockout: the chance scales with the spin on the shot, power and chin (squared: force -> acceleration),
+    // the counter, and how much damage he's already carrying
+    const flash = DMG[m].rot * FLASH * P * P * chin * chin * counter * counter * (1 + (100 - before) / 70) * Math.min(1.6, dmg / 11);
+    const how = m === 'kick' ? 'Head kick' : m === 'upper' ? (rand() < .5 ? 'Elbow' : 'Hook') : m === 'cross' ? 'Right hand' : 'Punches';
+    if (o.hp <= 0 || rand() < flash) knockdown(g, f, o, counter > 1.25 ? 'Counter ' + how.toLowerCase() : how, Math.max(0, dmg - before) + (o.hp > 0 ? 4 : 0));
+    else if (o.rocked <= 0 && ((dmg >= 9 && o.hp < 52) || o.hp < 24)) {
+      o.rocked = 1.3 + dmg / 12; o.cap = Math.max(20, o.cap - 4); setState(o, 'stun'); o.move = null;
+      ev(g, {type: 'hurt', side: f.side, x: o.x, z: o.z, power: 1, text: 'ROCKED!'});
+    } else if (!open) setState(o, 'stun');
+  } else if (tgt === 'body') {
+    f.bodyLanded += 1; f.points += dmg * .25;
+    ev(g, {type: 'hit', side: f.side, x: hx, z: hz, power: dmg / 14, target: tgt});
+    hurtBody(g, f, o, m, dmg, counter);
+    if (o.state !== 'down' && !open) setState(o, 'stun');
+  } else {
+    f.legLanded += 1; f.points += dmg * .2;
+    o.legs -= dmg;
+    ev(g, {type: 'hit', side: f.side, x: hx, z: hz, power: dmg / 16, target: tgt});
+    if (o.legs <= 0) {
+      o.legDowns += 1; o.kdRound += 1; f.knockdowns += 1; f.points += 8; setState(o, 'down'); o.move = null;
+      if (o.legDowns >= 2) { o.hp = 0; g.how = 'Leg kicks'; g.slowmo = 1; ev(g, {type: 'ko', side: f.side, x: o.x, z: o.z, power: 1.6, text: 'HE CAN\'T STAND! TKO!'}); }
+      else { o.legs = 24; ev(g, {type: 'kd', side: f.side, x: o.x, z: o.z, power: 1, text: 'The leg gives out!'}); }
+    } else if (!open && dmg > 9) setState(o, 'stun');
+  }
+}
+
+/** body shots: they take the wind (stamina) and fold a man when the pool runs out; liver shots can do it early */
+function hurtBody(g: LiveFight, f: Fighter, o: Fighter, m: MoveId, dmg: number, counter: number) {
+  o.body -= dmg; o.stamina = Math.max(0, o.stamina - dmg * .9);
+  const liver = (m === 'kick' || m === 'upper') && rand() < .002 * counter * (dmg / 7);
+  if (o.body > 0 && !liver) return;
+  o.kdRound += 1; f.knockdowns += 1; f.points += 12; setState(o, 'down'); o.move = null;
+  if (rand() < .3 + (o.kdRound - 1) * .3 + (o.body < -10 ? .2 : 0)) { o.hp = 0; g.how = 'Body shot'; g.slowmo = 1.1; ev(g, {type: 'ko', side: f.side, x: o.x, z: o.z, power: 2, text: 'TO THE BODY! HE FOLDS!'}); }
+  else { o.body = 28; o.stamina = Math.min(o.stamina, 18); o.rocked = 2.5; ev(g, {type: 'kd', side: f.side, x: o.x, z: o.z, power: 1.3, text: 'Body shot! He folds!'}); }
+}
+
+/** head health gone (or a flash knockdown): down he goes; most of these end the fight */
+function knockdown(g: LiveFight, f: Fighter, o: Fighter, how: string, severity: number) {
+  o.kdRound += 1; f.knockdowns += 1; f.points += 14; o.cap = Math.max(20, o.cap - 12);
+  setState(o, 'down'); o.move = null;
+  const p = .3 + severity / 30 + (f.stats.power - o.stats.chin) / 220 + (o.kdRound - 1) * .35 + (o.cap < 45 ? .18 : 0);
+  if (severity > 10 || o.kdRound >= 3 || rand() < p) {
+    o.hp = 0; g.how = how; g.slowmo = 1.1;
+    ev(g, {type: 'ko', side: f.side, x: o.x, z: o.z, power: 2, text: severity > 10 ? 'LIGHTS OUT!' : 'KNOCKOUT!'});
+  } else {
+    o.hp = Math.max(o.cap * .45, 18); o.rocked = 3.5;
+    ev(g, {type: 'kd', side: f.side, x: o.x, z: o.z, power: 1.4, text: 'Knockdown!'});
+  }
 }
 
 function takedown(g: LiveFight, f: Fighter, o: Fighter) {
@@ -239,7 +344,7 @@ function ground(g: LiveFight, inputs: [Input, Input], pressed: [Input, Input], d
     top.sub += dt * Math.max(.05, .16 + grapEdge) * (.75 + .25 * (1 - bot.stamina / 100));
     if (crank) top.sub += .04 + top.stats.grappling / 4000;
     if (mash) { top.sub -= .045 + bot.stats.grappling / 4000; bot.escape += .015; bot.stamina = Math.max(0, bot.stamina - .6); }
-    if (top.sub >= 1) { ev(g, {type: 'tap', side: top.side, x: bot.x, z: bot.z, power: 2, text: 'TAP OUT!'}); return finish(g, top, 'SUB'); }
+    if (top.sub >= 1) { ev(g, {type: 'tap', side: top.side, x: bot.x, z: bot.z, power: 2, text: 'TAP OUT!'}); return finish(g, top, 'SUB', g.how); }
     top.subClock += dt;
     if (top.sub <= 0 || top.subClock > 6) {
       top.sub = 0; top.mashCd = 3; bot.escape += .3;
@@ -251,14 +356,18 @@ function ground(g: LiveFight, inputs: [Input, Input], pressed: [Input, Input], d
     bot.escape -= dt * (.04 + top.stats.wrestling / 2000);
     if ((tp.jab || tp.cross || tp.upper) && top.gnpCd <= 0) {
       top.gnpCd = .42 / spd(top);
-      const dmg = .75 * (.55 + top.stats.power / 100) * (1.25 - bot.stats.chin / 200);
-      bot.hp -= dmg; top.points += dmg; top.landed += 1; top.stamina -= 2.5; bot.escape -= .04;
-      ev(g, {type: 'hit', side: top.side, x: bot.x, z: bot.z, power: dmg / 8});
-      if (bot.hp <= 0) { g.slowmo = 1; ev(g, {type: 'ko', side: top.side, x: bot.x, z: bot.z, power: 2, text: 'TKO! Ref stops it'}); return finish(g, top, 'KO/TKO'); }
+      // ground and pound: short shots from top, partly covered up, but they add up and the head barely recovers down there
+      const dmg = 2.5 * (.55 + top.stats.power / 110) * (1.3 - bot.stats.chin / 170) * (.8 + rand() * .4) * (.62 + .38 * top.stamina / 100);
+      bot.hp -= dmg; bot.cap = Math.max(20, bot.cap - dmg * .08); bot.sinceHit = 0; bot.absorbed += dmg;
+      top.points += dmg * .3; top.landed += 1; top.headLanded += 1; top.stamina -= 2.5; bot.escape -= .04;
+      ev(g, {type: 'hit', side: top.side, x: bot.x, z: bot.z, power: dmg / 8, target: 'head'});
+      if (bot.hp <= 0) { g.slowmo = 1; ev(g, {type: 'ko', side: top.side, x: bot.x, z: bot.z, power: 2, text: 'TKO! Ref stops it'}); return finish(g, top, 'KO/TKO', 'Ground and pound'); }
     }
     if (tp.kick && top.stamina > 20 && top.mashCd <= 0) {
       top.sub = .2; top.subClock = 0; top.stamina -= 12;
-      ev(g, {type: 'sub', side: top.side, x: bot.x, z: bot.z, power: 1, text: ['Rear-naked choke!', 'Armbar!', 'Guillotine!', 'Kimura!'][Math.floor(rand() * 4)]});
+      const name = ['Rear-naked choke', 'Armbar', 'Guillotine', 'Kimura', 'Arm-triangle'][Math.floor(rand() * 5)];
+      g.how = name;
+      ev(g, {type: 'sub', side: top.side, x: bot.x, z: bot.z, power: 1, text: name + '!'});
     }
   }
   bot.escape = Math.max(0, bot.escape);
@@ -269,11 +378,11 @@ function ground(g: LiveFight, inputs: [Input, Input], pressed: [Input, Input], d
     ev(g, {type: 'escape', side: bot.side, x: bot.x, z: bot.z, power: .6, text: 'Back to the feet'});
   }
 }
-function finish(g: LiveFight, winner: Fighter, method: 'KO/TKO' | 'SUB') {
+function finish(g: LiveFight, winner: Fighter, method: 'KO/TKO' | 'SUB', how?: string) {
   const loser = winner.side === 0 ? g.f[1] : g.f[0];
   setState(loser, 'ko'); setState(winner, 'win');
   g.phase = 'over'; g.phaseT = 0;
-  g.result = {winner: winner.side, method, round: g.round};
+  g.result = {winner: winner.side, method, round: g.round, how, time: Math.max(0, ROUND_SECONDS - g.clock)};
 }
 
 function endRound(g: LiveFight) {
@@ -281,7 +390,7 @@ function endRound(g: LiveFight) {
   for (const card of g.cards) {
     const n = (rand() - .5) * 6;
     const aWin = a.points + n > b.points;
-    const wide = Math.abs(a.points - b.points) > 40;
+    const wide = Math.abs(a.points - b.points) > 40 || a.kdRound >= 2 || b.kdRound >= 2;
     card[0] += aWin ? 10 : wide ? 8 : 9; card[1] += aWin ? (wide ? 8 : 9) : 10;
   }
   ev(g, {type: 'bell', side: 0, x: 0, power: 1, text: `End of round ${g.round}`});
@@ -300,7 +409,9 @@ function endRound(g: LiveFight) {
 
 function nextRound(g: LiveFight) {
   g.round += 1; g.clock = ROUND_SECONDS; g.phase = 'intro'; g.phaseT = 0;
-  g.f.forEach((f, i) => { f.points = 0; f.kdRound = 0; f.x = i === 0 ? -1.6 : 1.6; f.z = 0; f.hx = i === 0 ? 1 : -1; f.hz = 0; setState(f, 'idle'); f.stamina = Math.min(100, f.stamina + 35 * f.stats.cardio / 100 + 20); f.hp = Math.min(100, f.hp + 8); f.sub = 0; f.escape = 0; });
+  // the minute in the corner: the head clears to its (lowered) ceiling, a little comes back to the body and legs
+  g.f.forEach((f, i) => { f.points = 0; f.kdRound = 0; f.x = i === 0 ? -1.6 : 1.6; f.z = 0; f.hx = i === 0 ? 1 : -1; f.hz = 0; setState(f, 'idle');
+    f.stamina = Math.min(100, f.stamina + 35 * f.stats.cardio / 100 + 20); f.cap = Math.min(100, f.cap + 4); f.hp = f.cap; f.body = Math.min(100, f.body + 25); f.legs = Math.min(100, f.legs + 14); f.rocked = 0; f.sub = 0; f.escape = 0; });
 }
 
 /* -------------------------------------------------------------------- AI */
@@ -323,26 +434,43 @@ function steer(me: Fighter, them: Fighter, move: Move): [number, number] {
   return [mx / l, mz / l];
 }
 
+/** where the AI aims: real fight data puts ~64% of significant strikes at the head, ~21% body, ~17% legs */
+function aim(held: Input, pressed: Input, me: Fighter, them: Fighter) {
+  held.up = false; held.down = false;
+  const r = rand();
+  if (pressed.kick) { if (r < .4 - (them.legs < 40 ? -.15 : 0)) held.down = true; else if (r > .76 - (them.rocked > 0 ? .2 : 0)) held.up = true; }
+  else if (pressed.cross || pressed.upper) { if (r < .2 + (them.body < 45 ? .15 : 0)) held.down = true; }
+  void me;
+}
+
 export function aiInput(g: LiveFight, me: Fighter, them: Fighter, brain: AIBrain): {held: Input; pressed: Input} {
   const held = {...NO_INPUT}, pressed = {...NO_INPUT};
   if (g.phase !== 'fight') return {held, pressed};
   brain.react -= DT; brain.plan -= DT; brain.shotCd -= DT;
   const lvl = brain.level; // 0..1
   // ground mashing: a hard-mashing human is ~6-8 presses/s; Normal AI ~4/s, more when fighting off a submission
-  if (me.state === 'bottom') { if (rand() < (them.sub > 0 ? (.03 + lvl * .07) * 1.5 : .06 + lvl * .07)) pressed.jab = true; return {held, pressed}; }
+  // (an AI on its back escapes in ~10 s against good top pressure; a human mashing hard gets out in ~4-5 s)
+  if (me.state === 'bottom') { if (rand() < (them.sub > 0 ? (.03 + lvl * .05) * 1.4 : .035 + lvl * .05)) pressed.jab = true; return {held, pressed}; }
   if (me.state === 'top') {
     if (me.sub === 0 && brain.plan <= 0) { brain.plan = 1.2; if (me.stats.grappling > 55 && them.hp < 85 && rand() < .15 + lvl * .15) pressed.kick = true; }
     // ground and pound ~2/s; while a submission is on, crank it (Normal ~3 presses/s)
-    if (rand() < (me.sub > 0 ? .02 + lvl * .06 : .12 + lvl * .1)) pressed.jab = true;
+    if (rand() < (me.sub > 0 ? .026 + lvl * .065 : .12 + lvl * .1)) pressed.jab = true;
     return {held, pressed};
   }
   const dist = rel(me, them).d;
   const ideal = me.style === 'Striker' ? 1.1 : 1.04;   // inside its own jab range (1.18)
   const grappler = me.style === 'Wrestler' || me.style === 'Grappler';
-  const out = (h: Input, p: Input) => { if (p.shoot) brain.shotCd = 4.2 - lvl * 1.6; const [mx, mz] = steer(me, them, brain.want.move ?? null); h.mx = mx; h.mz = mz; h.block = !!brain.want.block; return {held: h, pressed: p}; };
+  const out = (h: Input, p: Input) => { if (p.shoot) brain.shotCd = 4.2 - lvl * 1.6; const [mx, mz] = steer(me, them, brain.want.move ?? null); h.mx = mx; h.mz = mz; h.block = !!brain.want.block; aim(h, p, me, them); return {held: h, pressed: p}; };
   // a stuffed shooter stuck under a sprawl: free shots
   if (them.state === 'sprawled' && dist < 1.25 && me.state !== 'attack' && brain.react <= 0) {
     brain.react = .25; if (rand() < .3 + lvl * .5) { pressed[rand() < .5 ? 'cross' : 'upper'] = true; return out(held, pressed); }
+  }
+  // hurt: cover up and get out of there (better AIs survive smarter)
+  if (me.rocked > 0 && brain.plan <= 0) { brain.plan = .3; brain.want = rand() < .45 + lvl * .25 ? {block: true} : {move: rand() < .6 ? 'away' : brain.circleDir === 1 ? 'circleL' : 'circleR'}; return out(held, pressed); }
+  // he's hurt: swarm him
+  if (them.rocked > 0 && dist < 1.3 && me.state !== 'attack' && brain.react <= 0 && me.stamina > 15) {
+    brain.react = .18 - lvl * .08;
+    if (rand() < .35 + lvl * .4) { pressed[rand() < .45 ? 'cross' : rand() < .6 ? 'upper' : 'kick'] = true; brain.chain = rand() < .6 ? 'upper' : 'cross'; return out(held, pressed); }
   }
   // punish: once their strike has gone (whiffed or landed) they're stuck recovering - better AIs counter right there
   if (them.state === 'attack' && them.hitDone && dist < 1.2 && brain.react <= 0 && me.state !== 'attack' && me.state !== 'stun') {
