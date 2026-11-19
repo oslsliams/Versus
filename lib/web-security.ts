@@ -19,7 +19,8 @@ export function securityHeaders(request:Request,response:Response){const headers
  if(liveHosts.has(url.hostname)&&url.protocol==='https:'){
   headers.set('Strict-Transport-Security','max-age=31536000');
   // Vinext uses inline bootstrap scripts; do not disable them or pretend this is a nonce policy.
-  headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://ufc.com https://*.ufc.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests");
+  // connect-src needs blob: and data: because the 3D loader fetches each model's embedded textures (skin, kit) through them.
+  headers.set('Content-Security-Policy',"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://ufc.com https://*.ufc.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' blob: data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests");
  }
  if(url.pathname.startsWith('/api/')||url.pathname.startsWith('/auth')||url.pathname.startsWith('/recover')||request.headers.get('cookie')||response.headers.has('set-cookie'))headers.set('Cache-Control','private, no-store');
  return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
