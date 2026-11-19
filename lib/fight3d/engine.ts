@@ -51,6 +51,11 @@ export const targetFor = (m: MoveId, up: boolean, down: boolean): Target => m ==
 const COMBOS: Record<MoveId, MoveId[]> = {jab: ['jab', 'jab', 'cross', 'upper'], cross: ['cross', 'upper', 'cross', 'kick'], kick: ['kick', 'jab', 'cross', 'kick'], upper: ['upper', 'cross', 'upper']};
 const SHOOT = {start: .26, active: .16, rec: .45, range: 1.4, cost: 12};
 export const ROUND_SECONDS = 90;
+/** player fight settings (set before a fight starts): stamina drain, health regeneration between exchanges,
+ *  doctor stoppages, round length, and multipliers on damage and cuts (applied over the tuned defaults) */
+export const FX = {stamina: 1, regen: true, doctor: true, roundSec: ROUND_SECONDS, damage: 1, cuts: 1};
+const KO_BASE = {dmg: .86}, CUT_BASE = {base: .006, sharp: .026};
+export function applyFX(k: Partial<typeof FX>) { Object.assign(FX, k); KO.dmg = KO_BASE.dmg * FX.damage; CUT.base = CUT_BASE.base * FX.cuts; CUT.sharp = CUT_BASE.sharp * FX.cuts; }
 export const CAGE_R = 4.2;          // usable floor radius (engine metres)
 const MIN_GAP = 1.0;                // bodies never overlap
 const ALIGN = .8;                   // a strike lands only if the target is within ~37 deg of where it was thrown
@@ -83,6 +88,8 @@ export type LiveFight = {
   grap: Grapple | null;
   /** a stuffed shot leaves his head hanging: the sprawler has a moment to grab a guillotine */
   fh: {by: 0 | 1; t: number} | null;
+  /** seconds in a round for this fight */
+  secs: number;
   /** a doctor check waiting for a break in the action, and the one in progress */
   docDue?: 0 | 1 | null; doc?: 0 | 1 | null;
 };
@@ -96,7 +103,7 @@ export function createFight(a: {name: string; color: string; style: Style; stats
     hp: 100, cap: 100, body: 100, legs: 100, rocked: 0, sinceHit: 9, target: 'head', legDowns: 0,
     stamina: 100, kdRound: 0, invuln: 0, queued: null, combo: 0, escape: 0, sub: 0, subClock: 0, gnpCd: 0, mashCd: 0, landed: 0, points: 0, takedowns: 0, knockdowns: 0,
     comboKey: null, thrown: 0, tdAttempts: 0, ctrl: 0, headLanded: 0, bodyLanded: 0, legLanded: 0, absorbed: 0, cut: Math.max(0, Math.min(60, p.cut ?? 0)), cutAt: Math.max(62, (p.cut ?? 0) + 18)});
-  return {f: [mk(a, 0, -1.6), mk(b, 1, 1.6)], round: 1, rounds, clock: ROUND_SECONDS, phase: 'intro', phaseT: 0, slowmo: 0, hitstop: 0, events: [], cards: [[0, 0], [0, 0], [0, 0]], seed, result: null, grap: null, fh: null};
+  return {f: [mk(a, 0, -1.6), mk(b, 1, 1.6)], round: 1, rounds, clock: FX.roundSec, secs: FX.roundSec, phase: 'intro', phaseT: 0, slowmo: 0, hitstop: 0, events: [], cards: [[0, 0], [0, 0], [0, 0]], seed, result: null, grap: null, fh: null};
 }
 
 /** unit vector and distance from f to o */
@@ -134,13 +141,13 @@ export function step(g: LiveFight, inputs: [Input, Input], pressed: [Input, Inpu
     f.t += dt; f.invuln = Math.max(0, f.invuln - dt); f.gnpCd -= dt; f.mashCd -= dt; f.sinceHit += dt;
     if (f.rocked > 0) f.rocked = Math.max(0, f.rocked - dt);
     // recovery between exchanges: the head clears (up to its ceiling), the body slowly, the legs barely
-    if (f.sinceHit > 1 && f.state !== 'down' && f.state !== 'ko') {
+    if (FX.regen && f.sinceHit > 1 && f.state !== 'down' && f.state !== 'ko') {
       f.hp = Math.min(f.cap, f.hp + dt * (1.6 + f.stats.cardio / 35) * KO.rec * (f.state === 'bottom' ? .3 : 1));
       f.body = Math.min(100, f.body + dt * .7); f.legs = Math.min(100, f.legs + dt * .12);
     }
   }
   // stamina regen (half while blocking, none while throwing or stuck under a sprawl); a beaten body and a wobble slow it
-  for (const f of g.f) if (!['attack', 'shoot', 'sprawled'].includes(f.state)) f.stamina = Math.min(100, f.stamina + dt * (4 + f.stats.cardio / 9) * (f.state === 'block' ? .5 : 1) * (.45 + .55 * f.body / 100) * (f.rocked > 0 ? .5 : 1));
+  for (const f of g.f) if (!['attack', 'shoot', 'sprawled'].includes(f.state)) f.stamina = Math.min(100, f.stamina + dt * (4 + f.stats.cardio / 9) * (f.state === 'block' ? .5 : 1) * (.45 + .55 * f.body / 100) * (f.rocked > 0 ? .5 : 1) / FX.stamina);
 
   // a stuffed shot: grab the neck before he gets his head out
   if (g.fh) {
@@ -163,6 +170,7 @@ export function step(g: LiveFight, inputs: [Input, Input], pressed: [Input, Inpu
   }
   for (const f of g.f) { const d = Math.hypot(f.x, f.z); if (d > CAGE_R) { f.x *= CAGE_R / d; f.z *= CAGE_R / d; } }
 
+  if (g.docDue != null && !FX.doctor) g.docDue = null;
   if (g.docDue != null && g.phase === 'fight' && !g.f.some(f => f.state === 'down' || f.state === 'ko')) callDoctor(g);
   if (g.clock <= 0 && g.phase === 'fight') endRound(g);
 }
@@ -396,7 +404,7 @@ function finish(g: LiveFight, winner: Fighter, method: 'KO/TKO' | 'SUB', how?: s
   const loser = winner.side === 0 ? g.f[1] : g.f[0];
   setState(loser, 'ko'); setState(winner, 'win');
   g.phase = 'over'; g.phaseT = 0; g.grap = null; g.fh = null;
-  g.result = {winner: winner.side, method, round: g.round, how, time: Math.max(0, ROUND_SECONDS - g.clock)};
+  g.result = {winner: winner.side, method, round: g.round, how, time: Math.max(0, g.secs - g.clock)};
 }
 
 function endRound(g: LiveFight) {
@@ -427,7 +435,7 @@ function endRound(g: LiveFight) {
 
 function nextRound(g: LiveFight) {
   g.grap = null; g.fh = null; g.docDue = null;
-  g.round += 1; g.clock = ROUND_SECONDS; g.phase = 'intro'; g.phaseT = 0;
+  g.round += 1; g.clock = g.secs; g.phase = 'intro'; g.phaseT = 0;
   // the minute in the corner: the head clears to its (lowered) ceiling, a little comes back to the body and legs
   g.f.forEach((f, i) => { f.points = 0; f.kdRound = 0; f.x = i === 0 ? -1.6 : 1.6; f.z = 0; f.hx = i === 0 ? 1 : -1; f.hz = 0; setState(f, 'idle');
     f.stamina = Math.min(100, f.stamina + 35 * f.stats.cardio / 100 + 20); f.cap = Math.min(100, f.cap + KO.corner); f.hp = f.cap; f.body = Math.min(100, f.body + 25); f.legs = Math.min(100, f.legs + 14); f.rocked = 0; f.sub = 0; f.escape = 0; if (f.cut > 0) f.cut = Math.max(8, f.cut - 7); });   // the cutman closes it a little
@@ -517,7 +525,7 @@ export function aiInput(g: LiveFight, me: Fighter, them: Fighter, brain: AIBrain
     else if (dist < ideal - .5 && me.style === 'Striker' && rand() < .35) brain.want = {move: 'away'};
     else {
       const r = rand();
-      if (grappler && brain.shotCd <= 0 && r < .05 + (them.stamina < 50 ? .04 : 0) && dist < 1.35 && g.clock < ROUND_SECONDS - 5) brain.want = {shoot: true};
+      if (grappler && brain.shotCd <= 0 && r < .05 + (them.stamina < 50 ? .04 : 0) && dist < 1.35 && g.clock < g.secs - 5) brain.want = {shoot: true};
       else if (brain.shotCd <= 0 && dist < .98 && r < (grappler ? .06 : .02)) brain.want = {shoot: true};
       else if (them.state === 'block' && r < .55) brain.want = rand() < .55 ? {kick: true} : rand() < .5 && grappler && brain.shotCd <= 0 ? {shoot: true} : {cross: true};   // break a shell
       else if (r < .42) brain.want = {jab: true};

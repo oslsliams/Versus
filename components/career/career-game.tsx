@@ -12,6 +12,7 @@ import {LookEditor} from './look-editor';
 import {CareerPhone, money, yearWeek, type PhoneApp} from './career-phone';
 import {StoryScene} from './story-scene';
 import {Drill, drillFor} from './drills';
+import {CallOutButton, CareerExtras, Trips} from './extras-ui';
 import {shareCareer} from './share-card';
 import {goalMet} from '../../lib/career/story';
 import {sfx} from '../fight3d/sound';
@@ -366,13 +367,14 @@ function Hub({career: c, update, startFightNight}: {career: Career; update: (c: 
               {c.history.length ? <ol>{c.history.slice(0, 8).map((h, i) => <li key={i}><span className={`bn-res ${h.result === 'W' ? 'win' : h.result === 'L' ? 'loss' : ''}`}>{h.result}</span><span><strong>{h.opponent}{h.title ? ' · title' : ''}</strong><small>{h.method} · R{h.round} · {TIERS[h.tier].short} · {money(h.purse)}</small></span></li>)}</ol> : <p className="muted">No fights yet. Sign your first one under This week.</p>}
             </section>
             <section className="panel cg-sharecard"><div><h2>Share your career</h2><p className="muted">Turn your record and belts into an image you can post.</p>{shared && <p className="muted" role="status">{shared}</p>}</div><button type="button" className="button primary" onClick={share}><Share2 size={16} aria-hidden="true"/>Share my career</button></section>
+            <CareerExtras c={c}/>
             <Locker c={c} update={update}/>
           </>}
 
-          {tab === 'team' && <Team c={c} update={update}/>}
+          {tab === 'team' && <><Team c={c} update={update}/><Trips c={c} update={update}/></>}
 
           {tab === 'division' && <>
-            <Rankings c={c}/>
+            <Rankings c={c} update={update}/>
             <div className="cg-col">
               {c.tier === 2 && <LegendPath c={c} update={update}/>}
               <YearTargets c={c}/>
@@ -495,18 +497,18 @@ function YearTargets({c}: {c: Career}) {
   </section>;
 }
 
-function Rankings({c}: {c: Career}) {
+function Rankings({c, update}: {c: Career; update: (c: Career | null) => void}) {
   if (c.tier < 2) {
     const list = [...c.roster.filter(n => n.tier === c.tier)].sort((a, b) => (b.record[0] - b.record[1]) - (a.record[0] - a.record[1])).slice(0, 8);
     return <section className="panel cg-rank"><h2>{TIERS[c.tier].short} standouts</h2><p className="muted">Win {c.tier === 0 ? 3 : 2} here with some hype to get called up. {c.tierWins} so far.</p>
-      <ol>{list.map(n => <li key={n.id}><Avatar name={n.name} color={n.color} size="sm"/><span>{n.name}{(n.streak ?? 0) >= 3 && <em className="cg-hot" title={`${n.streak} wins in a row`}>W{n.streak}</em>}</span><small>{n.record.join('–')}</small></li>)}</ol></section>;
+      <ol>{list.map(n => <li key={n.id}><Avatar name={n.name} color={n.color} size="sm"/><span>{n.name}{(n.streak ?? 0) >= 3 && <em className="cg-hot" title={`${n.streak} wins in a row`}>W{n.streak}</em>}</span><small><CallOutButton c={c} id={n.id} update={update}/>{n.record.join('–')}</small></li>)}</ol></section>;
   }
   const champ = c.champion === 'you' ? null : npc(c, c.champion!);
   return <section className="panel cg-rank"><h2>{c.division} rankings</h2>
     <ol>
-      <li className={`champ ${c.champ ? 'you' : ''}`}><span className="cg-rk"><Crown size={14} aria-label="Champion"/></span><span>{c.champ ? c.name : champ?.name}</span><small>{c.champ ? c.record.join('–') : champ?.record.join('–')}</small></li>
+      <li className={`champ ${c.champ ? 'you' : ''}`}><span className="cg-rk"><Crown size={14} aria-label="Champion"/></span><span>{c.champ ? c.name : champ?.name}</span><small>{!c.champ && champ && (c.rank ?? 99) <= 5 && <CallOutButton c={c} id={champ.id} update={update}/>}{c.champ ? c.record.join('–') : champ?.record.join('–')}</small></li>
       {c.rankings.map((id, i) => { const n = id === 'you' ? null : npc(c, id); const p = (c.lastRanks ?? []).indexOf(id) - 1, mv = !c.lastRanks?.length ? 0 : p < 0 ? 99 : p - i;
-        return <li key={id} className={id === 'you' ? 'you' : ''}><span className="cg-rk">{i + 1}</span><span>{n ? n.name : c.name}{(n?.streak ?? 0) >= 3 && <em className="cg-hot" title={`${n!.streak} wins in a row`}>W{n!.streak}</em>}</span><small>{mv === 99 ? <b className="cg-mv up">NEW</b> : mv > 0 ? <b className="cg-mv up">▲{mv}</b> : mv < 0 ? <b className="cg-mv down">▼{-mv}</b> : null}{n ? n.record.join('–') : c.record.join('–')}</small></li>; })}
+        return <li key={id} className={id === 'you' ? 'you' : ''}><span className="cg-rk">{i + 1}</span><span>{n ? n.name : c.name}{(n?.streak ?? 0) >= 3 && <em className="cg-hot" title={`${n!.streak} wins in a row`}>W{n!.streak}</em>}</span><small><CallOutButton c={c} id={id} update={update}/>{mv === 99 ? <b className="cg-mv up">NEW</b> : mv > 0 ? <b className="cg-mv up">▲{mv}</b> : mv < 0 ? <b className="cg-mv down">▼{-mv}</b> : null}{n ? n.record.join('–') : c.record.join('–')}</small></li>; })}
     </ol></section>;
 }
 

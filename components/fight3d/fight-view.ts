@@ -175,7 +175,7 @@ export class FighterRig {
   bones: Record<string, THREE.Bone | undefined> = {};
   flash = 0; skinMats: THREE.MeshStandardMaterial[] = [];
   /** the cut over his eye: a gash and a drip, riding on the head bone */
-  cutFx: {g: THREE.Group; mat: THREE.MeshBasicMaterial; drip: THREE.Mesh} | null = null; cutAnchor = '';
+  cutFx: {g: THREE.Group; mat: THREE.MeshBasicMaterial; drip: THREE.Mesh} | null = null; cutAnchor = ''; blood = true;
   lastPick: Pick | null = null; lastState = ''; lastMove: MoveId | null = null;
   /** react to a landed strike, choosing the reaction from what hit us */
   hit(power: number, by: Pick | null, target?: Target) {
@@ -421,7 +421,7 @@ export class FighterRig {
     this.mixer.timeScale = st === 'top' ? 1.6 : 1;
     this.mixer.update(dt);
     this.flash = Math.max(0, this.flash - dt * 4);
-    if (this.cutFx) { const c = f.cut ?? 0; this.cutFx.g.visible = c > 1; this.cutFx.mat.opacity = THREE.MathUtils.clamp(.35 + c / 60, 0, .95); this.cutFx.drip.visible = c > 20; this.cutFx.drip.scale.y = THREE.MathUtils.clamp((c - 15) / 40, .2, 1.8); }
+    if (this.cutFx) { const c = this.blood ? f.cut ?? 0 : 0; this.cutFx.g.visible = c > 1; this.cutFx.mat.opacity = THREE.MathUtils.clamp(.35 + c / 60, 0, .95); this.cutFx.drip.visible = c > 20; this.cutFx.drip.scale.y = THREE.MathUtils.clamp((c - 15) / 40, .2, 1.8); }
     // the damage shows: skin reddens and bruises as his ceiling drops; a hit flashes
     const worn = THREE.MathUtils.clamp((100 - f.cap) / 75, 0, 1);
     for (const m of this.skinMats) { m.emissive?.setRGB(this.flash * .5, this.flash * .05, this.flash * .05); m.color.setRGB(1, 1 - worn * .2, 1 - worn * .24); }
@@ -434,7 +434,7 @@ export class FightView {
   renderer: THREE.WebGLRenderer; scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(40, 1, .05, 200);
   composer: EffectComposer; bloom: UnrealBloomPass;
   rigs: [FighterRig, FighterRig]; sparks: {mesh: THREE.Mesh; life: number; v: THREE.Vector3}[] = [];
-  shake = 0; time = 0; camX = 0; camZ = 0; camDist = 3.6; camDir = new THREE.Vector2(0, 1); private disposed = false;
+  shake = 0; shakeMul = 1; time = 0; camX = 0; camZ = 0; camDist = 3.6; camDir = new THREE.Vector2(0, 1); private disposed = false;
   /** the player's screen axes on the floor (world xz): WASD moves along these */
   axes = {rx: 1, rz: 0, fx: 0, fz: -1};
   cage: {mesh: THREE.Mesh; x: number; z: number; o: number; fence: boolean}[] = [];
@@ -604,6 +604,8 @@ export class FightView {
   /** play the walkouts (sides in walking order); the fight loop waits until director.done */
   startWalkout(order: (0 | 1)[]) { if (!this.director) { this.director = new WalkoutDirector(this, order); if (this.debugCam) this.director.skip(); } return this.director; }
 
+  /** fight setting: show cuts on the fighters' faces or not */
+  setBlood(on: boolean) { for (const r of this.rigs) r.blood = on; }
   resize(w: number, h: number) { this.renderer.setSize(w, h, false); this.composer.setSize(w, h); this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); }
   degrade() { this.stadium.degrade(); this.renderer.setPixelRatio(1); this.renderer.shadowMap.enabled = false; this.bloom.enabled = false; const c = this.renderer.domElement; this.resize(c.clientWidth, c.clientHeight); }
 
@@ -682,7 +684,7 @@ export class FightView {
     this.camX += (mx - this.camX) * (1 - Math.exp(-3 * dt)); this.camZ += (mz - this.camZ) * (1 - Math.exp(-3 * dt));
     this.camDist += ((narrow ? 5.2 : 3.3) + gap * (narrow ? .9 : .55) - this.camDist) * (1 - Math.exp(-2.5 * dt));
     this.shake = Math.max(0, this.shake - dt * 1.2);
-    const sx = (Math.random() - .5) * this.shake, sy = (Math.random() - .5) * this.shake;
+    const sx = (Math.random() - .5) * this.shake * this.shakeMul, sy = (Math.random() - .5) * this.shake * this.shakeMul;
     const cx = this.camX + this.camDir.x * this.camDist - this.camDir.y * .35, cz = this.camZ + this.camDir.y * this.camDist + this.camDir.x * .35;
     // screen axes for the controls: right = across the screen, forward = into the screen
     const fx = -this.camDir.x, fz = -this.camDir.y;

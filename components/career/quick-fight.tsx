@@ -5,6 +5,7 @@ import {Swords, RotateCcw, Users, Eye} from 'lucide-react';
 import {overall, type Stats, type Style} from '../../lib/career/engine';
 import {FightStats, LiveFightGame, type Corner, type LiveResult} from '../fight3d/live-fight';
 import {modelFor, tape, type FightCard} from '../../lib/fight3d/tape';
+import {FightSettingsPanel} from '../fight3d/fight-settings';
 import type {Look} from '../../lib/cosmetics';
 
 const S = (striking: number, power: number, speed: number, wrestling: number, grappling: number, cardio: number, chin: number, iq: number): Stats => ({striking, power, speed, wrestling, grappling, cardio, chin, iq});
@@ -71,6 +72,7 @@ export function QuickFight() {
     <section className="panel qf-opts">
       <div><span className="cg-label">Difficulty</span><div className="bn-seg" role="group" aria-label="Difficulty">{LEVELS.map((l, i) => <button key={l.label} type="button" aria-pressed={level === i} onClick={() => setLevel(i)}>{l.label}</button>)}</div></div>
       <div><span className="cg-label">Rounds</span><div className="bn-seg" role="group" aria-label="Rounds">{[1, 3, 5].map(n => <button key={n} type="button" aria-pressed={rounds === n} onClick={() => setRounds(n)}>{n}</button>)}</div></div>
+      <details className="qf-settings"><summary>Fight settings</summary><FightSettingsPanel/></details>
       <div className="qf-go"><button className="button primary cg-big" onClick={() => { setWatch(false); setFighting(1); }}><Swords size={18} aria-hidden="true"/>Fight: {you.name.split(' ')[0]} vs {opp.name.split(' ')[0]}</button><button className="button outline" onClick={() => { setWatch(true); setFighting(1); }}><Eye size={16} aria-hidden="true"/>Watch AI fight</button></div>
     </section>
   </div>;

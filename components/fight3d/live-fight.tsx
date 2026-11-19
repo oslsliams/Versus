@@ -4,7 +4,8 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {WalkoutHud, walkOrder} from './walkout';
 import {Pause, Play, FastForward, Maximize, Minimize, X} from 'lucide-react';
 import type {Stats, Style} from '../../lib/career/engine';
-import {DT, GOPTS, GPOS_LABEL, NO_INPUT, ROUND_SECONDS, aiInput, createFight, damageTaken, grappleOptions, grappleSubs, makeBrain, step, type GDir, type Input, type LiveFight as Fight} from '../../lib/fight3d/engine';
+import {applyFightSettings, loadFightSettings} from './fight-settings';
+import {DT, GOPTS, GPOS_LABEL, NO_INPUT, aiInput, createFight, damageTaken, grappleOptions, grappleSubs, makeBrain, step, type GDir, type Input, type LiveFight as Fight} from '../../lib/fight3d/engine';
 import type {FightView} from './fight-view';
 import {pairModels, tape as makeTape, withModels, FIGHTER_MODELS, type FightCard, type FighterModel, type Tape} from '../../lib/fight3d/tape';
 import {Commentator, VOICES, announce, cornerAdvice, verdict, type Line} from '../../lib/fight3d/commentary';
@@ -73,6 +74,9 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
   const [full, setFull] = useState(false);
+  // the player's fight settings (game style, realism sliders, presentation switches)
+  const [fset] = useState(loadFightSettings);
+  const fsRef = useRef(fset); fsRef.current = fset;
   const pausedRef = useRef(false), done = useRef(false), readyRef = useRef(false);
   readyRef.current = ready;
   // AI-vs-AI watch mode skips the tape after a beat
@@ -85,6 +89,7 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
 
   useEffect(() => {
     let view: FightView | null = null, raf = 0, last = performance.now(), acc = 0, alive = true, slowFrames = 0, degraded = false;
+    applyFightSettings(fsRef.current);
     const g: Fight = createFight(you, opp, rounds);
     const brain = makeBrain(difficulty), autoBrain = makeBrain(.6);
     const caller = new Commentator([you.name, opp.name]);
@@ -99,7 +104,8 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
       const assets = await loadFightAssets(red, blue, p => alive && setLoading(p), plain ? undefined : [you.look ? {...you.look, model: red} : undefined, opp.look ? {...opp.look, model: blue} : undefined], !!fcRef.current.title);
       if (!alive || !canvas.current) return;
       try { const beltsOf = (t: Tape) => t.rank === 'C' ? Math.max(1, t.belts ?? 1) : 0;
-        view = new FightView(canvas.current, g, assets, venue, {title: !!fcRef.current.title, held: [beltsOf(fcRef.current.you), beltsOf(fcRef.current.opp)]}); viewRef.current = view; } catch { setError('Your browser could not start 3D graphics (WebGL). Try another browser or simulate the fight.'); return; }
+        view = new FightView(canvas.current, g, assets, venue, {title: !!fcRef.current.title, held: [beltsOf(fcRef.current.you), beltsOf(fcRef.current.opp)]}); viewRef.current = view;
+        view.shakeMul = fsRef.current.shake ? 1 : 0; view.setBlood(fsRef.current.blood); } catch { setError('Your browser could not start 3D graphics (WebGL). Try another browser or simulate the fight.'); return; }
       if (new URLSearchParams(location.search).has('debugview')) Object.assign(window, {__view: view, __fight: g});   // test hook
       resize(); setReady(true); last = performance.now();
       raf = requestAnimationFrame(loop);
@@ -138,7 +144,7 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
             else if (e.type === 'hurt') { if (e.side === 0) told.rockedFor++; else told.rockedAgainst++; }
             else if (e.type === 'tired' && e.side === 0) told.tired++;
           }
-          const said = caller.feed(g, g.events, DT); if (said) setComm({...said, key: Math.random()});
+          const said = caller.feed(g, g.events, DT); if (said && fsRef.current.commentary) setComm({...said, key: Math.random()});
           if (g.phase !== lastPhase) {
             if (g.phase === 'break' && !watch) setCorner(cornerAdvice(g, roundStart));
             if (g.phase === 'intro' || g.phase === 'fight') { setCorner(null); if (g.phase === 'fight') roundStart = {landed: [g.f[0].landed, g.f[1].landed], td: [g.f[0].takedowns, g.f[1].takedowns]}; }
@@ -157,7 +163,7 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
           endRef.current = {winner: r.winner === 0 ? 'you' : r.winner === 1 ? 'opp' : 'draw', method: r.method, round: r.round, damageTaken: damageTaken(g.f[0]), cards: g.cards, stats: [line(g.f[0]), line(g.f[1])], how: r.how, time: r.time, card: fcRef.current,
             tale: {kdFor: told.kdFor, kdAgainst: told.kdAgainst, rockedFor: told.rockedFor, rockedAgainst: told.rockedAgainst, landed: g.f[0].landed, thrown: g.f[0].thrown, head: g.f[0].headLanded, body: g.f[0].bodyLanded, legs: g.f[0].legLanded, takedowns: g.f[0].takedowns, ctrl: Math.round(g.f[0].ctrl), gassed: told.tired >= 3, legsGone: g.f[0].legs < 30, bodyGone: g.f[0].body < 30, closeCards: g.cards.some(([a, b]) => Math.abs(a - b) <= 1), cut: Math.round(g.f[0].cut), oppCut: Math.round(g.f[1].cut)}};
           // knockouts get the slow-motion replay first; everything ends with the hand raise
-          if (r.method === 'KO/TKO' && view!.finale.hasKO && r.winner !== -1) { view!.finale.startReplay(r.winner === 0 ? 1 : 0); setStage('replay'); }
+          if (fsRef.current.replay && r.method === 'KO/TKO' && view!.finale.hasKO && r.winner !== -1) { view!.finale.startReplay(r.winner === 0 ? 1 : 0); setStage('replay'); }
           else { view!.finale.startCeremony(r.winner); setStage('decision'); }
         }
         if (stageRef.current === 'replay' && view!.finale.replayDone && view!.finale.mode === 'replay') { view!.finale.startCeremony(g.result!.winner); setStage('decision'); }
@@ -186,7 +192,7 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
         const p = view.screenOf(who);
         add.push({id: Math.random(), text, x: p.x + (Math.random() - .5) * 40, y: p.y, tone: s === 0 ? 'red' : 'blue'});
       }
-      if (add.length) setBubbles(b => [...b, ...add].slice(-5));
+      if (add.length && fsRef.current.bubbles) setBubbles(b => [...b, ...add].slice(-5));
     };
     let gkey = '';
     const paint = (g: Fight) => {
@@ -199,6 +205,7 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
         const rk = h['rk' + i]; if (rk) rk.dataset.on = f.rocked > 0 ? '1' : '';
         const ct = h['ct' + i]; if (ct) { ct.dataset.on = f.cut > 1 ? '1' : ''; ct.dataset.bad = f.cut >= 50 ? '1' : ''; }
         if (st) { st.style.width = `${f.stamina}%`; st.dataset.low = f.stamina < 30 ? '1' : ''; }
+        const pl = h['pl' + i]; if (pl) pl.dataset.show = f.hp < 60 || f.cap < 75 || f.stamina < 45 || f.body < 50 || f.legs < 50 || f.rocked > 0 || f.cut > 1 ? '1' : '';
         const sn = h['sn' + i]; if (sn) { const s = Math.round(f.stamina); sn.textContent = s < 12 ? `GASSED ${s}` : `STAMINA ${s}`; sn.dataset.low = s < 30 ? '1' : ''; }
       });
       const gl = h.goal; if (gl && goal) { const n = goal.kind === 'body' || goal.kind === 'legs' || goal.kind === 'td' || goal.kind === 'landed' ? goalValue(goal, {body: me0().bodyLanded, legs: me0().legLanded, takedowns: me0().takedowns, landed: me0().landed, kdAgainst: told.kdAgainst}) : null; const txt = n == null ? goal.label : `${goal.label}: ${Math.min(n, goal.n)}/${goal.n}`; if (gl.textContent !== txt) gl.textContent = txt; gl.dataset.done = n != null && n >= goal.n ? '1' : ''; }
@@ -254,12 +261,12 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
     onPointerUp: () => { held.current[k] = false; }, onPointerCancel: () => { held.current[k] = false; }, onPointerLeave: () => { held.current[k] = false; },
   });
 
-  return <div className={`lf${walk && !started ? ' walking' : ''}${stage ? ' finale' : ''}`} ref={shell} role="application" aria-label={`Live fight: ${you.name} versus ${opp.name}`}>
+  return <div className={`lf${walk && !started ? ' walking' : ''}${stage ? ' finale' : ''} hud-${fset.hud}`} ref={shell} role="application" aria-label={`Live fight: ${you.name} versus ${opp.name}`}>
     <canvas ref={canvas}/>
     {!started && !error && (walk ? <WalkoutHud card={fc} step={walkStep} onSkip={skipWalk}/> : <TaleOfTape card={fc} ready={ready} loading={loading} onStart={() => setWalk(true)}/>)}
 
     <div className="lf-top">
-      {[you, opp].map((c, i) => <div key={i} className={`lf-plate ${i ? 'blue' : 'red'}`}>
+      {[you, opp].map((c, i) => <div key={i} className={`lf-plate ${i ? 'blue' : 'red'}`} ref={el => { hud.current['pl' + i] = el; }}>
         <span className="lf-bars"><span className="lf-hp"><i ref={el => { hud.current['hp' + i] = el; }}/><b className="lf-cap" title="Damage he can't recover from this fight" ref={el => { hud.current['cap' + i] = el; }}/></span>
           <span className="lf-dmg" aria-hidden="true"><b ref={el => { hud.current['hd' + i] = el; }}>HEAD</b><b ref={el => { hud.current['bd' + i] = el; }}>BODY</b><b ref={el => { hud.current['lg' + i] = el; }}>LEGS</b><em ref={el => { hud.current['rk' + i] = el; }}>ROCKED</em><em className="lf-cut" ref={el => { hud.current['ct' + i] = el; }}>CUT</em></span><span className="lf-st"><i ref={el => { hud.current['st' + i] = el; }}/></span><b className="lf-stn" ref={el => { hud.current['sn' + i] = el; }}>STAMINA 100</b></span>
         <span className="lf-name">{(i ? fc.opp : fc.you).rank && <b className={`lf-rank ${(i ? fc.opp : fc.you).rank === 'C' ? 'champ' : ''}`}>{(i ? fc.opp : fc.you).rank}</b>}{c.name.toUpperCase()}</span>
@@ -271,7 +278,7 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
     <div className="lf-score">
       <span className="lf-sname">{fc.you.rank && <b className={`lf-srank ${fc.you.rank === 'C' ? 'champ' : ''}`} title={fc.you.rank === 'C' ? 'Champion' : `Ranked ${fc.you.rank}`}>{fc.you.rank}</b>}{last(you.name)}</span><span className="lf-chip red"/>
       <span className="lf-logo">VS</span>
-      <span ref={el => { hud.current.clock = el; }} className="lf-clock">{Math.floor(ROUND_SECONDS / 60)}:{String(ROUND_SECONDS % 60).padStart(2, '0')}</span>
+      <span ref={el => { hud.current.clock = el; }} className="lf-clock">{Math.floor(fset.roundSec / 60)}:{String(fset.roundSec % 60).padStart(2, '0')}</span>
       <span ref={el => { hud.current.round = el; }} className="lf-round">R1</span>
       <span className="lf-chip blue"/><span className="lf-sname">{last(opp.name)}{fc.opp.rank && <b className={`lf-srank ${fc.opp.rank === 'C' ? 'champ' : ''}`} title={fc.opp.rank === 'C' ? 'Champion' : `Ranked ${fc.opp.rank}`}>{fc.opp.rank}</b>}</span>
     </div>
@@ -304,7 +311,7 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
       <div className="lf-dpad"><button {...touch('up')} aria-label="Move in">▲</button><button {...touch('left')} aria-label="Move left">◀</button><button {...touch('block')} aria-label="Block">Block</button><button {...touch('right')} aria-label="Move right">▶</button><button {...touch('down')} aria-label="Move out">▼</button></div>
       <div className="lf-btns"><button className="jab" {...touch('jab')}>Jab</button><button className="cross" {...touch('cross')}>Cross</button><button className="kick" {...touch('kick')}>Kick</button><button className="upper" {...touch('upper')}>Elbow</button><button className="shoot" {...touch('shoot')}>Shoot</button></div>
     </div>
-    {ready && !paused && <p className="lf-hint"><kbd>J</kbd> jab <kbd>K</kbd> cross <kbd>L</kbd> kick <kbd>I</kbd> hook <kbd>W</kbd>/<kbd>S</kbd>+strike head / body-legs <kbd>Space</kbd> takedown <kbd>Shift</kbd> block / sprawl <kbd>Esc</kbd> menu</p>}
+    {ready && !paused && fset.hints && <p className="lf-hint"><kbd>J</kbd> jab <kbd>K</kbd> cross <kbd>L</kbd> kick <kbd>I</kbd> hook <kbd>W</kbd>/<kbd>S</kbd>+strike head / body-legs <kbd>Space</kbd> takedown <kbd>Shift</kbd> block / sprawl <kbd>Esc</kbd> menu</p>}
   </div>;
 }
 

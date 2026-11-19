@@ -2,6 +2,7 @@
 // the named cast, story arcs that run for months and never repeat, the big-moment scenes and the ending.
 // Only types come from the engine, so the engine can import this file without a cycle.
 import type {Career, Division, LogEntry, StatKey, Stats, Style} from './engine';
+import {EXTRA_BEATS} from './extras';
 
 /* ------------------------------------------------------------------ cast */
 export type CastKey = 'coach' | 'manager' | 'brother' | 'friend' | 'partner';
@@ -219,6 +220,7 @@ export const BEATS: Beat[] = [
 ];
 
 /** the next message a player should get, or null if nothing is due */
+BEATS.push(...EXTRA_BEATS);
 export function nextBeat(c: Career, r: () => number): Beat | null {
   const seen = c.storySeen ?? {}, arcWeek = c.arcWeek ?? {};
   const due = BEATS.filter(b => {

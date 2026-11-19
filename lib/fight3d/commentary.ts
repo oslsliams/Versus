@@ -39,6 +39,20 @@ const L = {
   roundStart: ['Round {r}. {lead}', 'Here we go, round {r}. {lead}', 'Round {r} underway. {lead}'],
   clock: ['One minute left in the round.', 'Thirty seconds to go!', 'Ten seconds! Big finish here!'],
 };
+/** moments the broadcast now calls on top of the basics */
+const MOMENTS = {
+  comeback: ['{a} was on the canvas earlier and now HE\'S the one hurting people!', 'What a turnaround! {a} got up and got even!'],
+  finalRound: ['Final round. Everything they have left, right now.', 'Last round. Leave nothing in the locker room.', 'This is it. The final round.'],
+  champRounds: ['Championship rounds. This is where legends are made.', 'Into the deep water now. Round four of five.'],
+  desperation: ['Twenty seconds! Somebody needs a moment here!', 'Under twenty to go! Empty the tank!'],
+  chant: ['The crowd is chanting {A}! They feel it too.', 'Listen to this place! They\'re all on their feet for {a}!'],
+  beatCount: ['{d} beats the count! He is still in this fight!', 'Somehow {d} is back up. Heart of a lion.'],
+  backTaken: ['{a} takes the back! This is the most dangerous place in MMA.', 'Hooks in for {a}. {d} has to defend the neck right now.'],
+  mounted: ['Full mount for {a}! {d} is in big trouble.', '{a} climbs to mount. Ground and pound incoming.'],
+  denied: ['{d} shuts that down. Beautiful defence.', 'Stopped! {d} read it all the way.'],
+  worn: ["{d}'s face tells the story now. That is real damage.", "Look at {d}'s face. He will feel this fight for weeks."],
+  cards: ["I have it {x}-{y} for {w} on my card. {more}", "My card says {x}-{y}, {w}. {more}"],
+};
 const COLOR = {
   dominant: ['{a} is just a level above tonight.', 'This is a clinic from {a}.', '{d} needs something drastic.'],
   close: ['This is a close one. The judges have a job here.', 'Could go either way on the cards.'],
@@ -53,6 +67,7 @@ export class Commentator {
   private cool = 0; private quiet = 0; private lastRound = 0; private clockFlags = new Set<string>();
   private streak = [0, 0]; private streakT = [0, 0]; private tiredFlag = [false, false];
   private names: [string, string];
+  private was: [string, string] = ['idle', 'idle']; private droppedBy: [boolean, boolean] = [false, false]; private flags = new Set<string>(); private breakRound = 0;
   constructor(names: [string, string]) { this.names = names; }
   private v(side: 0 | 1) { const a = this.names[side], d = this.names[side ? 0 : 1]; return {a: last(a), d: last(d), A: last(a).toUpperCase(), D: last(d).toUpperCase()}; }
 
@@ -80,12 +95,30 @@ export class Commentator {
       else if (e.type === 'sub') say(8, L.sub, {...vv, s: e.text ?? ''});
       else if (e.type === 'escape') say(5, L.escape, {...vv, d: vv.a, D: vv.A});
       else if (e.type === 'tap') say(10, L.tap, vv);
+      else if (e.type === 'deny') say(4.5, MOMENTS.denied, {...vv, d: vv.a, D: vv.A});
+      else if (e.type === 'trans' && /back/i.test(e.text ?? '')) say(7, MOMENTS.backTaken, vv);
+      else if (e.type === 'trans' && /mount/i.test(e.text ?? '')) say(6.5, MOMENTS.mounted, vv);
+      if ((e.type === 'hurt' || e.type === 'kd') && this.droppedBy[s ? 0 : 1] === false && this.droppedBy[s]) say(8.8, MOMENTS.comeback, vv);
+      if (e.type === 'kd') this.droppedBy[s ? 0 : 1] = true;
+      if (e.type === 'hit' && this.streak[s] === 5 && !this.flags.has('chant' + g.round + s)) { this.flags.add('chant' + g.round + s); say(5.5, MOMENTS.chant, vv, 'color'); }
       else if (e.type === 'cut') say(e.power >= .6 ? 6 : 5.5, e.power >= .6 ? L.cutBad : L.cut, {...vv, s: 'shot'});
       else if (e.type === 'doctor') { const w = this.v(s ? 0 : 1); say(e.power >= 2 ? 10 : 7, e.power >= 2 ? L.docStop : e.power >= 1 ? L.docGo : L.doctor, {...w, d: vv.a, D: vv.A}); }
     }
+    // a man getting back up off the canvas
+    g.f.forEach((f, i) => { if (this.was[i] === 'down' && f.state !== 'down' && f.state !== 'ko' && g.phase === 'fight') say(6, MOMENTS.beatCount, this.v(i ? 0 : 1)); this.was[i] = f.state;
+      if (f.cap < 50 && !this.flags.has('worn' + i)) { this.flags.add('worn' + i); say(3.5, MOMENTS.worn, this.v(i ? 0 : 1), 'color'); } });
+    // between rounds: how the color man scores it
+    if (g.phase === 'break' && this.breakRound !== g.round) {
+      this.breakRound = g.round; const [x, y] = g.cards[0];
+      if (x !== y) say(4, MOMENTS.cards, {x: String(Math.max(x, y)), y: String(Math.min(x, y)), w: last(this.names[x > y ? 0 : 1]), more: g.round + 1 >= g.rounds ? 'One round left.' : 'Plenty of time left.'}, 'color');
+    }
+    // the last twenty seconds of the last round
+    if (g.phase === 'fight' && g.round === g.rounds && g.clock <= 20 && !this.flags.has('desp')) { this.flags.add('desp'); say(7, MOMENTS.desperation, {}); }
     // round starts, clock calls, fatigue, and filling the silence
     if (g.phase === 'fight' && g.round !== this.lastRound) {
       this.lastRound = g.round; this.clockFlags.clear();
+      if (g.rounds > 1 && g.round === g.rounds) say(4.5, MOMENTS.finalRound, {});
+      else if (g.rounds === 5 && g.round === 4) say(4.5, MOMENTS.champRounds, {}, 'color');
       const [a, b] = g.f, diff = a.points - b.points;
       const lead = g.round === 1 ? 'Let\'s see who wants it more.' : Math.abs(diff) < 4 ? 'Dead even so far.' : `${last((diff > 0 ? a : b).name)} edged the last one.`;
       say(4, L.roundStart, {r: String(g.round), lead});

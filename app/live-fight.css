@@ -9,6 +9,9 @@ html.lf-lock,html.lf-lock body{overflow:hidden}
 /* top corner plates, broadcast style */
 .lf-top{position:absolute;top:max(14px,env(safe-area-inset-top,0px));left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));display:flex;justify-content:space-between;gap:20px;pointer-events:none}
 .lf-plate{display:grid;gap:4px;width:min(40vw,440px)}
+/* fight settings: HUD off hides the bars (names stay), dynamic shows a fighter's bars only when he's hurt or tired */
+.lf.hud-off .lf-bars{display:none}
+.lf.hud-dynamic .lf-bars{opacity:0;transition:opacity .35s}.lf.hud-dynamic .lf-plate[data-show="1"] .lf-bars{opacity:1}
 .lf-plate.blue{text-align:right}
 .lf-bars{display:grid;gap:4px;padding:6px;background:#0a0d16d9;clip-path:polygon(0 0,100% 0,96% 100%,0 100%)}
 .lf-plate.blue .lf-bars{clip-path:polygon(0 0,100% 0,100% 100%,4% 100%)}

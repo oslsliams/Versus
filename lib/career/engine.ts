@@ -3,6 +3,7 @@
 import type {Look} from '../cosmetics';
 import {BEATS, CAST_KEYS, bothBeltsScene, brokenHandFight, contractBonus, contractScene, cutScene, debutNightScene, goalMet, newContract, storyFightFor, taleLine, taleNote, talePost, doubleScene, dualLostScene, epilogue, fightScene, fromName, handleOf, has, legendScene, lockerNote, makeCast, nemesisScene, nextBeat, promotedScene, startBonds, strippedScene, superLossScene, superfightScene, titleShotScene, warningScene, type Bonds, type Cast, type CastKey, type Contract, type Eff, type FightStory, type FightTale, type Scene, type StoryFight, type Award, type Line} from './story';
 export {epilogue, handleOf};
+import {countdownScene, extrasAfterFight, extrasWeek, hallOfFame, rustMult, tripBoost, type Extras} from './extras';
 export type {Bonds, Cast, CastKey, Contract, FightTale, Scene, StoryFight};
 
 export type StatKey = 'striking' | 'power' | 'wrestling' | 'grappling' | 'cardio' | 'chin' | 'speed' | 'iq';
@@ -56,6 +57,8 @@ export type Career = {
   cut?: number;
   /** settings: skip the training drills (quick sessions, half the gains) */
   skipDrills?: boolean;
+  /** callouts, signature move, trips, achievements, career stats, records (lib/career/extras) */
+  extra?: Extras;
   /** the rankings as they stood at the last power rankings (for the up / down arrows) */
   lastRanks?: string[];
   /** this year's targets, checked at the awards on your birthday */
@@ -214,6 +217,8 @@ export function fightStats(c: Career): Stats {
   const off = DIVISIONS.indexOf(c.division) - DIVISIONS.indexOf(c.natural ?? c.division);
   if (off > 0) { s.power = clamp(s.power + 3 * off); s.chin = clamp(s.chin + 2 * off); s.speed = clamp(s.speed - 3 * off); s.cardio = clamp(s.cardio - 2 * off); }
   if (off < 0) { s.speed = clamp(s.speed - 3 * off); s.power = clamp(s.power + 2 * off); s.chin = clamp(s.chin + 3 * off); s.cardio = clamp(s.cardio + 4 * off); }
+  // ring rust after a long layoff
+  const rust = rustMult(c); if (rust < 1) { s.speed = clamp(Math.round(s.speed * rust)); s.iq = clamp(Math.round(s.iq * rust)); }
   return s;
 }
 
@@ -253,7 +258,7 @@ export function takeAction(prev: Career, a: Action): Career {
   }
   if (a.type === 'train') {
     const session = a.skipped ? .5 : a.quality == null ? 1 : .65 + a.quality * .85;   // a played drill: a great one is worth about twice a poor one; a skipped one, half
-    const g = gain(c, a.focus, (1 + r()) * (tired ? .5 : 1) * session);
+    const g = gain(c, a.focus, (1 + r()) * (tired ? .5 : 1) * session * tripBoost(c, a.focus));
     if ((a.quality ?? 0) >= .85) { c.fitness = Math.min(100, (c.fitness ?? 55) + 2); c.log.unshift({week: c.week, text: 'A perfect session. Everyone in the gym stopped to watch.', tone: 'good'}); }
     if (a.focus === 'cardio') c.stats.cardio = clamp(c.stats.cardio);
     c.log.unshift({week: c.week, text: `${a.skipped ? 'Quick week' : 'Hard week'} on ${STAT_LABEL[a.focus].toLowerCase()} (+${g.toFixed(1)}${a.skipped ? ', drill skipped' : ''}).`});
@@ -262,7 +267,7 @@ export function takeAction(prev: Career, a: Action): Career {
   } else if (a.type === 'spar') {
     const ks = [pick(r, STAT_KEYS), pick(r, STAT_KEYS), 'iq' as StatKey];
     const session = a.skipped ? .5 : a.quality == null ? 1 : .65 + a.quality * .85;
-    const gs = ks.map(k => `${STAT_LABEL[k]} +${gain(c, k, (.7 + r() * .7) * session).toFixed(1)}`);
+    const gs = ks.map(k => `${STAT_LABEL[k]} +${gain(c, k, (.7 + r() * .7) * session * tripBoost(c, k)).toFixed(1)}`);
     c.log.unshift({week: c.week, text: `${a.skipped ? 'Light sparring' : 'Sparring rounds'}: ${[...new Set(gs)].join(', ')}.`});
     c.energy = Math.max(0, c.energy + ACTIONS.spar.energy);
     injuryRoll(c, r, tired ? .06 : .015, true);   // controlled rounds: knocks are rare and short
@@ -356,6 +361,7 @@ function advanceWeek(c: Career, r: () => number): Career {
   if (c.camp) c.camp.weeksLeft = Math.max(0, c.camp.weeksLeft - 1);
   c.offers = c.offers.map(o => ({...o, weeksOut: o.weeksOut})).filter(() => !c.camp);
   divisionWeek(c, r);
+  extrasWeek(c, r);
   if (c.week % 52 === 0) ageUp(c, r);
   if (c.week % 4 === 0) worldTurns(c, r);
   if (c.dual) checkBelts(c, r);
@@ -639,6 +645,7 @@ export function acceptOffer(prev: Career, id: string): Career {
   // what he says depends on what has actually happened between you
   if (o.tag === 'grudge' || o.tag === 'rematch') { const last = c.history.find(h => h.opponentId === n.id); c.log.unshift({week: c.week, text: `${n.name}: "${pick(rng(c.seed + c.week), !last ? TRASH_NEW : last.result === 'L' ? TRASH_BEAT_YOU : TRASH_LOST_TO_YOU)}"`, tone: 'bad'}); }
   if (o.title && !c.champ && !c.superfight && !c.history.some(h => h.title)) addScene(c, titleShotScene(c, n.name));
+  else if (o.title) addScene(c, countdownScene(c, n, c.champ));
   return c;
 }
 export function declineOffer(prev: Career, id: string): Career {
@@ -732,6 +739,7 @@ export function applyResult(prev: Career, out: FightOutcome): Career {
     c.log.unshift({week: c.week, text: `Contract offer accepted: ${c.name} moves up to the ${TIERS[c.tier].name}!`, tone: 'big'});
   }
   if (c.rank && c.rank <= 15 && !(c.milestones ?? []).some(m => m.text.startsWith('Ranked'))) milestone(c, `Ranked #${c.rank} in the ${c.division} division for the first time.`);
+  extrasAfterFight(c, r, opp, out);
   reporterTake(c, r, opp, out);
   afterFight(c, r, camp, opp, out, before);
   c.camp = null;
@@ -748,6 +756,7 @@ function forceRetire(c: Career, why: NonNullable<Career['retireReason']>) {
   c.retired = true; c.retireReason = why; c.camp = null; c.offers = []; c.choice = null; c.scenes = [];
   c.log.unshift({week: c.week, text: `${c.name} retires at ${c.age} with a ${c.record.join('-')} record.`, tone: 'big'});
   milestone(c, `Retires at ${c.age}, ${c.record.join('-')}.`);
+  hallOfFame(c, legacy(c));
 }
 
 export function legacy(c: Career) {
