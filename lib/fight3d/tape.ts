@@ -2,9 +2,10 @@
 // fighter (derived from the division and the name), weight is the division limit at the weigh-in,
 // and the odds come from the skill gap, shown as a moneyline the way sportsbooks print it.
 import {overall, type Stats, type Style} from '../career/engine';
+import type {StoryGoal} from '../career/story';
 
-export type Tape = {name: string; nickname?: string; record: string; country?: string; age: number; height: string; weight: string; reach: string; rank?: string; odds: string; fav: boolean; style: Style; model?: string; prob?: number};
-export type FightCard = {event: string; billing: string; title?: string; you: Tape; opp: Tape};
+export type Tape = {name: string; nickname?: string; record: string; country?: string; age: number; height: string; weight: string; reach: string; rank?: string; odds: string; fav: boolean; style: Style; model?: string; prob?: number; belts?: number};
+export type FightCard = {event: string; billing: string; title?: string; you: Tape; opp: Tape; story?: {title: string; brief: string; goal: StoryGoal}};
 
 const DIV: Record<string, [number, number]> = {   // [weight limit lb, typical height inches]
   Flyweight: [125, 65], Bantamweight: [135, 67], Featherweight: [145, 68.5], Lightweight: [155, 70],
@@ -13,7 +14,7 @@ const DIV: Record<string, [number, number]> = {   // [weight limit lb, typical h
 /** weight class name from the weigh-in weight (e.g. '155.0' -> 'Lightweight') */
 export const divisionOf = (weight: string) => { const lb = parseFloat(weight); return Object.entries(DIV).find(([, [limit]]) => lb <= limit + 1)?.[0] ?? 'Lightweight'; };
 const hash = (s: string) => { let h = 2166136261; for (const ch of s) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); return (h >>> 0) / 4294967296; };
-const feet = (inches: number) => `${Math.floor(inches / 12)}'${Math.round(inches % 12)}"`;
+const feet = (inches: number) => { const n = Math.round(inches); return `${Math.floor(n / 12)}'${n % 12}"`; };
 
 /** one corner as the oddsmakers see it */
 export type Side = {name?: string; stats: Stats; style?: Style; record?: string; age?: number; rank?: string};
@@ -45,7 +46,7 @@ export function moneyline(p: number, vig = .045) {
   return (r > 0 ? '+' : '') + (Math.abs(r) < 100 ? (r < 0 ? -100 : 100) : r);
 }
 
-export function tape(f: {name: string; nickname?: string; style: Style; stats: Stats; country?: string; age?: number; record?: string; rank?: string; model?: string}, opp: Stats | (Side & {name: string}), division = 'Lightweight'): Tape & {prob: number} {
+export function tape(f: {name: string; nickname?: string; style: Style; stats: Stats; country?: string; age?: number; record?: string; rank?: string; model?: string; belts?: number}, opp: Stats | (Side & {name: string}), division = 'Lightweight'): Tape & {prob: number} {
   const [lb, base] = DIV[division] ?? DIV.Lightweight;
   const h = base + (hash(f.name + 'h') - .5) * 4;
   const reach = h + (hash(f.name + 'r') * 4.5 - 1) + (f.style === 'Striker' ? 1 : 0);
@@ -53,7 +54,7 @@ export function tape(f: {name: string; nickname?: string; style: Style; stats: S
   const them: Side = 'stats' in opp ? {stats: opp.stats, style: opp.style, record: recordOf(opp), age: ageOf(opp), rank: opp.rank} : {stats: opp as Stats};
   const p = winProb(me, them);
   return {
-    name: f.name, nickname: f.nickname, country: f.country, style: f.style, rank: f.rank, model: f.model,
+    name: f.name, nickname: f.nickname, country: f.country, style: f.style, rank: f.rank, model: f.model, belts: f.belts,
     record: me.record!, age: me.age!,
     height: feet(h), weight: (lb + (hash(f.name + 'kg') < .5 ? .5 : 0)).toFixed(1), reach: `${(Math.round(reach * 2) / 2).toFixed(1).replace('.0', '')}"`,
     odds: String(moneyline(p)), fav: p >= .5, prob: p,

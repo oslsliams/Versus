@@ -70,6 +70,7 @@ export class WalkoutDirector {
         try { const r = view.makeRig(src, crewLook('crew'), a.refDress); r.root.visible = false; S.add(r.root); crew.push({rig: r, pf: pseudo(), phase: Math.random() * 6, prev: null}); } catch { /* no crew then */ }
       }
       const rig = view.rigs[side];
+      rig.showBelts(view.beltPlan.held[side]);   // the champion walks to the cage with his belt over his shoulder
       const w: Walker = {side, corner, cx, me: {rig, pf: pseudo(), phase: 0, prev: null}, crew, path, plan, total: plan[plan.length - 1].t};
       this.dressShirt(w);
       rig.root.visible = false;
@@ -95,6 +96,7 @@ export class WalkoutDirector {
   private shirtOff(w: Walker) {
     if (w.mat && w.fightTex && w.mat.map !== w.fightTex) { w.mat.map = w.fightTex; w.mat.needsUpdate = true; }
     for (const o of w.me.rig.walkout) o.visible = false;
+    w.me.rig.showBelts(0);   // he hands it to his team at the cage
   }
 
   /** the backstage set behind the arena's tunnel arch: locker room, door, corridor; plus barriers and cage steps */

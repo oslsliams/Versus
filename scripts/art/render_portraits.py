@@ -22,6 +22,17 @@ for name in names:
     bpy.ops.import_scene.gltf(filepath=os.path.join(MODELS, f'fighter-{name}.glb'))
     for o in [o for o in bpy.data.objects if o.name.startswith('Icosphere')]: bpy.data.objects.remove(o, do_unlink=True)
     rig = next(o for o in bpy.data.objects if o.type == 'ARMATURE')
+    # a few body triangles inside the shorts kept the skin material (a dark patch at the crotch): give them the shorts' cloth
+    for o in [o for o in bpy.data.objects if o.type == 'MESH']:
+        names = [m.name if m else '' for m in o.data.materials]
+        if 'Human.body' not in names or 'shorts' not in names: continue
+        skin, cloth, me = names.index('Human.body'), names.index('shorts'), o.data
+        pts = [me.vertices[v].co for p in me.polygons if p.material_index == cloth for v in p.vertices]
+        z0, z1 = min(p.z for p in pts), max(p.z for p in pts); cx = sum(p.x for p in pts) / len(pts); cy = sum(p.y for p in pts) / len(pts)
+        rad = max(math.hypot(p.x - cx, p.y - cy) for p in pts)
+        for p in me.polygons:
+            c = p.center
+            if p.material_index == skin and z0 + (z1 - z0) * .12 < c.z < z1 - (z1 - z0) * .06 and math.hypot(c.x - cx, c.y - cy) < rad * .97: p.material_index = cloth
     ad = rig.animation_data or rig.animation_data_create()
     for t in ad.nla_tracks: t.mute = True
     act = bpy.data.actions.get('idle')
@@ -81,6 +92,28 @@ for name in names:
     ad.action = None
     for pb in rig.pose.bones: pb.matrix_basis = standing[pb.name]
     bpy.context.view_layer.update()
+    # ---- two-division champion: a title belt over each shoulder, a fist on each strap ----
+    if 'double' in ONLY:
+        import belt
+        M = belt.materials(); W = rig.matrix_world
+        for side, s in (('Right', -1), ('Left', 1)):
+            aim(side + 'Arm', (s * .3, -.2, -.93)); aim(side + 'ForeArm', (-s * .3, -.55, .78)); aim(side + 'Hand', (-s * .3, -.5, .8))
+        bpy.context.view_layer.update()
+        B = lambda n: W @ rig.pose.bones['mixamorig:' + n].head
+        neck, chest = B('Neck'), B('Spine2')
+        for side, s in (('Right', -1), ('Left', 1)):
+            sh, hand = B(side + 'Arm'), W @ rig.pose.bones[f'mixamorig:{side}Hand'].tail
+            sx = sh.x * .55 + neck.x * .45; fy = chest.y - .15
+            pts = [(hand.x, hand.y - .03, hand.z - .03), (sx, fy, chest.z + .02), (sx, fy + .02, sh.z - .02), (sx, chest.y - .07, sh.z + .09),
+                   (sx, chest.y + .02, sh.z + .13), (sx, chest.y + .1, sh.z + .08), (sx, chest.y + .15, sh.z - .12), (sx, chest.y + .15, sh.z - .38)]
+            nrm = [(0, -1, 0), (0, -1, .05), (0, -.95, .3), (0, -.6, .8), (0, 0, 1), (0, .6, .8), (0, .98, .2), (0, 1, 0)]
+            belt.ribbon(M, pts, nrm, width=.075, thick=.009)
+            plate = belt.make_plate(M, scale=.74)
+            belt.place(plate, Vector((sh.x * .72 + neck.x * .28, fy - .05, chest.z - .03)), Vector((s * .1, -1, .12)), tilt=s * .06)
+        sc.render.filepath = os.path.join(OUT, f'{name}-double.webp')
+        bpy.ops.render.render(write_still=True)
+        print('PORTRAIT', name, 'double')
+        continue
     if ONLY and 'champ' not in ONLY: continue
 
     # ---- champion version: the title belt slung over the right shoulder, right hand gripping the strap ----

@@ -98,6 +98,7 @@ export class Finale {
     this.view.scene.add(im); this.confetti = im;
   }
   get raised() { return this.mode === 'ceremony' && this.ct > 2.3; }
+  private belted = false;
   private ceremony(dt: number) {
     this.ct += dt;
     const [red, blue] = this.view.rigs, ref = this.view.ref, t = this.ct;
@@ -139,6 +140,8 @@ export class Finale {
     const fit = Math.max(4.4, 1.75 / Math.tan(hfov / 2) + .3), z = fit - Math.min(1, t / 6) * fit * .15;
     cam.position.set(Math.sin(t * .25) * .25, PLAT + 1.45, z); cam.lookAt(0, PLAT + 1.25, 0);
     this.view.fadeCage(cam.position.x, cam.position.z, dt);
+    // a title fight: the belt goes on the winner as his hand goes up (both if a double champion kept his crown)
+    if (!this.belted && t > 2.5 && this.winner !== -1 && this.view.beltPlan.title) { this.belted = true; const held = this.view.beltPlan.held[this.winner]; this.view.rigs[this.winner].showBelts(Math.max(1, held)); this.view.rigs[this.winner === 0 ? 1 : 0].showBelts(0); }
     // confetti once the hand goes up
     if (this.confetti && t > 2.4) {
       this.confetti.visible = true;

@@ -27,6 +27,11 @@ const L = {
   sprawl: ['{d} reads the shot and sprawls!', 'Great takedown defence from {d}.', '{d} stuffs it! {a} is left on his knees.'],
   sub: ['{a} is hunting for the finish! {s}', 'Oh, this is deep! {s}', '{s} {d} is in trouble!'],
   escape: ['{d} fights out of it!', 'What a scramble from {d}!', '{d} is back to his feet. The crowd loves it.'],
+  cut: ['{d} is cut! Blood coming down his face.', 'That {s} opened {d} up.', 'There\'s a cut over {d}\'s eye now.'],
+  cutBad: ['That cut on {d} is bad. The doctor might have a look.', '{d} can\'t see out of that eye, the blood is pouring.', '{a} is aiming right at that cut.'],
+  doctor: ['The referee calls time. The doctor wants to see that cut.', 'Time out! Doctor in the cage to look at {d}.'],
+  docGo: ['The doctor lets it go! Back to work.', '{d} survives the check. The fight goes on.'],
+  docStop: ['THE DOCTOR HAS STOPPED IT! {A} WINS ON THE CUT!', 'IT\'S OVER! The doctor says no more, {a} gets the TKO!'],
   tap: ['HE TAPS! {A} WINS BY SUBMISSION!', 'IT\'S OVER! {a} gets the tap!'],
   tired: ['{d} is breathing heavy. The gas tank is running low.', 'You can see it, {d} is fading.', '{d}\'s hands are dropping. He\'s exhausted.'],
   quiet: ['Both men feeling each other out.', 'Lots of feints, not much landing.', 'Measuring distance in the centre of the cage.', 'Somebody has to let their hands go here.', 'The crowd wants more action.'],
@@ -75,6 +80,8 @@ export class Commentator {
       else if (e.type === 'sub') say(8, L.sub, {...vv, s: e.text ?? ''});
       else if (e.type === 'escape') say(5, L.escape, {...vv, d: vv.a, D: vv.A});
       else if (e.type === 'tap') say(10, L.tap, vv);
+      else if (e.type === 'cut') say(e.power >= .6 ? 6 : 5.5, e.power >= .6 ? L.cutBad : L.cut, {...vv, s: 'shot'});
+      else if (e.type === 'doctor') { const w = this.v(s ? 0 : 1); say(e.power >= 2 ? 10 : 7, e.power >= 2 ? L.docStop : e.power >= 1 ? L.docGo : L.doctor, {...w, d: vv.a, D: vv.A}); }
     }
     // round starts, clock calls, fatigue, and filling the silence
     if (g.phase === 'fight' && g.round !== this.lastRound) {

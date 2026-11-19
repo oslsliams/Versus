@@ -4,15 +4,18 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {WalkoutHud, walkOrder} from './walkout';
 import {Pause, Play, FastForward, Maximize, Minimize, X} from 'lucide-react';
 import type {Stats, Style} from '../../lib/career/engine';
-import {DT, NO_INPUT, ROUND_SECONDS, aiInput, createFight, damageTaken, makeBrain, step, type Input, type LiveFight as Fight} from '../../lib/fight3d/engine';
+import {DT, GOPTS, GPOS_LABEL, NO_INPUT, ROUND_SECONDS, aiInput, createFight, damageTaken, grappleOptions, grappleSubs, makeBrain, step, type GDir, type Input, type LiveFight as Fight} from '../../lib/fight3d/engine';
 import type {FightView} from './fight-view';
 import {pairModels, tape as makeTape, withModels, FIGHTER_MODELS, type FightCard, type FighterModel, type Tape} from '../../lib/fight3d/tape';
 import {Commentator, VOICES, announce, cornerAdvice, verdict, type Line} from '../../lib/fight3d/commentary';
 import type {Look} from '../../lib/cosmetics';
+import {goalValue, type FightTale} from '../../lib/career/story';
+import {sfx} from './sound';
+import {MuteButton} from './mute-button';
 
-export type Corner = {name: string; color: string; style: Style; stats: Stats; look?: Look};
+export type Corner = {name: string; color: string; style: Style; stats: Stats; look?: Look; /** a cut carried in from camp (0-100) */ cut?: number};
 export type FightStatLine = {sig: number; thrown: number; tdLanded: number; tdAttempts: number; ctrl: number; kds: number; head?: number; body?: number; legs?: number};
-export type LiveResult = {winner: 'you' | 'opp' | 'draw'; method: 'KO/TKO' | 'SUB' | 'DEC' | 'SPLIT DEC' | 'DRAW'; round: number; damageTaken: number; cards: [number, number][]; stats?: [FightStatLine, FightStatLine]; how?: string; time?: number; card?: FightCard};
+export type LiveResult = {winner: 'you' | 'opp' | 'draw'; method: 'KO/TKO' | 'SUB' | 'DEC' | 'SPLIT DEC' | 'DRAW'; round: number; damageTaken: number; cards: [number, number][]; stats?: [FightStatLine, FightStatLine]; how?: string; time?: number; card?: FightCard; tale?: FightTale};
 
 /** bodies for both corners: a fighter's own look wins, otherwise a stable pick, never the same body twice */
 export function cornerModels(you: Corner, opp: Corner): [FighterModel, FighterModel] {
@@ -23,6 +26,9 @@ export function cornerModels(you: Corner, opp: Corner): [FighterModel, FighterMo
 }
 
 type Btn = Exclude<keyof Input, 'mx' | 'mz'>;
+/** what the grappling guide shows (rebuilt only when something changes; the bars move every frame through refs) */
+type GView = {pos: string; role: 'top' | 'bottom' | 'clinch' | 'drive'; opts: {dir: GDir; label: string}[]; subs: string[];
+  read: {label: string | null; lit: GDir | null; dirs: GDir[]; guessed: GDir | null} | null; mine: string | null; sub: {name: string; mine: boolean; choke: boolean} | null};
 // WASD / arrows move around the octagon (relative to the camera); Shift blocks (and sprawls)
 const KEYMAP: Record<string, Btn> = {
   KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right', KeyW: 'up', ArrowUp: 'up', KeyS: 'down', ArrowDown: 'down',
@@ -31,7 +37,7 @@ const KEYMAP: Record<string, Btn> = {
 };
 const last = (n: string) => n.split(' ').slice(-1)[0].toUpperCase();
 
-export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQuit, watch = false, card}: {you: Corner; opp: Corner; rounds: number; difficulty: number; onEnd: (r: LiveResult) => void; onSim?: () => void; onQuit?: () => void; watch?: boolean; card?: FightCard}) {
+export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQuit, watch = false, card, venue = 2}: {you: Corner; opp: Corner; rounds: number; difficulty: number; onEnd: (r: LiveResult) => void; onSim?: () => void; onQuit?: () => void; watch?: boolean; card?: FightCard; venue?: number}) {
   // the broadcast card: event, billing and the tale of the tape (built from the corners if the caller has nothing richer)
   const [mRed, mBlue] = cornerModels(you, opp);
   const base: FightCard = card ?? {event: 'VERSUS FIGHT NIGHT', billing: 'Main event', you: makeTape(you, opp), opp: makeTape(opp, you)};
@@ -62,7 +68,7 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
   // watch mode moves on from the decision by itself
   useEffect(() => { if (watch && stage === 'decision') { const id = setTimeout(finish, 12000); return () => clearTimeout(id); } }, [watch, stage, finish]);
   const [paused, setPaused] = useState(false);
-  const [ground, setGround] = useState<null | 'top' | 'bottom'>(null);
+  const [gv, setGv] = useState<GView | null>(null);
   const [loading, setLoading] = useState(0);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
@@ -72,6 +78,10 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
   // AI-vs-AI watch mode skips the tape after a beat
   useEffect(() => { if (watch && ready && !started) { const id = setTimeout(() => setWalk(true), 2500); return () => clearTimeout(id); } }, [watch, ready, started]);
   pausedRef.current = paused;
+  // sound: walkout music, then the crowd for the fight, and silence when the fight screen closes
+  useEffect(() => { if (walk && !started) { sfx.unlock(); sfx.crowdOn(venue); sfx.walkoutOn(); } if (started) sfx.walkoutOff(); }, [walk, started, venue]);
+  useEffect(() => () => sfx.stopFight(), []);
+  useEffect(() => { if (stage === 'decision' && endRef.current) sfx.fanfare(endRef.current.winner === 'you'); }, [stage]);
 
   useEffect(() => {
     let view: FightView | null = null, raf = 0, last = performance.now(), acc = 0, alive = true, slowFrames = 0, degraded = false;
@@ -79,13 +89,18 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
     const brain = makeBrain(difficulty), autoBrain = makeBrain(.6);
     const caller = new Commentator([you.name, opp.name]);
     let roundStart = {landed: [0, 0] as [number, number], td: [0, 0] as [number, number]}, lastPhase = g.phase;
+    // what really happened in this fight, for the story afterwards
+    const told = {kdFor: 0, kdAgainst: 0, rockedFor: 0, rockedAgainst: 0, tired: 0};
+    const goal = fcRef.current.story?.goal;
     const resize = () => { if (view && shell.current) view.resize(shell.current.clientWidth, shell.current.clientHeight); };
     import('./fight-view').then(async ({FightView, loadFightAssets}) => {
       const [red, blue] = cornerModels(you, opp);
       const plain = new URLSearchParams(location.search).has('nolook');   // debug: fight without tattoos/gear
-      const assets = await loadFightAssets(red, blue, p => alive && setLoading(p), plain ? undefined : [you.look ? {...you.look, model: red} : undefined, opp.look ? {...opp.look, model: blue} : undefined]);
+      const assets = await loadFightAssets(red, blue, p => alive && setLoading(p), plain ? undefined : [you.look ? {...you.look, model: red} : undefined, opp.look ? {...opp.look, model: blue} : undefined], !!fcRef.current.title);
       if (!alive || !canvas.current) return;
-      try { view = new FightView(canvas.current, g, assets); viewRef.current = view; } catch { setError('Your browser could not start 3D graphics (WebGL). Try another browser or simulate the fight.'); return; }
+      try { const beltsOf = (t: Tape) => t.rank === 'C' ? Math.max(1, t.belts ?? 1) : 0;
+        view = new FightView(canvas.current, g, assets, venue, {title: !!fcRef.current.title, held: [beltsOf(fcRef.current.you), beltsOf(fcRef.current.opp)]}); viewRef.current = view; } catch { setError('Your browser could not start 3D graphics (WebGL). Try another browser or simulate the fight.'); return; }
+      if (new URLSearchParams(location.search).has('debugview')) Object.assign(window, {__view: view, __fight: g});   // test hook
       resize(); setReady(true); last = performance.now();
       raf = requestAnimationFrame(loop);
     }).catch(() => alive && setError('The fight assets could not load. Check your connection and try again.'));
@@ -117,7 +132,12 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
           const me = watch ? aiInput(g, g.f[0], g.f[1], autoBrain) : {held: held.current, pressed: pressed.current};
           step(g, [me.held, ai.held], [me.pressed, ai.pressed]);
           pressed.current = {...NO_INPUT};
-          view!.events(g.events);
+          view!.events(g.events); sfx.events(g.events);
+          for (const e of g.events) {
+            if (e.type === 'kd' || e.type === 'ko') { if (e.side === 0) told.kdFor++; else told.kdAgainst++; }
+            else if (e.type === 'hurt') { if (e.side === 0) told.rockedFor++; else told.rockedAgainst++; }
+            else if (e.type === 'tired' && e.side === 0) told.tired++;
+          }
           const said = caller.feed(g, g.events, DT); if (said) setComm({...said, key: Math.random()});
           if (g.phase !== lastPhase) {
             if (g.phase === 'break' && !watch) setCorner(cornerAdvice(g, roundStart));
@@ -128,13 +148,14 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
           pop(g);
           acc -= DT;
         }
-        view!.render(g, frame);
+        view!.render(g, frame); sfx.crowdTick(frame);
         paint(g);
         if (g.phase === 'over' && g.phaseT > 2.6 && !done.current) {
           done.current = true;
           const r = g.result!;
           const line = (f: Fight['f'][number]): FightStatLine => ({sig: f.landed, thrown: f.thrown, tdLanded: f.takedowns, tdAttempts: f.tdAttempts, ctrl: Math.round(f.ctrl), kds: f.knockdowns, head: f.headLanded, body: f.bodyLanded, legs: f.legLanded});
-          endRef.current = {winner: r.winner === 0 ? 'you' : r.winner === 1 ? 'opp' : 'draw', method: r.method, round: r.round, damageTaken: damageTaken(g.f[0]), cards: g.cards, stats: [line(g.f[0]), line(g.f[1])], how: r.how, time: r.time, card: fcRef.current};
+          endRef.current = {winner: r.winner === 0 ? 'you' : r.winner === 1 ? 'opp' : 'draw', method: r.method, round: r.round, damageTaken: damageTaken(g.f[0]), cards: g.cards, stats: [line(g.f[0]), line(g.f[1])], how: r.how, time: r.time, card: fcRef.current,
+            tale: {kdFor: told.kdFor, kdAgainst: told.kdAgainst, rockedFor: told.rockedFor, rockedAgainst: told.rockedAgainst, landed: g.f[0].landed, thrown: g.f[0].thrown, head: g.f[0].headLanded, body: g.f[0].bodyLanded, legs: g.f[0].legLanded, takedowns: g.f[0].takedowns, ctrl: Math.round(g.f[0].ctrl), gassed: told.tired >= 3, legsGone: g.f[0].legs < 30, bodyGone: g.f[0].body < 30, closeCards: g.cards.some(([a, b]) => Math.abs(a - b) <= 1), cut: Math.round(g.f[0].cut), oppCut: Math.round(g.f[1].cut)}};
           // knockouts get the slow-motion replay first; everything ends with the hand raise
           if (r.method === 'KO/TKO' && view!.finale.hasKO && r.winner !== -1) { view!.finale.startReplay(r.winner === 0 ? 1 : 0); setStage('replay'); }
           else { view!.finale.startCeremony(r.winner); setStage('decision'); }
@@ -167,24 +188,41 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
       }
       if (add.length) setBubbles(b => [...b, ...add].slice(-5));
     };
+    let gkey = '';
     const paint = (g: Fight) => {
-      const h = hud.current;
+      const h = hud.current, me0 = () => g.f[0];
       g.f.forEach((f, i) => {
         const hp = h['hp' + i], st = h['st' + i];
         if (hp) { hp.style.width = `${Math.max(0, f.hp)}%`; hp.dataset.low = f.hp < 30 ? '1' : ''; }
         const cap = h['cap' + i]; if (cap) cap.style.width = `${100 - f.cap}%`;
         for (const [k, v] of [['hd', f.hp], ['bd', f.body], ['lg', f.legs]] as const) { const el = h[k + i]; if (el) el.dataset.lvl = v > 66 ? 'ok' : v > 33 ? 'mid' : 'bad'; }
         const rk = h['rk' + i]; if (rk) rk.dataset.on = f.rocked > 0 ? '1' : '';
+        const ct = h['ct' + i]; if (ct) { ct.dataset.on = f.cut > 1 ? '1' : ''; ct.dataset.bad = f.cut >= 50 ? '1' : ''; }
         if (st) { st.style.width = `${f.stamina}%`; st.dataset.low = f.stamina < 30 ? '1' : ''; }
         const sn = h['sn' + i]; if (sn) { const s = Math.round(f.stamina); sn.textContent = s < 12 ? `GASSED ${s}` : `STAMINA ${s}`; sn.dataset.low = s < 30 ? '1' : ''; }
       });
+      const gl = h.goal; if (gl && goal) { const n = goal.kind === 'body' || goal.kind === 'legs' || goal.kind === 'td' || goal.kind === 'landed' ? goalValue(goal, {body: me0().bodyLanded, legs: me0().legLanded, takedowns: me0().takedowns, landed: me0().landed, kdAgainst: told.kdAgainst}) : null; const txt = n == null ? goal.label : `${goal.label}: ${Math.min(n, goal.n)}/${goal.n}`; if (gl.textContent !== txt) gl.textContent = txt; gl.dataset.done = n != null && n >= goal.n ? '1' : ''; }
       const clock = h.clock; if (clock) { const s = Math.max(0, Math.ceil(g.clock)); clock.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
       const rd = h.round; if (rd) rd.textContent = g.phase === 'break' ? 'BREAK' : `R${g.round}`;
-      const me = g.f[0], them = g.f[1];
-      const gs = me.state === 'top' ? 'top' : me.state === 'bottom' ? 'bottom' : null;
-      setGround(prev => prev === gs ? prev : gs);
-      const esc = h.escape; if (esc) esc.style.width = `${Math.min(100, (gs === 'bottom' ? me.escape : them.escape) * 100)}%`;
-      const sub = h.sub; if (sub) sub.style.width = `${Math.min(100, (gs === 'top' ? me.sub : them.sub) * 100)}%`;
+      // grappling guide: where you are, what you can do, the read when he moves, the bar chase in a submission
+      const G = g.grap;
+      let view: GView | null = null;
+      if (G && !watch) {
+        const m = G.move, S = G.sub, theirRole = G.top === 1 ? 'top' : 'bottom';
+        view = {pos: GPOS_LABEL[G.pos], role: G.pos === 'clinch' ? 'clinch' : G.pos === 'drive' ? 'drive' : G.top === 0 ? 'top' : 'bottom',
+          opts: m || S ? [] : grappleOptions(g, 0).map(o => ({dir: o.dir, label: o.label})), subs: m || S ? [] : grappleSubs(g, 0),
+          read: m && m.by === 1 ? {label: m.t >= m.tele ? m.opt.label : null, lit: m.t >= m.tele ? m.opt.dir : null, guessed: G.guess[0],
+            dirs: [...new Set((G.pos === 'drive' ? GOPTS.drive : GOPTS[G.pos].filter(o => o.role === 'any' || o.role === theirRole)).map(o => o.dir))]} : null,
+          mine: m && m.by === 0 ? m.opt.label : null, sub: S ? {name: S.name, mine: S.by === 0, choke: S.choke} : null};
+        if (m) { const mb = h.gmove; if (mb) mb.style.width = `${Math.min(100, m.t / m.win * 100)}%`; }
+        if (S) {
+          const put = (el: HTMLElement | null | undefined, c: number, w: number) => { if (el) { el.style.left = `${(c - w / 2) * 100}%`; el.style.width = `${w * 100}%`; } };
+          for (const k of ['', '2', '3'] as const) { const off = k === '2' ? 1 : k === '3' ? -1 : 0; put(h['ga' + k], S.a + off, S.aw); put(h['gd' + k], S.d + off, S.dw); }
+          const lk = h.glock; if (lk) lk.style.width = `${Math.min(100, S.lock * 100)}%`;
+          const es = h.gesc; if (es) es.style.width = `${Math.min(100, S.esc * 100)}%`;
+        }
+      }
+      const key = JSON.stringify(view); if (key !== gkey) { gkey = key; setGv(view); }
     };
     const down = (e: KeyboardEvent) => {
       if (!startedRef.current) { if ((e.code === 'Enter' || e.code === 'Space') && readyRef.current && !walkRef.current) { e.preventDefault(); setWalk(true); } return; }
@@ -206,7 +244,7 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
       if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
       view?.dispose();
     };
-  }, [you, opp, rounds, difficulty, onEnd, watch]);
+  }, [you, opp, rounds, difficulty, onEnd, watch, venue]);
 
   const toggleFull = async () => {
     try { if (document.fullscreenElement) await document.exitFullscreen(); else await shell.current?.requestFullscreen(); } catch { /* fullscreen not allowed here: the overlay still fills the window */ }
@@ -223,12 +261,13 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
     <div className="lf-top">
       {[you, opp].map((c, i) => <div key={i} className={`lf-plate ${i ? 'blue' : 'red'}`}>
         <span className="lf-bars"><span className="lf-hp"><i ref={el => { hud.current['hp' + i] = el; }}/><b className="lf-cap" title="Damage he can't recover from this fight" ref={el => { hud.current['cap' + i] = el; }}/></span>
-          <span className="lf-dmg" aria-hidden="true"><b ref={el => { hud.current['hd' + i] = el; }}>HEAD</b><b ref={el => { hud.current['bd' + i] = el; }}>BODY</b><b ref={el => { hud.current['lg' + i] = el; }}>LEGS</b><em ref={el => { hud.current['rk' + i] = el; }}>ROCKED</em></span><span className="lf-st"><i ref={el => { hud.current['st' + i] = el; }}/></span><b className="lf-stn" ref={el => { hud.current['sn' + i] = el; }}>STAMINA 100</b></span>
+          <span className="lf-dmg" aria-hidden="true"><b ref={el => { hud.current['hd' + i] = el; }}>HEAD</b><b ref={el => { hud.current['bd' + i] = el; }}>BODY</b><b ref={el => { hud.current['lg' + i] = el; }}>LEGS</b><em ref={el => { hud.current['rk' + i] = el; }}>ROCKED</em><em className="lf-cut" ref={el => { hud.current['ct' + i] = el; }}>CUT</em></span><span className="lf-st"><i ref={el => { hud.current['st' + i] = el; }}/></span><b className="lf-stn" ref={el => { hud.current['sn' + i] = el; }}>STAMINA 100</b></span>
         <span className="lf-name">{(i ? fc.opp : fc.you).rank && <b className={`lf-rank ${(i ? fc.opp : fc.you).rank === 'C' ? 'champ' : ''}`}>{(i ? fc.opp : fc.you).rank}</b>}{c.name.toUpperCase()}</span>
       </div>)}
     </div>
 
-    <div className={`lf-event ${fc.title ? 'title' : ''}`}>{fc.event} · {fc.title ?? fc.billing}</div>
+    <div className={`lf-event ${fc.title ? 'title' : ''}`}>{fc.title && <img src="/art/belt.webp" alt="" width={46} height={19}/>}{fc.event} · {fc.title ?? fc.billing}</div>
+    {fc.story && started && !stage && <div className="lf-goal"><b>{fc.story.title}</b><span ref={el => { hud.current.goal = el; }}>{fc.story.goal.label}</span></div>}
     <div className="lf-score">
       <span className="lf-sname">{fc.you.rank && <b className={`lf-srank ${fc.you.rank === 'C' ? 'champ' : ''}`} title={fc.you.rank === 'C' ? 'Champion' : `Ranked ${fc.you.rank}`}>{fc.you.rank}</b>}{last(you.name)}</span><span className="lf-chip red"/>
       <span className="lf-logo">VS</span>
@@ -244,13 +283,10 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
     {!stage && bubbles.map(b => <span key={b.id} className={`lf-bubble ${b.tone}`} style={{left: b.x, top: b.y}} aria-hidden="true">{b.text}</span>)}
     {stage === 'replay' && <div className="lf-replay" aria-label="Knockout replay"><i/><i/><span className="lf-replay-bug">REPLAY</span><span className="lf-replay-sub">Slow motion</span></div>}
     {stage === 'decision' && endRef.current && <Decision card={fc} result={endRef.current} onContinue={finish}/>}
-    {ground && <div className="lf-ground">
-      <span>{ground === 'top' ? 'Top: J / K ground and pound · L start a submission, then mash J / K to crank it' : 'On your back: mash any key to fill Escape (and to fight off submissions)'}</span>
-      <span className="lf-meter"><b>Escape</b><span className="lf-mbar"><i className="esc" ref={el => { hud.current.escape = el; }}/></span></span>
-      <span className="lf-meter"><b>Submission</b><span className="lf-mbar"><i className="sub" ref={el => { hud.current.sub = el; }}/></span></span>
-    </div>}
+    {gv && !stage && <GrappleGuide v={gv} hud={hud}/>}
 
     <div className="lf-tools">
+      <MuteButton/>
       <button onClick={toggleFull} aria-label={full ? 'Exit fullscreen' : 'Fullscreen'}>{full ? <Minimize size={18}/> : <Maximize size={18}/>}</button>
       <button onClick={() => setPaused(p => !p)} aria-label={paused ? 'Resume' : 'Pause'}><Pause size={18}/></button>
     </div>
@@ -258,7 +294,8 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
       <button className="button primary" onClick={() => setPaused(false)}><Play size={16} aria-hidden="true"/>Resume</button>
       {onSim && <button className="button outline" onClick={onSim}><FastForward size={16} aria-hidden="true"/>Simulate the rest</button>}
       {onQuit && <button className="button outline" onClick={onQuit}><X size={16} aria-hidden="true"/>Leave the fight</button>}
-      <p className="lf-keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move around the cage · <kbd>Shift</kbd> block (tap as they shoot to sprawl, block a leg kick to check it) · <kbd>J</kbd> jab · <kbd>K</kbd> cross / hook · <kbd>L</kbd> kick (body) · <kbd>I</kbd> elbow / hook · <kbd>Space</kbd> takedown</p>
+      <p className="lf-keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move around the cage · <kbd>Shift</kbd> block (tap as they shoot to sprawl, block a leg kick to check it) · <kbd>J</kbd> jab · <kbd>K</kbd> cross / hook · <kbd>L</kbd> kick (body) · <kbd>I</kbd> elbow / hook · <kbd>Space</kbd> takedown (in close: clinch)</p>
+      <p className="lf-keys">Grappling: <kbd>Space</kbd> + <kbd>W</kbd>/<kbd>A</kbd>/<kbd>D</kbd>/<kbd>S</kbd> to change position · when he moves, press the direction you read to stop it · <kbd>L</kbd> submission, then <kbd>A</kbd>/<kbd>D</kbd> to chase his bar (or run from his) · <kbd>J</kbd>/<kbd>K</kbd> strike. The more hurt and tired a man is, the bigger his bar and the easier he is to catch.</p>
       <p className="lf-keys">Aim: hold <kbd>W</kbd> + <kbd>L</kbd> for a head kick, <kbd>S</kbd> + <kbd>L</kbd> for a leg kick, <kbd>S</kbd> + a punch to go to the body. Hooks, elbows and head kicks knock people out; counters (hitting him as he throws) hit hardest. Body shots drain his gas tank, leg kicks slow him down.</p>
     </div>}
     {error && <div className="lf-pause"><h2>Can't start the fight</h2><p>{error}</p>{onSim && <button className="button primary" onClick={onSim}>Simulate the fight</button>}{onQuit && <button className="button outline" onClick={onQuit}>Back</button>}</div>}
@@ -272,8 +309,8 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
 }
 
 /* ================================================================ broadcast graphics */
-// champions get the belt version of their portrait
-const PORTRAIT = (t: Tape, stance = false) => t.model ? `/fighters/${t.model}${t.rank === 'C' ? '-champ' : stance ? '-stance' : ''}.webp` : null;
+// champions get the belt version of their portrait, and a double champion carries both belts
+const PORTRAIT = (t: Tape, stance = false) => t.model ? `/fighters/${t.model}${t.rank === 'C' ? ((t.belts ?? 1) >= 2 ? '-double' : '-champ') : stance ? '-stance' : ''}.webp` : null;
 function Side({t, side, stance}: {t: Tape; side: 'red' | 'blue'; stance?: boolean}) {
   const src = PORTRAIT(t, stance);
   const [first, ...rest] = t.name.toUpperCase().split(' ');
@@ -281,6 +318,7 @@ function Side({t, side, stance}: {t: Tape; side: 'red' | 'blue'; stance?: boolea
     {src ? <img className={`tt-portrait ${stance ? 'alive' : ''}`} src={src} alt="" width={720} height={1100}/> : <span className="tt-portrait none" aria-hidden="true"/>}
     <div className="tt-id">
       <span className="tt-name">{t.rank && <b className={`tt-rank ${t.rank === 'C' ? 'champ' : ''}`}>{t.rank}</b>}{first}<br/>{rest.join(' ')}</span>
+      {(t.belts ?? 1) >= 2 && <span className="tt-nick">Double champion</span>}
       {t.nickname && <span className="tt-nick">&ldquo;{t.nickname}&rdquo;</span>}
       <span className="tt-meta"><span>{t.country ?? t.style}</span><span>{t.record}</span><span className={t.fav ? 'fav' : 'und'}>{t.odds} {t.fav ? 'FAV' : 'UND'}</span></span>
     </div>
@@ -294,9 +332,10 @@ function TaleOfTape({card, ready, loading, onStart}: {card: FightCard; ready: bo
     <Side t={card.you} side="red" stance/>
     <div className="tt-mid">
       <div className="tt-event"><strong>VERSUS</strong><span>{card.event.replace(/^VERSUS\s*/, '') || 'FIGHT NIGHT'}</span></div>
+      {card.title && <img className="tt-belt" src="/art/belt.webp" alt="The championship belt" width={500} height={210}/>}
       <h2 className="tt-title">{card.title ?? card.billing.toUpperCase()}<small>{card.title ? 'Championship bout · 5 rounds' : 'Tale of the tape'}</small></h2>
       <dl className="tt-rows">{rows.map(([k, a, b]) => <div key={k}><dd>{a}</dd><dt>{k}</dt><dd>{b}</dd></div>)}</dl>
-      <p className="tt-announce">{announce(card)}</p>
+      {card.story ? <div className="tt-story"><b>{card.story.title}</b><p>{card.story.brief}</p><span>Bonus goal: {card.story.goal.label}</span></div> : <p className="tt-announce">{announce(card)}</p>}
       <div className="tt-sponsor">RIPTIDE ENERGY</div>
       {ready ? <button className="button primary tt-go" onClick={onStart} autoFocus>Walk out <kbd>Enter</kbd></button>
         : <div className="tt-load"><span>Loading the arena… {Math.round(loading * 100)}%</span><span className="lf-loadbar"><i style={{width: `${loading * 100}%`}}/></span></div>}
@@ -323,6 +362,7 @@ export function FightStats({card: raw, stats, result}: {card: FightCard; stats: 
       <h2 className="tt-title">FIGHT STATISTICS</h2>
       <div className="tt-heads"><span className="red">{a.name.toUpperCase()}</span><span className="blue">{b.name.toUpperCase()}</span></div>
       <dl className="tt-rows">{rows.map(([k, x, y]) => <div key={k}><dd>{x}</dd><dt>{k}</dt><dd>{y}</dd></div>)}</dl>
+      {result && card.title && result.winner !== 'draw' && <img className="tt-belt small" src="/art/belt.webp" alt="" width={500} height={210}/>}
       {result && <Verdict card={card} result={result}/>}
     </div>
     <Side t={b} side="blue"/>
@@ -343,7 +383,7 @@ function Decision({card, result, onContinue}: {card: FightCard; result: LiveResu
   const corner = result.winner === 'you' ? 'red' : 'blue';
   const scores = result.cards.map(([a, b]) => result.winner === 'opp' ? `${b}-${a}` : `${a}-${b}`).join(', ');
   const clock = result.time != null ? mmss(Math.round(result.time)) : '';
-  const tko = result.how === 'Ground and pound' || result.how === 'Leg kicks' || result.how === 'Body shot';
+  const tko = result.how === 'Ground and pound' || result.how === 'Leg kicks' || result.how === 'Body shot' || result.how === 'Doctor stoppage';
   const lead = result.method === 'KO/TKO' ? `Referee stops the contest at ${clock} of round ${result.round}.`
     : result.method === 'SUB' ? `${l.name.split(' ').slice(-1)[0]} taps at ${clock} of round ${result.round}.`
     : `After ${result.round} rounds, we go to the judges' scorecards.`;
@@ -354,14 +394,43 @@ function Decision({card, result, onContinue}: {card: FightCard; result: LiveResu
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); onContinue(); } }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k); }, [onContinue]);
   return <div className={`lf-decision ${w ? corner : 'draw'}`} role="dialog" aria-label="Official decision">
     <div className="lf-dec-card">
+      {card.title && <img className="lf-dec-belt" src="/art/belt.webp" alt={w ? 'The championship belt' : 'The belt stays where it is'} width={500} height={210}/>}
       <span className="lf-dec-lead">{lead}</span>
-      {result.method !== 'KO/TKO' && result.method !== 'SUB' && <span className="lf-dec-scores">{scores}</span>}
+      {result.method !== 'KO/TKO' && result.method !== 'SUB' && <span className="lf-dec-scores">{card.title && <small>Championship scorecards</small>}{scores}</span>}
       {w ? <>
-        <span className="lf-dec-for">{titleCall ? `${titleCall} ${card.title?.replace(/^VERSUS /, '')}` : `For the winner, ${how}, fighting out of the ${corner} corner`}</span>
+        <span className="lf-dec-for">{titleCall ? `${titleCall} ${card.title?.replace(/^VERSUS /, '').replace(/CHAMPIONSHIP$/, 'CHAMPION')}` : `For the winner, ${how}, fighting out of the ${corner} corner`}</span>
         <strong className="lf-dec-name">{w.nickname ? <small>&ldquo;{w.nickname}&rdquo;</small> : null}{w.name}</strong>
         {titleCall && <span className="lf-dec-for">{how}</span>}
       </> : <strong className="lf-dec-name">It&rsquo;s a draw</strong>}
       <button className="button primary lf-dec-go" onClick={onContinue}>Fight stats <kbd>Enter</kbd></button>
     </div>
+  </div>;
+}
+/** The grappling guide: the position, your options, the read when he moves, and the submission bar chase */
+function GrappleGuide({v, hud}: {v: GView; hud: React.MutableRefObject<Record<string, HTMLElement | null>>}) {
+  const r = (k: string) => (el: HTMLElement | null) => { hud.current[k] = el; };
+  const role = v.role === 'top' ? 'On top' : v.role === 'bottom' ? 'Underneath' : v.role === 'clinch' ? 'Tied up' : 'Shot';
+  if (v.sub) return <div className={`lf-grap sub ${v.sub.mine ? 'att' : 'def'}`} role="status">
+    <header><b>{v.sub.name}</b><span>{v.sub.mine ? 'Chase his bar' : 'Get out!'}</span></header>
+    <div className={`lf-track ${v.sub.choke ? 'loop' : ''}`} aria-hidden="true">
+      {['', '2', '3'].map(k => <i key={'d' + k} className="lf-bar them" ref={r('gd' + k)}/>)}
+      {['', '2', '3'].map(k => <i key={'a' + k} className="lf-bar us" ref={r('ga' + k)}/>)}
+    </div>
+    <div className="lf-gmeters"><span><b>Submit</b><u><i ref={r('glock')}/></u></span><span><b>Escape</b><u><i className="esc" ref={r('gesc')}/></u></span></div>
+    <p>{v.sub.mine ? <><kbd>A</kbd><kbd>D</kbd> move your red bar over his blue one · <kbd>J</kbd> strike to widen it</> : <><kbd>A</kbd><kbd>D</kbd> keep your blue bar away from his red one · <kbd>J</kbd> fight his hands</>}{v.sub.choke ? ' · a choke goes all the way round' : ''}</p>
+  </div>;
+  if (v.read) return <div className="lf-grap read" role="status">
+    <header><b>{v.read.label ? `He's going for: ${v.read.label}` : 'He\'s moving. Read it!'}</b><span>{v.pos}</span></header>
+    <div className="lf-dirs">{v.read.dirs.map(d => <kbd key={d} className={`${v.read!.lit === d ? 'lit' : ''} ${v.read!.guessed === d ? 'picked' : ''}`}>{d}</kbd>)}</div>
+    <p>{v.read.guessed ? 'Committed.' : 'Press the direction he\'s going to stop it. One guess.'}</p>
+  </div>;
+  return <div className="lf-grap" role="status">
+    <header><b>{v.pos}</b><span>{role}</span></header>
+    {v.mine ? <div className="lf-gmove"><span>{v.mine}…</span><u><i ref={r('gmove')}/></u></div> : <ul>
+      {v.opts.map(o => <li key={o.dir + o.label}><kbd>Space</kbd>+<kbd>{o.dir}</kbd>{o.label}</li>)}
+      {v.subs.length > 0 && <li><kbd>L</kbd>{v.subs.join(' / ')}</li>}
+      {(v.role === 'top' || v.role === 'clinch') && <li><kbd>J</kbd><kbd>K</kbd>{v.role === 'clinch' ? 'Short shots' : 'Ground and pound'}{v.role === 'clinch' ? <> · <kbd>I</kbd>Knees</> : null}</li>}
+      {v.role === 'bottom' && <li><kbd>Shift</kbd>Cover up</li>}
+    </ul>}
   </div>;
 }

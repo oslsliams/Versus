@@ -3,23 +3,26 @@
 // Messages (decisions from your coach, manager, family and rivals), Feed, News, Your story, Bank and Settings.
 // Docked beside the hub on wide screens; on phones and tablets it slides up from the floating phone button.
 import {useEffect, useRef, useState} from 'react';
-import {AtSign, BookOpen, ChevronLeft, Flag, Landmark, MessageCircle, Newspaper, RotateCcw, Settings, Users, X} from 'lucide-react';
-import {COACHES, LIVING, resolveChoice, retire, weeklyCost, type Career, type CoachKey} from '../../lib/career/engine';
+import {AtSign, BookOpen, ChevronLeft, Contact, Flag, Landmark, MessageCircle, Newspaper, RotateCcw, Settings, Users, X} from 'lucide-react';
+import {MuteButton} from '../fight3d/mute-button';
+import {COACHES, LIVING, npc, resolveChoice, retire, weeklyCost, type Career, type CastKey, type CoachKey} from '../../lib/career/engine';
 
 export const money = (n: number) => (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString();
 export const yearWeek = (w: number) => `Year ${Math.floor((w - 1) / 52) + 1} · Week ${((w - 1) % 52) + 1}`;
 export const compact = (n: number) => n >= 1e6 ? (n / 1e6).toFixed(1).replace('.0', '') + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1).replace('.0', '') + 'K' : String(Math.round(n));
 
-export type PhoneApp = 'home' | 'messages' | 'feed' | 'news' | 'story' | 'bank' | 'settings';
-type Thread = {id: number; from: string; title: string; text: string; answer: string; result?: string};
+export type PhoneApp = 'home' | 'messages' | 'people' | 'feed' | 'news' | 'story' | 'bank' | 'settings';
 const APPS = [
-  {id: 'messages', label: 'Messages', Icon: MessageCircle}, {id: 'feed', label: 'Feed', Icon: AtSign}, {id: 'news', label: 'News', Icon: Newspaper},
+  {id: 'messages', label: 'Messages', Icon: MessageCircle}, {id: 'people', label: 'People', Icon: Contact}, {id: 'feed', label: 'Feed', Icon: AtSign}, {id: 'news', label: 'News', Icon: Newspaper},
   {id: 'story', label: 'Story', Icon: BookOpen}, {id: 'bank', label: 'Bank', Icon: Landmark}, {id: 'settings', label: 'Settings', Icon: Settings},
 ] as const;
-const TITLES: Record<Exclude<PhoneApp, 'home'>, string> = {messages: 'Messages', feed: 'Feed', news: 'Fight news', story: 'Your story', bank: 'Bank', settings: 'Settings'};
+const TITLES: Record<Exclude<PhoneApp, 'home'>, string> = {messages: 'Messages', people: 'People', feed: 'Feed', news: 'Fight news', story: 'Your story', bank: 'Bank', settings: 'Settings'};
+const CAST_ORDER: CastKey[] = ['coach', 'manager', 'brother', 'friend', 'partner'];
+const bondLabel = (n: number) => n >= 75 ? 'Would do anything for you' : n >= 55 ? 'Solid' : n >= 35 ? 'Getting distant' : 'Barely speaking';
 
 export function CareerPhone({c, update, app, setApp, open, onClose, onTeam}: {c: Career; update: (c: Career | null) => void; app: PhoneApp; setApp: (a: PhoneApp) => void; open: boolean; onClose: () => void; onTeam: () => void}) {
-  const [threads, setThreads] = useState<Thread[]>([]);
+  const threads = c.threads ?? [];
+  const nemesis = c.nemesis ? npc(c, c.nemesis) : undefined;
   const [confirm, setConfirm] = useState<'retire' | 'new' | null>(null);
   const feedKey = c.feed?.[0] ? c.feed[0].week + c.feed[0].text : '', newsKey = c.log[0] ? c.log[0].week + c.log[0].text : '';
   const [seen, setSeen] = useState({feed: feedKey, news: newsKey});
@@ -40,11 +43,7 @@ export function CareerPhone({c, update, app, setApp, open, onClose, onTeam}: {c:
 
   const newCount = (items: {week: number; text: string}[], key: string) => { const i = items.findIndex(x => x.week + x.text === key); return i < 0 ? Math.min(items.length, 9) : Math.min(i, 9); };
   const badge: Partial<Record<PhoneApp, number>> = {messages: c.choice ? 1 : 0, feed: newCount(c.feed ?? [], seen.feed), news: newCount(c.log, seen.news)};
-  const answer = (id: string, label: string) => {
-    const ch = c.choice!, next = resolveChoice(c, id);
-    setThreads(t => [...t, {id: c.week * 1000 + t.length, from: ch.from ?? 'Media', title: ch.title, text: ch.text, answer: label, result: next.log[0]?.text}].slice(-6));
-    update(next);
-  };
+  const answer = (id: string) => update(resolveChoice(c, id));
   const opp = c.camp ? c.roster.find(n => n.id === c.camp!.opponentId) : undefined;
   const team = (Object.entries(c.team ?? {}) as [CoachKey, number][]).filter(([, l]) => l);
 
@@ -66,15 +65,22 @@ export function CareerPhone({c, update, app, setApp, open, onClose, onTeam}: {c:
           <header className="cp-bar"><button type="button" onClick={() => setApp('home')} aria-label="Back to home screen"><ChevronLeft size={22} aria-hidden="true"/></button><h2>{TITLES[app]}</h2></header>
           <div className="cp-body" ref={body}>
             {app === 'messages' && <div className="cp-chat">
-              {!threads.length && !c.choice && <p className="cp-empty">No new messages. When your coach, manager, family or a rival needs an answer, it lands here.</p>}
-              {threads.map(t => <div key={t.id} className="cp-thread done">
-                <span className="cp-from">{t.from}</span><p className="cp-in"><b>{t.title}</b>{t.text}</p><p className="cp-out">{t.answer}</p>{t.result && <p className="cp-in result">{t.result}</p>}
+              {!threads.length && !c.choice && <p className="cp-empty">No messages yet. When {c.cast?.coach.short ?? 'your coach'}, {c.cast?.manager.short ?? 'your manager'}, your family or a rival needs you, it lands here.</p>}
+              {threads.map((t, i) => <div key={`${t.week}-${i}`} className="cp-thread done">
+                <span className="cp-from">{t.from} · {yearWeek(t.week)}</span><p className="cp-in">{t.title && <b>{t.title}</b>}{t.text}</p>{t.answer && <p className="cp-out">{t.answer}</p>}{t.result && <p className="cp-in result">{t.result}</p>}
               </div>)}
               {c.choice && <div className="cp-thread" aria-live="polite">
                 <span className="cp-from">{c.choice.kind === 'press' ? 'Fight week media' : c.choice.from ?? 'Message'}</span>
                 <p className="cp-in"><b>{c.choice.title}</b>{c.choice.text}</p>
-                <div className="cp-replies">{c.choice.options.map(o => <button key={o.id} type="button" onClick={() => answer(o.id, o.label)}><strong>{o.label}</strong><small>{o.hint}</small></button>)}</div>
+                <div className="cp-replies">{c.choice.options.map(o => <button key={o.id} type="button" onClick={() => answer(o.id)}><strong>{o.label}</strong><small>{o.hint}</small></button>)}</div>
               </div>}
+            </div>}
+            {app === 'people' && c.cast && <div className="cp-people">
+              <ul>{CAST_ORDER.map(k => { const p = c.cast![k], b = c.bonds?.[k] ?? 50; return <li key={k}>
+                <i aria-hidden="true">{p.short.replace(/^(Coach|Kru|Professor|Dr\.) /, '').slice(0, 1)}</i>
+                <span><strong>{p.name}</strong><small>{p.role} · {bondLabel(b)}</small><span className="cp-bond" role="img" aria-label={`Relationship ${Math.round(b)} of 100`}><u style={{width: `${b}%`}}/></span></span>
+              </li>; })}</ul>
+              {nemesis && <div className="cp-nemesis"><small>The name you can't forget</small><strong>{nemesis.name}</strong><span>{nemesis.record.join('–')} · {nemesis.tier === c.tier ? 'In your league now' : nemesis.tier < c.tier ? 'Still climbing toward you' : 'Waiting above you'}</span></div>}
             </div>}
             {app === 'feed' && <>
               <p className="cp-sum"><strong>{compact(c.followers ?? 0)}</strong> followers</p>
@@ -88,6 +94,7 @@ export function CareerPhone({c, update, app, setApp, open, onClose, onTeam}: {c:
               <dl><div><dt>Rent and food</dt><dd>−{money(LIVING[c.tier])}</dd></div>
                 {team.map(([k, l]) => <div key={k}><dt>{COACHES[k].label}</dt><dd>−{money(COACHES[k].pay[l])}</dd></div>)}
                 <div className="total"><dt>Total bills</dt><dd>−{money(weeklyCost(c))}</dd></div></dl>
+              {(c.yearPurses ?? 0) > 0 && <><h3>Due on your birthday</h3><dl><div><dt>Tax on this year's purses (25%)</dt><dd>−{money((c.yearPurses ?? 0) * .25)}</dd></div></dl></>}
               {c.lastPayout && <><h3>Last purse</h3>
                 <dl><div><dt>Gross</dt><dd>{money(c.lastPayout.gross)}</dd></div><div><dt>Manager</dt><dd>−{money(c.lastPayout.manager)}</dd></div><div><dt>Gym</dt><dd>−{money(c.lastPayout.gym)}</dd></div>
                   {!!c.lastPayout.bonus && <div><dt>Bonus</dt><dd>{money(c.lastPayout.bonus)}</dd></div>}
@@ -101,6 +108,7 @@ export function CareerPhone({c, update, app, setApp, open, onClose, onTeam}: {c:
                 <button type="button" className="button outline" onClick={() => setConfirm(null)}>Cancel</button>
               </div> : <>
                 <p className="cp-empty">Your career saves on this device.</p>
+                <MuteButton label className="button outline"/>
                 <button type="button" className="button outline" onClick={() => setConfirm('retire')}><Flag size={16} aria-hidden="true"/>Retire</button>
                 <button type="button" className="button outline" onClick={() => setConfirm('new')}><RotateCcw size={16} aria-hidden="true"/>New career</button>
               </>}

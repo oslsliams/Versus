@@ -14,6 +14,7 @@ import {Stadium} from './stadium';
 import {applyLook, loadLookAssets, patchShorts, type LookAssets} from './look';
 import {WalkoutDirector} from './walkout-scene';
 import {Finale} from './finale';
+import {GrapplePoser, grapplePlace} from './grapple-pose';
 import {REFEREE_LOOK, type Look} from '../../lib/cosmetics';
 
 const PLAT = .9;           // mat height in the arena model
@@ -78,7 +79,11 @@ type Assets = {arena: THREE.Group; red: Src; blue: Src; crowd: number[] | null; 
   /** the referee: a third body (never one of the fighters') in the all-black officials' kit */
   ref?: Src; refLook?: Look; refDress?: LookAssets;
   /** a body for the walkout crews (cornermen in team shirts) */
-  crew?: Src};
+  crew?: Src;
+  /** title fights: the belt fitted to each corner's body (red, blue) */
+  belts?: [THREE.Group | null, THREE.Group | null]};
+/** who walks out with a belt (0, 1 or 2 each) and whether one is on the line */
+export type BeltPlan = {title: boolean; held: [number, number]};
 // original MakeHuman fighter bodies built by scripts/art/build_fighter_mh.py
 export {FIGHTER_MODELS, modelFor, type FighterModel} from '../../lib/fight3d/tape';
 import type {FighterModel} from '../../lib/fight3d/tape';
@@ -98,7 +103,7 @@ export async function loadDress(look: Look | undefined): Promise<LookAssets | un
   const [la, gear] = await Promise.all([loadLookAssets(look), look.gear.length ? loadGlb(`/cosmetics/gear-${look.model}.glb`, () => {}).catch(() => null) : Promise.resolve(null)]);
   return {...la, gear: gear as any};
 }
-export function loadFightAssets(red: FighterModel, blue: FighterModel, onProgress?: (p: number) => void, looks?: [Look | undefined, Look | undefined]): Promise<Assets> {
+export function loadFightAssets(red: FighterModel, blue: FighterModel, onProgress?: (p: number) => void, looks?: [Look | undefined, Look | undefined], title = false): Promise<Assets> {
   const pool = (['delacroix', 'takeda', 'volkov', 'okafor', 'bianchi', 'mwangi', 'ashford', 'kalani'] as FighterModel[]).filter(m => m !== red && m !== blue);
   const refModel = pool[0], crewModel = pool[1];
   const refLook = REFEREE_LOOK(refModel);
@@ -107,8 +112,10 @@ export function loadFightAssets(red: FighterModel, blue: FighterModel, onProgres
   const report = () => onProgress?.(done.reduce((a, b) => a + b, 0) / 5);
   const crowd = fetch('/models/arena-crowd.json').then(r => r.ok ? r.json() as Promise<{seats?: number[]}> : null).then(j => j?.seats ?? null).catch(() => null);
   const dress = Promise.all([loadDress(looks?.[0]), loadDress(looks?.[1]), loadDress(refLook)]);
-  return Promise.all([...urls.map((u, i) => loadGlb(u, p => { done[i] = p; report(); }).catch(e => { if (i >= 3) return null; throw e; })), crowd, dress])
-    .then(([a, r, b, rf, cw, c, d]) => ({
+  const belts = title ? Promise.all([red, blue].map(m => loadGlb(`/models/belt-${m}.glb`, () => {}).then(g => g.scene).catch(() => null))) : Promise.resolve([null, null]);
+  return Promise.all([...urls.map((u, i) => loadGlb(u, p => { done[i] = p; report(); }).catch(e => { if (i >= 3) return null; throw e; })), crowd, dress, belts])
+    .then(([a, r, b, rf, cw, c, d, bl]) => ({
+      belts: bl as [THREE.Group | null, THREE.Group | null],
       crew: cw ? {scene: (cw as any).scene, clips: (cw as any).animations} : undefined,arena: (a as any).scene, red: {scene: (r as any).scene, clips: (r as any).animations}, blue: {scene: (b as any).scene, clips: (b as any).animations}, crowd: c as number[] | null,
       looks, dress: [(d as any)[0], (d as any)[1]] as [LookAssets | undefined, LookAssets | undefined],
       ref: rf ? {scene: (rf as any).scene, clips: (rf as any).animations} : undefined, refLook, refDress: (d as any)[2] as LookAssets | undefined}));
@@ -139,6 +146,24 @@ function aimBone(bone: THREE.Bone, child: THREE.Object3D, dir: THREE.Vector3, am
   bone.updateMatrixWorld(true);
 }
 
+/** where the cut sits relative to the head bone (bind pose, metres before body scaling) */
+export const CUT_AT = {x: .032, y: .132, z: .095};
+let blood: {gashTex: THREE.Texture; dripTex: THREE.Texture} | null = null;
+/** soft-edged blood: a ragged gash and a tapered drip, drawn once on canvases */
+function bloodTextures() {
+  if (blood) return blood;
+  const make = (w: number, h: number, draw: (x: CanvasRenderingContext2D) => void) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d')!; draw(x); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
+  const gashTex = make(128, 64, x => {
+    const gr = x.createRadialGradient(64, 32, 2, 64, 32, 60); gr.addColorStop(0, 'rgba(150,12,12,.85)'); gr.addColorStop(.5, 'rgba(120,10,10,.45)'); gr.addColorStop(1, 'rgba(110,10,10,0)');
+    x.fillStyle = gr; x.beginPath(); x.ellipse(64, 32, 60, 26, 0, 0, Math.PI * 2); x.fill();
+    x.strokeStyle = 'rgba(55,0,0,.95)'; x.lineWidth = 6; x.lineCap = 'round'; x.beginPath(); x.moveTo(22, 36); x.quadraticCurveTo(50, 26, 70, 32); x.quadraticCurveTo(90, 37, 106, 28); x.stroke();
+  });
+  const dripTex = make(32, 160, x => {
+    const gr = x.createLinearGradient(0, 0, 0, 160); gr.addColorStop(0, 'rgba(140,10,10,.9)'); gr.addColorStop(.75, 'rgba(120,8,8,.7)'); gr.addColorStop(1, 'rgba(120,8,8,0)');
+    x.fillStyle = gr; x.beginPath(); x.moveTo(9, 0); x.lineTo(23, 0); x.quadraticCurveTo(20, 80, 19, 140); x.arc(16, 142, 4, 0, Math.PI); x.quadraticCurveTo(12, 80, 9, 0); x.fill();
+  });
+  return (blood = {gashTex, dripTex});
+}
 export class FighterRig {
   root = new THREE.Group(); body: THREE.Object3D; mixer: THREE.AnimationMixer; walkout: THREE.Object3D[] = []; wobble = 0;
   rest = new Map<string, THREE.Quaternion>();
@@ -149,6 +174,8 @@ export class FighterRig {
   lowers = new Map<string, THREE.AnimationAction>(); lowerKey = 'idle'; prevX: number | null = null; prevZ: number | null = null; stepRate = 1;
   bones: Record<string, THREE.Bone | undefined> = {};
   flash = 0; skinMats: THREE.MeshStandardMaterial[] = [];
+  /** the cut over his eye: a gash and a drip, riding on the head bone */
+  cutFx: {g: THREE.Group; mat: THREE.MeshBasicMaterial; drip: THREE.Mesh} | null = null; cutAnchor = '';
   lastPick: Pick | null = null; lastState = ''; lastMove: MoveId | null = null;
   /** react to a landed strike, choosing the reaction from what hit us */
   hit(power: number, by: Pick | null, target?: Target) {
@@ -157,6 +184,41 @@ export class FighterRig {
     else if (target === 'legs' || (!target && by?.leg)) this.play('hit_leg', .05);
     else if (target === 'body' || (!target && by?.body)) this.play('hit_body', .05);
     else this.playUpper(['hit_head', 'hit_head_l', 'hit_head_r'][Math.floor(Math.random() * 3)], .04);
+  }
+  /** the title belt, slung over a shoulder (R) and, for a double champion, a second one over the other (L) */
+  belts: {R: THREE.Object3D[]; L: THREE.Object3D[]} = {R: [], L: []};   // glTF splits each belt into one mesh per material
+  wearBelts(src: THREE.Group | null) {
+    if (!src) return;
+    let parent: THREE.Object3D | null = null;
+    this.body.traverse(o => { const m = o as THREE.SkinnedMesh; if (!parent && m.isSkinnedMesh && /body|skin/i.test((m.material as THREE.Material).name)) parent = m.parent; });
+    if (!parent) return;
+    const named = new Map<string, THREE.Bone>(); this.body.traverse(o => { if ((o as THREE.Bone).isBone) named.set(o.name, o as THREE.Bone); });
+    src.traverse(o => {
+      const sm = o as THREE.SkinnedMesh; if (!sm.isSkinnedMesh) return;
+      const side = /_L/.test(sm.name) || /_L/.test(sm.parent?.name ?? '') ? 'L' : 'R';
+      const copy = new THREE.SkinnedMesh(sm.geometry, sm.material); copy.castShadow = true; copy.frustumCulled = false; copy.visible = false;
+      copy.position.copy(sm.position); copy.quaternion.copy(sm.quaternion); copy.scale.copy(sm.scale);
+      (parent as THREE.Object3D).add(copy);
+      copy.bind(new THREE.Skeleton(sm.skeleton.bones.map(b => named.get(b.name) ?? b), sm.skeleton.boneInverses), sm.bindMatrix.clone());
+      this.belts[side].push(copy);
+    });
+  }
+  showBelts(n: number) { for (const m of this.belts.R) m.visible = n >= 1; for (const m of this.belts.L) m.visible = n >= 2; }
+  /** keep a whole-body clip on (for grappling poses that need a different base clip from the state's) */
+  hold(key: string, fade = .25) { if (this.split || this.currentKey !== key) this.play(key, fade); }
+  /** a bone's position in the world */
+  pos(name: string) { return this.bones[name]?.getWorldPosition(new THREE.Vector3()) ?? this.root.position.clone(); }
+  /** aim a leg: thigh and shin along world directions (amt 0..1 blends from the animated pose) */
+  aimLeg(side: 'Left' | 'Right', thigh: THREE.Vector3, shin: THREE.Vector3, amt = 1) {
+    const ul = this.bones[side + 'UpLeg'], lg = this.bones[side + 'Leg'], ft = this.bones[side + 'Foot']; if (!ul || !lg || !ft || amt <= 0) return;
+    aimBone(ul, lg, thigh, amt); aimBone(lg, ft, shin, amt);
+  }
+  /** spine and neck back to the bind pose (straight, relative to the hips) */
+  straighten() { for (const n of ['Spine', 'Spine1', 'Spine2', 'Neck', 'Head']) { const b = this.bones[n], r = this.rest.get(n); if (b && r) b.quaternion.copy(r); } this.body.updateMatrixWorld(true); }
+  /** bend the spine (three segments) toward a world direction */
+  aimSpine(dir: THREE.Vector3, amt = 1) {
+    if (amt <= 0) return;
+    for (const [a, b] of [['Spine', 'Spine1'], ['Spine1', 'Spine2'], ['Spine2', 'Neck']] as const) { const x = this.bones[a], y = this.bones[b]; if (x && y) aimBone(x, y, dir, amt * .7); }
   }
   dodge() { if (['idle', 'walk'].includes(this.lastState)) this.play(['slip_out', 'slip_in', 'roll'][Math.floor(Math.random() * 3)], .06); }
   blocked(by: Pick | null) { if (by?.leg) this.play('check', .05); else if (by?.body) this.play('block_body', .05); else this.playUpper('block_high', .05); }
@@ -220,6 +282,7 @@ export class FighterRig {
       a.setLoop(THREE.LoopRepeat, Infinity); this.lowers.set(name, a);
     }
     this.lower = this.lowers.get('idle') ?? null;
+    try { this.makeCut(); } catch { this.cutFx = null; }
     this.toSplit(0);
     this.mixer.update(Math.random() * 2);
   }
@@ -295,6 +358,30 @@ export class FighterRig {
     if (this.lower && this.lower !== next) next.crossFadeFrom(this.lower, fade, false); else next.fadeIn(fade);
     this.lower = next;
   }
+  private makeCut() {
+    const h = this.bones.Head; if (!h) return;
+    this.body.updateMatrixWorld(true);
+    const p = h.getWorldPosition(new THREE.Vector3()), k = this.body.scale.y;
+    const {gashTex, dripTex} = bloodTextures();
+    const mk = (map: THREE.Texture) => new THREE.MeshBasicMaterial({map, color: '#ffffff', transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4});
+    const mat = mk(gashTex), dripMat = mk(dripTex);
+    const g = new THREE.Group();
+    const gash = new THREE.Mesh(new THREE.PlaneGeometry(.026, .012), mat); gash.rotation.z = -.3;
+    // the drip hangs from the gash and runs down past the eye as the cut gets worse
+    const drip = new THREE.Mesh(new THREE.PlaneGeometry(.01, .05), dripMat); drip.geometry.translate(0, -.025, 0); drip.position.set(.003, -.002, -.0015);
+    drip.onBeforeRender = () => { dripMat.opacity = mat.opacity * .9; };
+    g.add(gash, drip);
+    // bind pose faces +Z: find the skin just above the left eyebrow by casting a ray back at the face
+    const at = new THREE.Vector3(p.x + CUT_AT.x * k, p.y + CUT_AT.y * k, p.z + CUT_AT.z * k);
+    const ray = new THREE.Raycaster(new THREE.Vector3(at.x, at.y, at.z + .4 * k), new THREE.Vector3(0, 0, -1), 0, .8 * k);
+    const skin: THREE.Object3D[] = []; this.body.traverse(o => { if ((o as THREE.Mesh).isMesh && o.visible) skin.push(o); });
+    const hit = ray.intersectObjects(skin, false).find(x => x.point.z > p.z);
+    if (hit) { at.copy(hit.point); at.z += .004 * k; }
+    this.cutAnchor = hit ? 'skin' : 'guess';
+    g.position.copy(at); g.scale.setScalar(k);
+    g.visible = false; h.attach(g);
+    this.cutFx = {g, mat, drip};
+  }
   sync(f: Fighter, opp: Fighter, dt: number) {
     const st = f.state;
     if (st === 'attack' && (this.lastState !== 'attack' || this.lastMove !== f.move || f.t < .02)) {
@@ -334,6 +421,7 @@ export class FighterRig {
     this.mixer.timeScale = st === 'top' ? 1.6 : 1;
     this.mixer.update(dt);
     this.flash = Math.max(0, this.flash - dt * 4);
+    if (this.cutFx) { const c = f.cut ?? 0; this.cutFx.g.visible = c > 1; this.cutFx.mat.opacity = THREE.MathUtils.clamp(.35 + c / 60, 0, .95); this.cutFx.drip.visible = c > 20; this.cutFx.drip.scale.y = THREE.MathUtils.clamp((c - 15) / 40, .2, 1.8); }
     // the damage shows: skin reddens and bruises as his ceiling drops; a hit flashes
     const worn = THREE.MathUtils.clamp((100 - f.cap) / 75, 0, 1);
     for (const m of this.skinMats) { m.emissive?.setRGB(this.flash * .5, this.flash * .05, this.flash * .05); m.color.setRGB(1, 1 - worn * .2, 1 - worn * .24); }
@@ -360,10 +448,16 @@ export class FightView {
   stadium: Stadium; private introAmt = 1;
   /** the referee: moves like a fighter (same rig and step loops) but is driven here, not by the engine */
   ref: FighterRig | null = null;
+  /** clinch, takedowns, ground positions and submissions: posed on top of the clips */
+  private grappler = new GrapplePoser();
   private refF = {state: 'idle', move: null, t: 0, x: 0, z: 0, hx: 0, hz: 1, cap: 100, rocked: 0, combo: 0, target: 'head'} as unknown as Fighter;
   debugCam = typeof location !== 'undefined' ? new URLSearchParams(location.search).get('fightcam') : null;
 
-  constructor(canvas: HTMLCanvasElement, g: LiveFight, assets: Assets) {
+  /** venue: 0 a basement club, 1 a mid-size arena, 2 the big show */
+  /** title fights: who carries a belt to the cage, and who gets one wrapped round him at the end */
+  beltPlan: BeltPlan = {title: false, held: [0, 0]};
+  constructor(canvas: HTMLCanvasElement, g: LiveFight, assets: Assets, venue = 2, belts?: BeltPlan) {
+    if (belts) this.beltPlan = belts;
     this.assets = assets;
     this.renderer = new THREE.WebGLRenderer({canvas, antialias: true, powerPreference: 'high-performance'});
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
@@ -372,7 +466,8 @@ export class FightView {
     const pm = new THREE.PMREMGenerator(this.renderer);
     this.scene.environment = pm.fromScene(new RoomEnvironment(), .04).texture; this.scene.environmentIntensity = .35;
     this.scene.background = new THREE.Color('#060a16');
-    this.scene.fog = new THREE.FogExp2('#081227', .014);   // light haze: the far stands stay visible
+    this.scene.fog = venue === 0 ? new THREE.FogExp2('#0d0a08', .03) : venue === 1 ? new THREE.FogExp2('#0a0f20', .018) : new THREE.FogExp2('#081227', .014);   // light haze: the far stands stay visible
+    if (venue === 0) this.scene.background = new THREE.Color('#050403');
 
     const arena = assets.arena.clone(true);
     arena.updateMatrixWorld(true);
@@ -391,12 +486,13 @@ export class FightView {
       if (mat && /seat|floor|apron/.test(mat.name)) mat.color.multiplyScalar(.6);
     });
     this.scene.add(arena);
-    this.buildLights();
+    this.buildLights(venue);
     const lowSpec = typeof navigator !== 'undefined' && ((navigator.hardwareConcurrency ?? 8) <= 4 || /Mobi|Android/i.test(navigator.userAgent));
-    this.stadium = new Stadium(this.scene, arena, assets.crowd, [g.f[0].name, g.f[1].name], lowSpec);
+    this.stadium = new Stadium(this.scene, arena, assets.crowd, [g.f[0].name, g.f[1].name], lowSpec, venue);
 
     this.rigs = [new FighterRig(assets.red, assets.looks?.[0], assets.dress?.[0]), new FighterRig(assets.blue, assets.looks?.[1], assets.dress?.[1])];
     this.rigs.forEach(r => this.scene.add(r.root));
+    this.rigs.forEach((r, i) => { try { r.wearBelts(assets.belts?.[i] ?? null); } catch { /* fight on without the belt */ } });
     if (assets.ref) {
       try { this.ref = new FighterRig(assets.ref, assets.refLook, assets.refDress); this.scene.add(this.ref.root); this.ref.root.position.set(0, PLAT, 0); }
       catch { this.ref = null; }
@@ -412,7 +508,7 @@ export class FightView {
     this.render(g, 0);
   }
 
-  private buildLights() {
+  private buildLights(venue: number) {
     const s = this.scene;
     s.add(new THREE.HemisphereLight('#9fb4ff', '#0d1018', .22));
     const target = new THREE.Object3D(); target.position.set(0, PLAT, 0); s.add(target);
@@ -431,7 +527,7 @@ export class FightView {
     const rimR = new THREE.PointLight('#ff3a55', 14, 18, 2); rimR.position.set(6, PLAT + 2.5, -4); s.add(rimR);
     const rimB = new THREE.PointLight('#2f6bff', 14, 18, 2); rimB.position.set(-6, PLAT + 2.5, -4); s.add(rimB);
     // house lights: red on one half of the bowl, blue on the other, like a big fight night
-    for (const [c, x] of [['#ff2a3c', 1], ['#2a5cff', -1]] as const) { const l = new THREE.PointLight(c, 260, 60, 1.9); l.position.set(x * 24, 14, 0); s.add(l); }
+    if (venue > 0) for (const [c, x] of [['#ff2a3c', 1], ['#2a5cff', -1]] as const) { const l = new THREE.PointLight(c, venue === 1 ? 90 : 260, 60, 1.9); l.position.set(x * 24, 14, 0); s.add(l); }
     s.add(new THREE.AmbientLight('#20263a', .12));
   }
 
@@ -551,12 +647,12 @@ export class FightView {
       const r = this.rigs[i];
       // on the ground the top fighter sits in close, hips between the bottom fighter's legs, chest over his chest
       const o = g.f[i === 0 ? 1 : 0];
-      const ground = f.state === 'top' && o.state === 'bottom';
-      const tx = ground ? (o.x - f.hx * .37) * X_SCALE : f.x * X_SCALE, tz = ground ? (o.z - f.hz * .37) * X_SCALE : f.z * X_SCALE;
+      const gp = grapplePlace(g, i as 0 | 1);
+      const tx = gp ? gp.x : f.x * X_SCALE, tz = gp ? gp.z : f.z * X_SCALE;
       const k = 1 - Math.exp(-25 * dt);
       r.root.position.x += (tx - r.root.position.x) * k; r.root.position.z += (tz - r.root.position.z) * k; r.root.position.y = PLAT;
       // model forward is +z: yaw toward the fighter's heading (shortest way round)
-      const yaw = Math.atan2(f.hx, f.hz);
+      const yaw = gp ? Math.atan2(gp.fx, gp.fz) : Math.atan2(f.hx, f.hz);
       let dy = yaw - r.root.rotation.y; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
       r.root.rotation.y += dy * (1 - Math.exp(-12 * dt));
       r.sync(f, o, dt);
@@ -565,6 +661,7 @@ export class FightView {
       const walk = g.round === 1 && g.phase === 'intro';
       for (const w of r.walkout) w.visible = walk;
     });
+    this.grappler.apply(g, this.rigs, dt);
     this.updateRef(g, dt);
     if (g.phase === 'fight' || g.phase === 'over') this.finale.record(this.time);
     for (const s of this.sparks) {
@@ -596,6 +693,10 @@ export class FightView {
     if (this.debugCam === 'board') { this.camera.position.set(3, PLAT + 6, 13); this.camera.lookAt(0, 17.5, 0); }
     else if (this.debugCam === 'board2') { this.camera.position.set(13, PLAT + 6, 3); this.camera.lookAt(0, 17.5, 0); }
     else if (this.debugCam === 'ribbon') { this.camera.position.set(0, PLAT + 3, 6); this.camera.lookAt(0, 10, -26); }
+    else if (this.debugCam?.startsWith('look')) {   // debug: ?fightcam=look:<deg>:<radius>:<height> circles the fighters themselves
+      const [, d = '0', r = '2.6', h = '1.2'] = this.debugCam.split(':'); const a = +d * Math.PI / 180;
+      this.camera.position.set(this.camX + Math.sin(a) * +r, PLAT + +h, this.camZ + Math.cos(a) * +r); this.camera.lookAt(this.camX, PLAT + .35, this.camZ);
+    }
     else if (this.debugCam?.startsWith('orbit')) {   // debug: ?fightcam=orbit:<deg>:<radius>:<height> looks at the cage from anywhere
       const [, d = '0', r = '30', h = '14'] = this.debugCam.split(':'); const a = +d * Math.PI / 180;
       this.camera.position.set(Math.sin(a) * +r, +h, Math.cos(a) * +r); this.camera.lookAt(0, PLAT + 2, 0);

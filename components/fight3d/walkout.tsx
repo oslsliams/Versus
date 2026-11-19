@@ -21,7 +21,7 @@ export function WalkoutHud({card, step, onSkip}: {card: FightCard; step: number;
   return <div className={`wo ${corner}`} role="region" aria-label={`Walkout: ${t.name}`}>
     <div key={step} className="wo-plate">
       <span className="wo-corner">Walking out of the {corner} corner</span>
-      <strong className="wo-name">{t.rank && <b className={`wo-rank ${t.rank === 'C' ? 'champ' : ''}`}>{t.rank === 'C' ? 'CHAMPION' : t.rank}</b>}{t.name}</strong>
+      <strong className="wo-name">{t.rank && <b className={`wo-rank ${t.rank === 'C' ? 'champ' : ''}`}>{t.rank === 'C' ? ((t.belts ?? 1) >= 2 ? 'DOUBLE CHAMPION' : 'CHAMPION') : t.rank}</b>}{t.name}</strong>
       {t.nickname && <span className="wo-nick">&ldquo;{t.nickname}&rdquo;</span>}
       <span className="wo-facts"><span>{t.record}</span><span>{divisionOf(t.weight)} · {parseFloat(t.weight)} lb</span>{t.country && <span>{t.country}</span>}</span>
     </div>

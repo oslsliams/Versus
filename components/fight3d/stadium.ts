@@ -42,10 +42,10 @@ export class Stadium {
   private hype = .25; private frame = 0; private scoreT = 0; private shotT = 0; private shot = 0;
   excitement = 0;
 
-  constructor(private scene: THREE.Scene, arena: THREE.Object3D, seats: number[] | null, private names: [string, string], lowSpec: boolean) {
+  constructor(private scene: THREE.Scene, arena: THREE.Object3D, seats: number[] | null, private names: [string, string], lowSpec: boolean, private venue = 2) {
     this.paintRibbon(this.ribbon, '#ffffff', '#0b0d14', 72); this.paintRibbon(this.ledFloor, '#e9f0ff', '#0a1430', 80);
     this.paintMonitor();
-    this.live = lowSpec ? null : new THREE.WebGLRenderTarget(512, 288, {colorSpace: THREE.SRGBColorSpace});
+    this.live = lowSpec || venue === 0 ? null : new THREE.WebGLRenderTarget(512, 288, {colorSpace: THREE.SRGBColorSpace});
     if (this.live) { this.live.texture.repeat.set(-1, -1); this.live.texture.offset.set(1, 1); }   // render targets are bottom-up
     // swap the named Blender materials for live ones
     arena.traverse(o => {
@@ -64,9 +64,34 @@ export class Stadium {
       else if (name === 'apron_led') m.material = new THREE.MeshBasicMaterial({vertexColors: true, toneMapped: false, color: new THREE.Color(.85, .85, .85)});
       else if (/^(lamp|lamp_blue|board_halo|tunnel_led|suite)$/.test(name)) { const mm = m.material as THREE.MeshStandardMaterial; mm.toneMapped = false; if (name === 'tunnel_led') mm.emissiveIntensity *= .35; if (name === 'board_halo') mm.emissiveIntensity *= .4; this.glow.push(mm); }
     });
+    if (venue < 2) this.buildRoom(arena);
     if (seats) this.buildCrowd(seats, lowSpec);
-    this.buildBeams(lowSpec ? 4 : 8);
+    this.buildBeams(venue === 0 ? 0 : venue === 1 ? 3 : lowSpec ? 4 : 8);
     this.paintScore(null);
+  }
+
+  /** smaller shows happen in smaller rooms: the big bowl is hidden and walls close in around the cage */
+  private buildRoom(arena: THREE.Object3D) {
+    const club = this.venue === 0;
+    const hide = club ? /^(j_bowl|j_seat_red|suites|j_ribbon|j_truss|j_wall|roof|j_lamp|j_lamp_blue|board_|led_floor_ring|j_tunnel_led)/ : /^(suites|j_truss|j_wall|roof)/;
+    arena.traverse(o => { if ((o as THREE.Mesh).isMesh && hide.test(o.name)) o.visible = false; });
+    const R = club ? 15.5 : 31, H = club ? 6.5 : 19, wall = canvasTex(2048, 512), {c, ctx} = wall;
+    ctx.fillStyle = club ? '#2a1712' : '#0b1020'; ctx.fillRect(0, 0, c.width, c.height);
+    if (club) {   // painted brick, stained by years of damp
+      for (let y = 0; y < c.height; y += 34) for (let x = (y / 34) % 2 ? -46 : 0; x < c.width; x += 92) { ctx.fillStyle = `hsl(${12 + Math.random() * 10} 34% ${9 + Math.random() * 8}%)`; ctx.fillRect(x + 2, y + 2, 88, 30); }
+    } else for (let x = 0; x < c.width; x += 26) { ctx.fillStyle = x % 52 ? '#0e1529' : '#0a0f1f'; ctx.fillRect(x, 0, 26, c.height); }   // heavy black drapes
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `900 ${club ? 70 : 84}px system-ui`;
+    const name = club ? 'BASEMENT BRAWL LEAGUE' : 'NEON CONTENDER SERIES';
+    for (let i = 0; i < 2; i++) { const x = c.width * (.25 + i * .5); ctx.fillStyle = club ? '#7d1d1d' : '#30215f'; ctx.fillRect(x - 470, 112, 940, 140); ctx.fillStyle = club ? '#f0d9a8' : '#c6f04d'; ctx.fillText(name, x, 184); }
+    wall.t.wrapS = THREE.RepeatWrapping; wall.t.flipY = true; wall.t.repeat.x = -3; wall.t.needsUpdate = true;
+    const shell = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H, 48, 1, true), new THREE.MeshLambertMaterial({map: wall.t, side: THREE.BackSide}));
+    shell.position.y = H / 2; this.scene.add(shell);
+    const lid = new THREE.Mesh(new THREE.CircleGeometry(R, 48), new THREE.MeshLambertMaterial({color: club ? '#0d0a09' : '#060810'})); lid.rotation.x = Math.PI / 2; lid.position.y = H; this.scene.add(lid);
+    if (club) {   // bare bulbs on a cable over the cage
+      const bulb = new THREE.MeshBasicMaterial({color: '#ffd9a0', toneMapped: false}), geo = new THREE.SphereGeometry(.09, 10, 8);
+      for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2, r = 8.5 + (i % 2) * 2.5, m = new THREE.Mesh(geo, bulb); m.position.set(Math.cos(a) * r, H - .85, Math.sin(a) * r); this.scene.add(m); }
+      const glow = new THREE.PointLight('#ffb36b', 7, 20, 1.6); glow.position.set(0, H - 1, 0); this.scene.add(glow);
+    }
   }
 
   private paintRibbon({c, ctx, t}: ReturnType<typeof canvasTex>, fg: string, bg: string, size: number) {
@@ -116,6 +141,8 @@ export class Stadium {
   }
 
   private buildCrowd(seats: number[], lowSpec: boolean) {
+    // a small show only fills the seats near the cage
+    if (this.venue < 2) { const keep: number[] = [], lim = this.venue === 0 ? 14.2 : 29; for (let i = 0; i < seats.length; i += 5) if (Math.hypot(seats[i], seats[i + 2]) < lim) keep.push(seats[i], seats[i + 1], seats[i + 2], seats[i + 3], seats[i + 4]); seats = keep; }
     const stride = 5, total = seats.length / stride;
     const step = lowSpec ? 2 : 1, n = Math.floor(total / step);
     const geo = fanGeometry();
