@@ -744,7 +744,7 @@ function grapple(g: LiveFight, inputs: [Input, Input], pressed: [Input, Input], 
     S.t += dt; S.boost[0] = Math.max(0, S.boost[0] - dt * 1.6); S.boost[1] = Math.max(0, S.boost[1] - dt * 1.6);
     const bars = subBars(g, S); S.aw = bars.aw; S.dw = bars.dw;
     const a = g.f[S.by], d = g.f[S.by ? 0 : 1];
-    const speed = (f: Fighter, base: number) => base * (.72 + f.stats.grappling / 220) * (.5 + .5 * f.stamina / 100);
+    const speed = (f: Fighter, base: number) => base * (.72 + f.stats.grappling / 220) * (f === d ? .72 + .28 * f.stamina / 100 : .5 + .5 * f.stamina / 100);
     for (const f of [a, d]) {
       const inp = inputs[f.side], prs = pressed[f.side];
       const dir = (inp.right || inp.up ? 1 : 0) - (inp.left || inp.down ? 1 : 0);
@@ -759,7 +759,7 @@ function grapple(g: LiveFight, inputs: [Input, Input], pressed: [Input, Input], 
     S.lock += dt * o * (SUBT.lock + (SUB_BITE[S.name] ?? 0) * .6) * (S.choke ? 1.15 : .8);   // chokes finish more fights than joint locks
     S.esc += dt * (1 - o) * SUBT.esc * (.75 + d.stats.grappling / 250);
     a.stamina = Math.max(0, a.stamina - dt * 2.2);
-    d.stamina = Math.max(0, d.stamina - dt * (S.choke ? 1 + o * 7 : 1 + o * 2));
+    d.stamina = Math.max(0, d.stamina - dt * (S.choke ? 1 + o * 4 : 1 + o * 2));
     if (S.choke && o > .5) d.hp -= dt * 2.5;
     if (S.lock >= 1) return endSub(g, true);
     if (S.esc >= 1) return endSub(g, false);

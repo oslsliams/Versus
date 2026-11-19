@@ -227,6 +227,14 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
           for (const k of ['', '2', '3'] as const) { const off = k === '2' ? 1 : k === '3' ? -1 : 0; put(h['ga' + k], S.a + off, S.aw); put(h['gd' + k], S.d + off, S.dw); }
           const lk = h.glock; if (lk) lk.style.width = `${Math.min(100, S.lock * 100)}%`;
           const es = h.gesc; if (es) es.style.width = `${Math.min(100, S.esc * 100)}%`;
+          const gd = h.gdir; if (gd) {
+            const mine = S.by === 0, from = mine ? S.a : S.d, to = mine ? S.d : S.a, w = mine ? S.aw : S.dw;
+            let diff = to - from; if (S.choke) diff = ((diff + 1.5) % 1) - .5;
+            let go = mine ? Math.sign(diff) : -Math.sign(diff || 1);
+            if (!mine && !S.choke && ((go < 0 && from - w / 2 < .03) || (go > 0 && from + w / 2 > .97))) go = -go;   // pinned at the end: dart past him
+            const txt = mine && Math.abs(diff) < .02 ? 'HOLD' : go < 0 ? `◀ A ${mine ? 'CHASE' : 'RUN'}` : `${mine ? 'CHASE' : 'RUN'} D ▶`;
+            if (gd.textContent !== txt) gd.textContent = txt;
+          }
         }
       }
       const key = JSON.stringify(view); if (key !== gkey) { gkey = key; setGv(view); }
@@ -418,13 +426,13 @@ function GrappleGuide({v, hud}: {v: GView; hud: React.MutableRefObject<Record<st
   const r = (k: string) => (el: HTMLElement | null) => { hud.current[k] = el; };
   const role = v.role === 'top' ? 'On top' : v.role === 'bottom' ? 'Underneath' : v.role === 'clinch' ? 'Tied up' : 'Shot';
   if (v.sub) return <div className={`lf-grap sub ${v.sub.mine ? 'att' : 'def'}`} role="status">
-    <header><b>{v.sub.name}</b><span>{v.sub.mine ? 'Chase his bar' : 'Get out!'}</span></header>
+    <header><b>{v.sub.name}</b><span>{v.sub.mine ? 'Chase his bar' : 'Get out!'}</span><em className="lf-gdir" ref={r('gdir')}/></header>
     <div className={`lf-track ${v.sub.choke ? 'loop' : ''}`} aria-hidden="true">
-      {['', '2', '3'].map(k => <i key={'d' + k} className="lf-bar them" ref={r('gd' + k)}/>)}
-      {['', '2', '3'].map(k => <i key={'a' + k} className="lf-bar us" ref={r('ga' + k)}/>)}
+      {['', '2', '3'].map(k => <i key={'d' + k} className={`lf-bar ${v.sub!.mine ? 'his' : 'mine'}${k ? '' : ' tag'}`} ref={r('gd' + k)}/>)}
+      {['', '2', '3'].map(k => <i key={'a' + k} className={`lf-bar ${v.sub!.mine ? 'mine' : 'his'}${k ? '' : ' tag'}`} ref={r('ga' + k)}/>)}
     </div>
     <div className="lf-gmeters"><span><b>Submit</b><u><i ref={r('glock')}/></u></span><span><b>Escape</b><u><i className="esc" ref={r('gesc')}/></u></span></div>
-    <p>{v.sub.mine ? <><kbd>A</kbd><kbd>D</kbd> move your red bar over his blue one · <kbd>J</kbd> strike to widen it</> : <><kbd>A</kbd><kbd>D</kbd> keep your blue bar away from his red one · <kbd>J</kbd> fight his hands</>}{v.sub.choke ? ' · a choke goes all the way round' : ''}</p>
+    <p>{v.sub.mine ? <><kbd>A</kbd><kbd>D</kbd> move your red bar (YOU) onto his blue one · <kbd>J</kbd> strike to widen it</> : <><kbd>A</kbd><kbd>D</kbd> keep your red bar (YOU) away from his blue one · follow the arrow · <kbd>J</kbd> fight his hands</>}{v.sub.choke ? ' · a choke goes all the way round' : ''}</p>
   </div>;
   if (v.read) return <div className="lf-grap read" role="status">
     <header><b>{v.read.label ? `He's going for: ${v.read.label}` : 'He\'s moving. Read it!'}</b><span>{v.pos}</span></header>

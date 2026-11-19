@@ -291,7 +291,11 @@ html.lf-lock,html.lf-lock body{overflow:hidden}
 .lf-track.loop{border-radius:6px;background:repeating-linear-gradient(90deg,#ffffff10 0 10px,#ffffff1a 10px 20px)}
 .lf-bar{position:absolute;top:4px;bottom:4px;border-radius:11px;will-change:left,width}
 .lf-bar.them{background:#3a7bff;box-shadow:0 0 12px #3a7bffaa}.lf-bar.us{background:#ff3347b0;box-shadow:0 0 14px #ff3347;top:2px;bottom:2px;mix-blend-mode:screen}
-.lf-grap.def .lf-bar.them{background:#ff3347b0;box-shadow:0 0 14px #ff3347}.lf-grap.def .lf-bar.us{background:#3a7bff;box-shadow:0 0 12px #3a7bffaa}
+.lf-bar.his{background:#3a7bff;box-shadow:0 0 12px #3a7bffaa}
+.lf-bar.mine{background:#ff3347c8;box-shadow:0 0 14px #ff3347;top:2px;bottom:2px;mix-blend-mode:screen;z-index:2}
+.lf-bar.mine.tag::after{content:'YOU';position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:10px;font-weight:900;letter-spacing:.08em}
+.lf-gdir{margin-left:auto;padding:2px 8px;border-radius:8px;background:#ffffff1f;font-style:normal;font-weight:900;font-size:12px;letter-spacing:.04em}
+.lf-grap.def .lf-gdir{background:#ff3347;color:#fff}
 .lf-gmeters{display:grid;grid-template-columns:1fr 1fr;gap:10px}.lf-gmeters span{display:grid;gap:3px}.lf-gmeters b{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#aeb4c4}
 .lf-gmeters i{background:#ff3347}.lf-gmeters i.esc{background:#3a7bff}
 @media (max-width:760px){.lf-grap{bottom:auto;top:clamp(150px,24vh,200px);padding:8px 10px}.lf-grap ul{grid-template-columns:1fr 1fr}.lf-dirs kbd{min-width:40px;height:40px}}
