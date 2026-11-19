@@ -1,6 +1,6 @@
 'use client';
 // VERSUS career mode: create a fighter, run their weeks, take fights, climb to a belt.
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {Fragment, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Dumbbell, Swords, BedDouble, Megaphone, Crown, Flame, HeartPulse, Zap, Wallet, ChevronRight, RotateCcw, Shield, X, Check, Film, Activity, Users, Smartphone, Shirt, Stethoscope, Trophy, UserRound, Share2, Target, FileSignature} from 'lucide-react';
 import {
   ACTIONS, BACKSTORIES, CAMP_LEVELS, COACHES, DIVISIONS, FIGHTER_COLORS, GYMS, START_COUNTRIES, STAT_KEYS, STAT_LABEL, STYLES, TIERS,
@@ -320,6 +320,8 @@ function Hub({career: c, update, startFightNight}: {career: Career; update: (c: 
 
             {!fightWeek && <section className="panel cg-week">
               <div className="section-heading"><h2>This week</h2><span className="muted">{yearWeek(c.week)}</span></div>
+              {c.energy < 30 && !injured && <p className="cg-warn" role="alert">Energy {Math.round(c.energy)}: you're exhausted. Training or sparring now carries a real injury risk{c.camp ? ', and an injury can cost you the fight' : ''}. Rest first.</p>}
+              {c.week < (c.noSparUntil ?? 0) && <p className="cg-warn">Doctor's orders after the knockout: no sparring for {(c.noSparUntil ?? 0) - c.week} more week{(c.noSparUntil ?? 0) - c.week === 1 ? '' : 's'}.</p>}
               <div className="cg-actions">
                 <div className={`cg-action train ${injured ? 'off' : ''}`}>
                   <Dumbbell size={22} aria-hidden="true"/><strong>{ACTIONS.train.label}</strong><small>{ACTIONS.train.blurb}</small>
@@ -332,7 +334,6 @@ function Hub({career: c, update, startFightNight}: {career: Career; update: (c: 
                 <ActionCard icon={<Megaphone size={22}/>} k="promote" onClick={() => act({type: 'promote'})}/>
                 <ActionCard icon={<Film size={22}/>} k="tape" onClick={() => act({type: 'tape'})}/>
               </div>
-              {c.energy < 30 && <p className="cg-warn">You're running on fumes. Training tired is slow and gets people hurt.</p>}
             </section>}
 
             {!c.camp && <section className="panel cg-offers">
@@ -500,8 +501,11 @@ function YearTargets({c}: {c: Career}) {
 function Rankings({c, update}: {c: Career; update: (c: Career | null) => void}) {
   if (c.tier < 2) {
     const list = [...c.roster.filter(n => n.tier === c.tier)].sort((a, b) => (b.record[0] - b.record[1]) - (a.record[0] - a.record[1])).slice(0, 8);
+    const myPlace = list.filter(n => n.record[0] - n.record[1] > c.record[0] - c.record[1]).length;   // where you'd slot in (you show up only inside the top 8)
     return <section className="panel cg-rank"><h2>{TIERS[c.tier].short} standouts</h2><p className="muted">Win {c.tier === 0 ? 3 : 2} here with some hype to get called up. {c.tierWins} so far.</p>
-      <ol>{list.map(n => <li key={n.id}><Avatar name={n.name} color={n.color} size="sm"/><span>{n.name}{(n.streak ?? 0) >= 3 && <em className="cg-hot" title={`${n.streak} wins in a row`}>W{n.streak}</em>}</span><small><CallOutButton c={c} id={n.id} update={update}/>{n.record.join('–')}</small></li>)}</ol></section>;
+      <ol>{list.map((n, i) => <Fragment key={n.id}><li><Avatar name={n.name} color={n.color} size="sm"/><span>{n.name}{(n.streak ?? 0) >= 3 && <em className="cg-hot" title={`${n.streak} wins in a row`}>W{n.streak}</em>}</span><small><CallOutButton c={c} id={n.id} update={update}/>{n.record.join('–')}</small></li>
+        {i === myPlace - 1 && <li className="you"><Avatar name={c.name} color={c.color} size="sm"/><span>{c.name} (you)</span><small>{c.record.join('–')}</small></li>}</Fragment>)}
+        {myPlace === 0 && <li key="you" className="you"><Avatar name={c.name} color={c.color} size="sm"/><span>{c.name} (you)</span><small>{c.record.join('–')}</small></li>}</ol></section>;
   }
   const champ = c.champion === 'you' ? null : npc(c, c.champion!);
   return <section className="panel cg-rank"><h2>{c.division} rankings</h2>

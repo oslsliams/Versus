@@ -11,7 +11,7 @@ import type {Beat, Line, Scene} from './story';
 /* ------------------------------------------------------------------ state */
 export type CareerStats = {fights: number; landed: number; thrown: number; takedowns: number; kdFor: number; kdAgainst: number; ctrl: number; cutsOpened: number; firstRoundFinishes: number; comebacks: number};
 export type Extras = {ach?: Record<string, number>; sig?: string; sigFrom?: string; stats?: CareerStats; trip?: {id: string; left: number}; callWeek?: number;
-  rumorWeek?: number; oddsCamp?: string; rustCamp?: string; records?: string[]; hof?: boolean; month?: number};
+  rumorWeek?: number; declined?: number; oddsCamp?: string; rustCamp?: string; records?: string[]; hof?: boolean; month?: number};
 const X = (c: Career): Extras => (c.extra ??= {});
 const pick = <T,>(r: () => number, xs: T[]) => xs[Math.floor(r() * xs.length)];
 const log = (c: Career, text: string, tone?: 'good' | 'bad' | 'big') => c.log.unshift({week: c.week, text, tone});
@@ -74,7 +74,8 @@ export function extrasWeek(c: Career, r: () => number) {
   if (!c.camp && !c.offers.length && c.week >= (x.rumorWeek ?? 0) && r() < .35) {
     const pool = c.roster.filter(n => n.tier === c.tier && n.id !== c.champion);
     const n = pool[Math.floor(r() * pool.length)];
-    if (n) { post(c, REPORTER, pick(r, RUMORS).replace('{n}', n.name).replace('{you}', c.name), 600 + c.hype * 30); x.rumorWeek = c.week + 3; }
+    const pool2 = c.week - (x.declined ?? -99) <= 2 ? RUMORS : RUMORS.filter(t => !t.includes('turned down'));
+    if (n) { post(c, REPORTER, pick(r, pool2).replace('{n}', n.name).replace('{you}', c.name), 600 + c.hype * 30); x.rumorWeek = c.week + 3; }
   }
   // fight week: the betting line moves
   const camp = c.camp;
@@ -209,7 +210,7 @@ const P = (c: Career, k: 'coach' | 'manager' | 'brother' | 'friend' | 'partner')
 const NICKS: Record<string, string[]> = {Striker: ['The Hammer', 'Lights Out', 'Sniper', 'Dynamite'], Wrestler: ['The Bulldozer', 'Anchor', 'Iron Lung', 'The Vise'], Grappler: ['The Python', 'Snake', 'Professor', 'Silk'], 'All-rounder': ['The Problem', 'Swiss Army', 'Chess', 'No Holes']};
 export const EXTRA_BEATS: Beat[] = [
   /* the fans and the internet */
-  {id: 'x-fan-nickname', arc: 'x-fans', from: 'manager', when: c => !c.nickname && c.finishes.ko + c.finishes.sub >= 2 && c.hype >= 18, build: (c, r) => { const n = pick(r, NICKS[c.style] ?? NICKS['All-rounder']); return {title: 'The fans picked a name', text: `"Everyone online is calling you '${n}'. It's on signs, it's on shirts. Do we run with it?"`, options: [
+  {id: 'x-fan-nickname', arc: 'x-fans', from: 'manager', when: c => !c.nickname && c.finishes.ko + c.finishes.sub >= 2 && c.hype >= 18, build: c => { const list = NICKS[c.style] ?? NICKS['All-rounder'], n = list[(c.seed + c.record[0]) % list.length]; return {title: 'The fans picked a name', text: `"Everyone online is calling you '${n}'. It's on signs, it's on shirts. Do we run with it?"`, options: [
     {id: 'yes', label: `Become "${n}"`, hint: 'It goes on the posters.', eff: {hype: 5, followers: 3000, flag: 'nick:' + n, text: `"${n}" ${c.name}. It sticks.`, tone: 'good'}},
     {id: 'no', label: 'Keep your own name', hint: 'No nickname for now.', eff: {hype: -1, text: 'You tell the fans you\'d rather be known by your name. Some respect it.'}}]}; }},
   {id: 'x-viral-walkout', arc: 'x-fans', from: 'friend', again: 200, when: c => c.record[0] >= 3 && c.hype >= 25, build: c => ({title: 'Your walkout went viral', text: `${P(c, 'friend')}: "Someone cut your walkout to a song and it's got four million views. People want you to dance next time."`, options: [
@@ -225,7 +226,7 @@ export const EXTRA_BEATS: Beat[] = [
     {id: 'reply', label: 'Write back by hand', hint: 'Costs an evening.', eff: {energy: -4, hype: 3, health: 3, text: 'You write two pages and send a signed glove. You feel better than after most wins.', tone: 'good'}},
     {id: 'video', label: 'Send a quick video', hint: 'Easy and kind.', eff: {hype: 2, text: 'A thirty-second video. His mum says he watches it every morning.'}}]})},
   {id: 'x-merch', arc: 'x-money', from: 'manager', when: c => c.hype >= 35 && c.tier >= 1, build: c => ({title: 'Your own merch line', text: `${P(c, 'manager')}: "Hoodies, caps, your logo. We put up the money, we keep a cut of everything."`, options: [
-    {id: 'yes', label: 'Launch it', hint: 'Costs money now, pays over time.', roll: .65, win: {money: Math.round(3000 + c.tier * 9000), hype: 3, text: 'It sells out in a weekend.', tone: 'good'}, lose: {money: -1500 * (c.tier + 1), text: 'Boxes of unsold hoodies in your garage.', tone: 'bad'}},
+    {id: 'yes', label: 'Launch it', hint: 'Costs money now, pays over time.', roll: .65, win: {money: [1200, 4000, 9000][c.tier], hype: 3, text: 'The first run sells out. Small, steady cheques after that.', tone: 'good'}, lose: {money: -[800, 2500, 6000][c.tier], text: 'Boxes of unsold hoodies in your garage.', tone: 'bad'}},
     {id: 'no', label: 'Not yet', hint: 'Win more first.', eff: {text: 'You decide the record should do the talking first.'}}]})},
   {id: 'x-cooking-show', arc: 'x-media', from: 'manager', when: c => c.hype >= 30 && !c.camp, build: c => ({title: 'A cooking show', text: `${P(c, 'manager')}: "Daytime TV. You make your fight-week meal, they ask about your mum. Easy money."`, options: [
     {id: 'yes', label: 'Do the show', hint: '+money, +hype, a lost day.', eff: {money: 800 * (c.tier + 1), hype: 4, energy: -6, text: 'You burn the rice live on air. People love you more for it.', tone: 'good'}},
