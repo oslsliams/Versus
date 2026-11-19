@@ -53,7 +53,9 @@ const SHOOT = {start: .26, active: .16, rec: .45, range: 1.4, cost: 12};
 export const ROUND_SECONDS = 90;
 /** player fight settings (set before a fight starts): stamina drain, health regeneration between exchanges,
  *  doctor stoppages, round length, and multipliers on damage and cuts (applied over the tuned defaults) */
-export const FX = {stamina: 1, regen: true, doctor: true, roundSec: ROUND_SECONDS, damage: 1, cuts: 1};
+export const FX = {stamina: 1, regen: true, doctor: true, roundSec: ROUND_SECONDS, damage: 1, cuts: 1, human: -1 as 0 | 1 | -1};
+/** caught in a submission as the human player: the AI's lock fills 20% slower and your escape 20% faster */
+export const SUB_ASSIST = .2;
 const KO_BASE = {dmg: .86}, CUT_BASE = {base: .006, sharp: .026};
 export function applyFX(k: Partial<typeof FX>) { Object.assign(FX, k); KO.dmg = KO_BASE.dmg * FX.damage; CUT.base = CUT_BASE.base * FX.cuts; CUT.sharp = CUT_BASE.sharp * FX.cuts; }
 export const CAGE_R = 4.2;          // usable floor radius (engine metres)
@@ -756,8 +758,9 @@ function grapple(g: LiveFight, inputs: [Input, Input], pressed: [Input, Input], 
     if (S.choke) { S.a = ((S.a % 1) + 1) % 1; S.d = ((S.d % 1) + 1) % 1; }
     else { S.a = clamp01(S.a, S.aw / 2, 1 - S.aw / 2); S.d = clamp01(S.d, S.dw / 2, 1 - S.dw / 2); }
     const o = subOverlap(S);
-    S.lock += dt * o * (SUBT.lock + (SUB_BITE[S.name] ?? 0) * .6) * (S.choke ? 1.15 : .8);   // chokes finish more fights than joint locks
-    S.esc += dt * (1 - o) * SUBT.esc * (.75 + d.stats.grappling / 250);
+    const assist = d.side === FX.human ? SUB_ASSIST : 0;
+    S.lock += dt * o * (SUBT.lock + (SUB_BITE[S.name] ?? 0) * .6) * (S.choke ? 1.15 : .8) * (1 - assist);   // chokes finish more fights than joint locks
+    S.esc += dt * (1 - o) * SUBT.esc * (.75 + d.stats.grappling / 250) * (1 + assist);
     a.stamina = Math.max(0, a.stamina - dt * 2.2);
     d.stamina = Math.max(0, d.stamina - dt * (S.choke ? 1 + o * 4 : 1 + o * 2));
     if (S.choke && o > .5) d.hp -= dt * 2.5;

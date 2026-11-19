@@ -5,7 +5,7 @@ import {WalkoutHud, walkOrder} from './walkout';
 import {Pause, Play, FastForward, Maximize, Minimize, X} from 'lucide-react';
 import type {Stats, Style} from '../../lib/career/engine';
 import {applyFightSettings, loadFightSettings} from './fight-settings';
-import {DT, GOPTS, GPOS_LABEL, NO_INPUT, aiInput, createFight, damageTaken, grappleOptions, grappleSubs, makeBrain, step, type GDir, type Input, type LiveFight as Fight} from '../../lib/fight3d/engine';
+import {DT, GOPTS, GPOS_LABEL, NO_INPUT, aiInput, applyFX, createFight, damageTaken, grappleOptions, grappleSubs, makeBrain, step, type GDir, type Input, type LiveFight as Fight} from '../../lib/fight3d/engine';
 import type {FightView} from './fight-view';
 import {pairModels, tape as makeTape, withModels, FIGHTER_MODELS, type FightCard, type FighterModel, type Tape} from '../../lib/fight3d/tape';
 import {Commentator, VOICES, announce, cornerAdvice, verdict, type Line} from '../../lib/fight3d/commentary';
@@ -90,6 +90,7 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
   useEffect(() => {
     let view: FightView | null = null, raf = 0, last = performance.now(), acc = 0, alive = true, slowFrames = 0, degraded = false;
     applyFightSettings(fsRef.current);
+    applyFX({human: watch ? -1 : 0});   // the player is the red corner (AI-vs-AI watch mode has no human)
     const g: Fight = createFight(you, opp, rounds);
     const brain = makeBrain(difficulty), autoBrain = makeBrain(.6);
     const caller = new Commentator([you.name, opp.name]);
