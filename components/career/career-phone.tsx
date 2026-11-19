@@ -3,9 +3,9 @@
 // Messages (decisions from your coach, manager, family and rivals), Feed, News, Your story, Bank and Settings.
 // Docked beside the hub on wide screens; on phones and tablets it slides up from the floating phone button.
 import {useEffect, useRef, useState} from 'react';
-import {AtSign, BookOpen, ChevronLeft, Contact, Flag, Landmark, MessageCircle, Newspaper, RotateCcw, Settings, Users, X} from 'lucide-react';
+import {AtSign, BookOpen, ChevronLeft, Contact, Dumbbell, Flag, Landmark, MessageCircle, Newspaper, RotateCcw, Settings, Users, X} from 'lucide-react';
 import {MuteButton} from '../fight3d/mute-button';
-import {COACHES, LIVING, npc, resolveChoice, retire, weeklyCost, type Career, type CastKey, type CoachKey} from '../../lib/career/engine';
+import {COACHES, LIVING, npc, resolveChoice, retire, setSkipDrills, weeklyCost, type Career, type CastKey, type CoachKey} from '../../lib/career/engine';
 
 export const money = (n: number) => (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString();
 export const yearWeek = (w: number) => `Year ${Math.floor((w - 1) / 52) + 1} · Week ${((w - 1) % 52) + 1}`;
@@ -109,6 +109,8 @@ export function CareerPhone({c, update, app, setApp, open, onClose, onTeam}: {c:
               </div> : <>
                 <p className="cp-empty">Your career saves on this device.</p>
                 <MuteButton label className="button outline"/>
+                <button type="button" className="button outline" role="switch" aria-checked={!!c.skipDrills} onClick={() => update(setSkipDrills(c, !c.skipDrills))}><Dumbbell size={16} aria-hidden="true"/>Skip training drills: {c.skipDrills ? 'On' : 'Off'}</button>
+                <p className="cp-hint">{c.skipDrills ? 'Training and sparring go straight through, but every session gives half the gains.' : 'Play a short drill each training week. A great one is worth about twice a poor one.'}</p>
                 <button type="button" className="button outline" onClick={() => setConfirm('retire')}><Flag size={16} aria-hidden="true"/>Retire</button>
                 <button type="button" className="button outline" onClick={() => setConfirm('new')}><RotateCcw size={16} aria-hidden="true"/>New career</button>
               </>}

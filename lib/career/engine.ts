@@ -54,6 +54,8 @@ export type Career = {
   week: number; age: number; energy: number; health: number; injuryWeeks: number; hype: number; money: number;
   /** a cut from the last fight (0-100): it heals week by week, sparring can split it open, and it opens easier on fight night */
   cut?: number;
+  /** settings: skip the training drills (quick sessions, half the gains) */
+  skipDrills?: boolean;
   /** the rankings as they stood at the last power rankings (for the up / down arrows) */
   lastRanks?: string[];
   /** this year's targets, checked at the awards on your birthday */
@@ -171,7 +173,8 @@ function startDebut(c: Career, r: () => number) {
 
 /* -------------------------------------------------------------- weekly */
 /** quality: how well the drill went (0..1); left out when the drill is skipped */
-export type Action = {type: 'train'; focus: StatKey; quality?: number} | {type: 'spar'; quality?: number} | {type: 'rest'} | {type: 'promote'} | {type: 'tape'};
+/** quality: how the played drill went (0-1); skipped: the drill was skipped, a quick session worth half */
+export type Action = {type: 'train'; focus: StatKey; quality?: number; skipped?: boolean} | {type: 'spar'; quality?: number; skipped?: boolean} | {type: 'rest'} | {type: 'promote'} | {type: 'tape'};
 export const ACTIONS = {
   train: {label: 'Train', energy: -18, blurb: 'Big gains in one stat. Builds fight fitness in camp. Tiring.'},
   spar: {label: 'Spar', energy: -12, blurb: 'Small gains in a few stats, builds fitness. Small knock risk.'},
@@ -249,18 +252,18 @@ export function takeAction(prev: Career, a: Action): Career {
     return advanceWeek(c, r);
   }
   if (a.type === 'train') {
-    const session = a.quality == null ? 1 : .65 + a.quality * .85;   // a played drill: a great one is worth about twice a poor one
+    const session = a.skipped ? .5 : a.quality == null ? 1 : .65 + a.quality * .85;   // a played drill: a great one is worth about twice a poor one; a skipped one, half
     const g = gain(c, a.focus, (1 + r()) * (tired ? .5 : 1) * session);
     if ((a.quality ?? 0) >= .85) { c.fitness = Math.min(100, (c.fitness ?? 55) + 2); c.log.unshift({week: c.week, text: 'A perfect session. Everyone in the gym stopped to watch.', tone: 'good'}); }
     if (a.focus === 'cardio') c.stats.cardio = clamp(c.stats.cardio);
-    c.log.unshift({week: c.week, text: `Hard week on ${STAT_LABEL[a.focus].toLowerCase()} (+${g.toFixed(1)}).`});
+    c.log.unshift({week: c.week, text: `${a.skipped ? 'Quick week' : 'Hard week'} on ${STAT_LABEL[a.focus].toLowerCase()} (+${g.toFixed(1)}${a.skipped ? ', drill skipped' : ''}).`});
     c.energy = Math.max(0, c.energy + ACTIONS.train.energy);
     injuryRoll(c, r, tired ? .12 : .025);
   } else if (a.type === 'spar') {
     const ks = [pick(r, STAT_KEYS), pick(r, STAT_KEYS), 'iq' as StatKey];
-    const session = a.quality == null ? 1 : .65 + a.quality * .85;
+    const session = a.skipped ? .5 : a.quality == null ? 1 : .65 + a.quality * .85;
     const gs = ks.map(k => `${STAT_LABEL[k]} +${gain(c, k, (.7 + r() * .7) * session).toFixed(1)}`);
-    c.log.unshift({week: c.week, text: `Sparring rounds: ${[...new Set(gs)].join(', ')}.`});
+    c.log.unshift({week: c.week, text: `${a.skipped ? 'Light sparring' : 'Sparring rounds'}: ${[...new Set(gs)].join(', ')}.`});
     c.energy = Math.max(0, c.energy + ACTIONS.spar.energy);
     injuryRoll(c, r, tired ? .06 : .015, true);   // controlled rounds: knocks are rare and short
     if ((c.cut ?? 0) >= 12 && r() < .25 + (c.cut ?? 0) / 120) { c.cut = Math.min(70, (c.cut ?? 0) + 22); c.log.unshift({week: c.week, text: `The cut over your eye splits open in sparring. ${c.cast?.coach.short ?? 'Your coach'} stops the round. It's at ${Math.round(c.cut)}% now.`, tone: 'bad'}); }
@@ -399,6 +402,8 @@ function newTargets(c: Career): YearTarget[] {
 }
 const KO_NAMES = ['Head kick', 'Counter left hook', 'Spinning elbow', 'Flying knee', 'Right hand', 'Uppercut'];
 const SUB_NAMES = ['Rear-naked choke', 'Armbar', 'Triangle', 'Guillotine', 'Kimura', "D'Arce choke"];
+/** settings: turn the training drills off (every session then counts as skipped, half the gains) */
+export function setSkipDrills(prev: Career, on: boolean): Career { const c: Career = migrate(structuredClone(prev)); c.skipDrills = on; return c; }
 /** this year's targets and whether they are done yet (for the hub) */
 export function targetProgress(c: Career) { const start = Math.floor(c.week / 52) * 52; const fights = c.history.filter(h => h.week > start); return (c.targets ?? []).map(t => ({label: t.label, done: targetDone(c, t, fights)})); }
 /** your birthday doubles as awards night: the year's best, your best moments, last year's targets and next year's */

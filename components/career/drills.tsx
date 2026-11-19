@@ -1,6 +1,6 @@
 'use client';
 // Training you actually play: three short drills that decide how much a week in the gym is worth.
-// Every drill can be skipped for a normal, average session.
+// Every drill can be skipped: a quick session worth half the gains (and the drills can be switched off in Settings).
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import type {StatKey} from '../../lib/career/engine';
@@ -16,7 +16,8 @@ const INFO: Record<DrillKind, {title: string; how: string; reps: number}> = {
 const CALLS = [{key: 'ArrowLeft', label: 'Slip left', mark: '◀'}, {key: 'ArrowUp', label: 'Sprawl', mark: '▲'}, {key: 'ArrowRight', label: 'Slip right', mark: '▶'}];
 const grade = (q: number) => q >= .85 ? 'Perfect session' : q >= .65 ? 'Sharp session' : q >= .4 ? 'Solid session' : 'Rough session';
 
-export function Drill({kind, label, onDone}: {kind: DrillKind; label: string; onDone: (quality: number | undefined) => void}) {
+/** onDone(undefined) means the drill was skipped; onAlwaysSkip switches drills off for good (Settings turns them back on) */
+export function Drill({kind, label, onDone, onAlwaysSkip}: {kind: DrillKind; label: string; onDone: (quality: number | undefined) => void; onAlwaysSkip?: () => void}) {
   const info = INFO[kind];
   const [phase, setPhase] = useState<'ready' | 'go' | 'done'>('ready');
   const [rep, setRep] = useState(0), [flash, setFlash] = useState<{text: string; good: boolean; id: number} | null>(null);
@@ -75,7 +76,8 @@ export function Drill({kind, label, onDone}: {kind: DrillKind; label: string; on
       <header><span>{label}</span><h2>{info.title}</h2></header>
       {phase === 'ready' && <div className="dr-intro"><p>{info.how}</p><p className="muted">A great session can be worth about twice a poor one.</p>
         <button ref={go} type="button" className="button primary" onClick={() => { sfx.unlock(); repRef.current = 0; scores.current = []; judged.current = false; setRep(0); setPhase('go'); }}>Start drill</button>
-        <button type="button" className="button outline" onClick={() => onDone(undefined)}>Skip, normal session</button></div>}
+        <button type="button" className="button outline" onClick={() => onDone(undefined)}>Skip (half gains)</button>
+        {onAlwaysSkip && <button type="button" className="dr-always" onClick={onAlwaysSkip}>Always skip drills</button>}</div>}
       {phase === 'go' && <>
         <div className="dr-reps" aria-label={`Rep ${rep + 1} of ${info.reps}`}>{Array.from({length: info.reps}, (_, i) => <i key={i} className={i < rep ? 'on' : i === rep ? 'now' : ''}/>)}</div>
         {kind === 'pads' && <button ref={go} type="button" className="dr-stage" onPointerDown={e => { e.preventDefault(); hit(); }} aria-label="Hit the pad"><span className="dr-pad" style={{left: `${spot.x}%`, top: `${spot.y}%`}}/><i ref={ring} className="dr-ring" style={{left: `${spot.x}%`, top: `${spot.y}%`}}/></button>}

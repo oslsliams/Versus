@@ -5,7 +5,7 @@ import {Dumbbell, Swords, BedDouble, Megaphone, Crown, Flame, HeartPulse, Zap, W
 import {
   ACTIONS, BACKSTORIES, CAMP_LEVELS, COACHES, DIVISIONS, FIGHTER_COLORS, GYMS, START_COUNTRIES, STAT_KEYS, STAT_LABEL, STYLES, TIERS,
   DUAL_RULES, acceptOffer, adjacentDivisions, applyResult, beltClocks, buy, campPrice, createCareer, declineOffer, dismissScene, epilogue, fightStats, fitnessLabel, heatOf, legacy, opponentStats, legendChecks, legendReady, migrate, moveDivision, npc, overall, physioPrice, prPrice, relinquishBelt, rng, takeAction, weeklyCost,
-  targetProgress, type Career, type CoachKey, type Division, type NPC, type Plan, type StatKey, type Style,
+  setSkipDrills, targetProgress, type Career, type CoachKey, type Division, type NPC, type Plan, type StatKey, type Style,
 } from '../../lib/career/engine';
 import {DEFAULT_LOOK, lookFor, type Look} from '../../lib/cosmetics';
 import {LookEditor} from './look-editor';
@@ -324,9 +324,9 @@ function Hub({career: c, update, startFightNight}: {career: Career; update: (c: 
                   <Dumbbell size={22} aria-hidden="true"/><strong>{ACTIONS.train.label}</strong><small>{ACTIONS.train.blurb}</small>
                   <label className="sr-only" htmlFor="cg-focus">Training focus</label>
                   <select id="cg-focus" value={focus} onChange={e => setFocus(e.target.value as StatKey)}>{STAT_KEYS.map(k => <option key={k} value={k}>{STAT_LABEL[k]} ({Math.floor(c.stats[k])})</option>)}</select>
-                  <button className="button primary" disabled={injured} onClick={() => setDrill(focus)}>Train {STAT_LABEL[focus].toLowerCase()}</button>
+                  <button className="button primary" disabled={injured} onClick={() => c.skipDrills ? act({type: 'train', focus, skipped: true}) : setDrill(focus)}>Train {STAT_LABEL[focus].toLowerCase()}</button>
                 </div>
-                <ActionCard icon={<Swords size={22}/>} k="spar" off={injured} onClick={() => setDrill('spar')}/>
+                <ActionCard icon={<Swords size={22}/>} k="spar" off={injured} onClick={() => c.skipDrills ? act({type: 'spar', skipped: true}) : setDrill('spar')}/>
                 <ActionCard icon={<BedDouble size={22}/>} k="rest" onClick={() => act({type: 'rest'})}/>
                 <ActionCard icon={<Megaphone size={22}/>} k="promote" onClick={() => act({type: 'promote'})}/>
                 <ActionCard icon={<Film size={22}/>} k="tape" onClick={() => act({type: 'tape'})}/>
@@ -391,7 +391,8 @@ function Hub({career: c, update, startFightNight}: {career: Career; update: (c: 
 
     <button type="button" className={`cp-fab ${unread ? 'ring' : ''}`} onClick={() => setPhoneOpen(true)} aria-label={unread ? 'Open your phone, 1 new message' : 'Open your phone'}><Smartphone size={24} aria-hidden="true"/>{!!unread && <b>{unread}</b>}</button>
     {c.scenes?.[0] && <StoryScene key={`${c.week}-${c.scenes[0].id}-${c.scenes.length}`} scene={c.scenes[0]} onDone={closeScene}/>}
-    {drill && <Drill kind={drillFor(drill)} label={drill === 'spar' ? 'Sparring' : STAT_LABEL[drill]} onDone={q => { const d = drill; setDrill(null); act(d === 'spar' ? {type: 'spar', quality: q} : {type: 'train', focus: d, quality: q}); }}/>}
+    {drill && <Drill kind={drillFor(drill)} label={drill === 'spar' ? 'Sparring' : STAT_LABEL[drill]} onDone={q => { const d = drill; setDrill(null); act(d === 'spar' ? {type: 'spar', quality: q, skipped: q == null} : {type: 'train', focus: d, quality: q, skipped: q == null}); }}
+      onAlwaysSkip={() => { const d = drill; setDrill(null); update(takeAction(setSkipDrills(c, true), d === 'spar' ? {type: 'spar', skipped: true} : {type: 'train', focus: d, skipped: true})); }}/>}
   </div>;
 }
 

@@ -43,7 +43,7 @@ const DMG: Record<MoveId, Record<Target, number> & {rot: number}> = {
 let FLASH = .0055;
 /** knockout tuning: dmg scales every clean head shot, kdKo is the base chance a knockdown ends it, kdSev how far past zero is lights out */
 // tuned on AI-vs-AI matchups with real skill gaps to UFC-like results: ~32% KO/TKO, ~20% submissions, ~48% decisions
-export const KO = {dmg: .82, kdKo: .3, kdSev: 10, rec: 1.1, corner: 12};
+export const KO = {dmg: .86, kdKo: .3, kdSev: 10, rec: 1.1, corner: 12};
 export const __tune = (k: {flash?: number} & Partial<typeof KO>) => { if (k.flash != null) FLASH = k.flash; Object.assign(KO, {...k, flash: undefined}); delete (KO as any).flash; };
 /** what each strike can aim at */
 export const targetFor = (m: MoveId, up: boolean, down: boolean): Target => m === 'kick' ? (up ? 'head' : down ? 'legs' : 'body') : down ? 'body' : 'head';
@@ -559,17 +559,17 @@ export type GOpt = {dir: GDir; label: string; to: GPos | 'stand' | 'land' | 'swe
 export const GPOS_LABEL: Record<GPos, string> = {clinch: 'Clinch', drive: 'Takedown', guard: 'Full guard', half: 'Half guard', side: 'Side control', mount: 'Mount', back: 'Back control'};
 const opt = (dir: GDir, label: string, to: GOpt['to'], role: GOpt['role'], diff: number, cost: number, stat: GOpt['stat'], flipTo?: GPos): GOpt => ({dir, label, to, role, diff, cost, stat, flipTo});
 export const GOPTS: Record<GPos, GOpt[]> = {
-  clinch: [opt('W', 'Body-lock takedown', 'land', 'any', .05, 12, 'wrestling'), opt('A', 'Trip', 'land', 'any', 0, 9, 'wrestling'), opt('S', 'Break away', 'stand', 'any', -.2, 3, 'wrestling')],
+  clinch: [opt('W', 'Body-lock takedown', 'land', 'any', .05, 12, 'wrestling'), opt('A', 'Trip', 'land', 'any', 0, 9, 'wrestling'), opt('S', 'Break away', 'stand', 'any', .15, 3, 'wrestling')],
   drive: [opt('W', 'Double leg', 'land', 'top', 0, 0, 'wrestling'), opt('A', 'Single leg', 'land', 'top', 0, 0, 'wrestling'), opt('D', 'Single leg', 'land', 'top', 0, 0, 'wrestling')],
   guard: [opt('W', 'Pass to half guard', 'half', 'top', 0, 7, 'grappling'), opt('D', 'Pass to side control', 'side', 'top', .12, 10, 'grappling'), opt('S', 'Stand up', 'stand', 'top', -.15, 4, 'wrestling'),
-    opt('W', 'Get up', 'stand', 'bottom', .05, 9, 'wrestling'), opt('A', 'Sweep', 'sweep', 'bottom', .12, 10, 'grappling', 'guard')],
+    opt('W', 'Get up', 'stand', 'bottom', .2, 7, 'wrestling'), opt('A', 'Sweep', 'sweep', 'bottom', .15, 10, 'grappling', 'guard')],
   half: [opt('W', 'Pass to side control', 'side', 'top', .03, 8, 'grappling'), opt('D', 'Mount', 'mount', 'top', .12, 10, 'grappling'), opt('S', 'Stand up', 'stand', 'top', -.15, 4, 'wrestling'),
-    opt('W', 'Get up', 'stand', 'bottom', .1, 10, 'wrestling'), opt('A', 'Recover guard', 'guard', 'bottom', 0, 7, 'grappling'), opt('D', 'Sweep', 'sweep', 'bottom', .15, 11, 'grappling', 'half')],
+    opt('W', 'Get up', 'stand', 'bottom', .22, 8, 'wrestling'), opt('A', 'Recover guard', 'guard', 'bottom', .12, 6, 'grappling'), opt('D', 'Sweep', 'sweep', 'bottom', .15, 11, 'grappling', 'half')],
   side: [opt('W', 'Mount', 'mount', 'top', .05, 9, 'grappling'), opt('D', 'Take the back', 'back', 'top', .15, 11, 'grappling'), opt('S', 'Stand up', 'stand', 'top', -.15, 4, 'wrestling'),
-    opt('W', 'Get up', 'stand', 'bottom', .2, 12, 'wrestling'), opt('A', 'Recover half guard', 'half', 'bottom', .05, 9, 'grappling')],
+    opt('W', 'Get up', 'stand', 'bottom', .28, 9, 'wrestling'), opt('A', 'Recover half guard', 'half', 'bottom', .18, 7, 'grappling')],
   mount: [opt('W', 'Take the back', 'back', 'top', .08, 9, 'grappling'), opt('S', 'Stand up', 'stand', 'top', -.15, 4, 'wrestling'),
-    opt('A', 'Elbow escape', 'half', 'bottom', .12, 10, 'grappling'), opt('D', 'Bridge and roll', 'sweep', 'bottom', .2, 12, 'wrestling', 'guard')],
-  back: [opt('S', 'Let him up', 'stand', 'top', -.15, 4, 'wrestling'), opt('A', 'Turn into him', 'guard', 'bottom', .15, 11, 'grappling'), opt('W', 'Get up', 'stand', 'bottom', .22, 12, 'wrestling')],
+    opt('A', 'Elbow escape', 'half', 'bottom', .22, 8, 'grappling'), opt('D', 'Bridge and roll', 'sweep', 'bottom', .26, 10, 'wrestling', 'guard')],
+  back: [opt('S', 'Let him up', 'stand', 'top', -.15, 4, 'wrestling'), opt('A', 'Turn into him', 'guard', 'bottom', .24, 9, 'grappling'), opt('W', 'Get up', 'stand', 'bottom', .3, 10, 'wrestling')],
 };
 /** submissions on offer in each position, for the man on top / underneath */
 export const GSUBS: Partial<Record<GPos, {top?: string[]; bottom?: string[]}>> = {
@@ -701,7 +701,7 @@ function guess(g: LiveFight, s: 0 | 1, dir: GDir) {
   G.guess[s] = dir; f.stamina = Math.max(0, f.stamina - 2.5);
   const m = G.move;
   if (m && m.by !== s && dir === m.opt.dir) {
-    G.momentum[s] = Math.min(1, G.momentum[s] + .35); G.momentum[m.by] = 0; G.cd[m.by] = .8; G.move = null;
+    G.momentum[s] = Math.min(1, G.momentum[s] + .35); G.momentum[m.by] = 0; G.cd[m.by] = m.opt.to === 'stand' || G.top !== m.by ? .45 : .8; G.move = null;
     if (G.pos === 'drive') {   // a stuffed shot: he's stuck under a sprawl, head and arm hanging there
       const a = g.f[m.by]; g.grap = null; setState(a, 'sprawled'); setState(f, 'sprawl'); a.stamina = Math.max(0, a.stamina - 8); f.points += 3;
       g.fh = {by: s, t: .85};
@@ -788,7 +788,7 @@ function grapple(g: LiveFight, inputs: [Input, Input], pressed: [Input, Input], 
   const m = G.move;
   if (m) { m.t += dt; if (m.t >= m.win) { G.move = null; landMove(g, m); if (!g.grap) return; } }
   // nobody doing anything: the referee stands them up
-  if (G.idle > 12 && (G.pos === 'clinch' || G.pos === 'guard' || G.pos === 'half')) { separate(g, -1); ev(g, {type: 'escape', side: 0, x: 0, z: 0, power: .3, text: 'The referee stands them up'}); }
+  if (G.idle > (G.pos === 'clinch' ? 6 : 9) && (G.pos === 'clinch' || G.pos === 'guard' || G.pos === 'half' || G.pos === 'side')) { separate(g, -1); ev(g, {type: 'escape', side: 0, x: 0, z: 0, power: .3, text: 'The referee stands them up'}); }
 }
 
 /** the AI on the ground: it reads your moves (more often the better it is), chases or runs in a submission,
@@ -819,7 +819,9 @@ function aiGrapple(g: LiveFight, me: Fighter, them: Fighter, brain: AIBrain): {h
   if (m && m.by !== me.side && G.guess[me.side] === null && brain.decided !== m.id && m.t > m.win * (.25 + rand() * .35)) {
     brain.decided = m.id;
     if (me.stamina >= 6) {
-      const p = m.aiDeny ?? Math.max(.03, Math.min(.85, .18 + lvl * .32 + (me.stats[m.opt.stat] - them.stats[m.opt.stat]) / 170 - m.opt.diff + G.momentum[me.side] * .1));
+      const escaping = m.opt.to === 'stand' || (G.top !== m.by && G.pos !== 'clinch');
+      const p0 = m.aiDeny ?? Math.max(.03, Math.min(.85, .18 + lvl * .32 + (me.stats[m.opt.stat] - them.stats[m.opt.stat]) / 170 - m.opt.diff + G.momentum[me.side] * .1));
+      const p = escaping ? Math.min(.38, p0 * .65) : p0;   // escapes are hard to shut down every time
       const opts = G.pos === 'drive' ? GOPTS.drive : GOPTS[G.pos].filter(o => o.role === 'any' || o.role === (G.top === them.side ? 'top' : 'bottom'));
       const dirs = [...new Set(opts.map(o => o.dir))].filter(d => d !== m.opt.dir);
       const pick = rand() < p ? m.opt.dir : dirs[Math.floor(rand() * dirs.length)] ?? null;
