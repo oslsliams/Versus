@@ -18,6 +18,8 @@ import {GrapplePoser, grapplePlace} from './grapple-pose';
 import {REFEREE_LOOK, type Look} from '../../lib/cosmetics';
 
 const PLAT = .9;           // mat height in the arena model
+/** Fight Night arena: its octagon is 1.11x the game's cage (apothem 4.71 m vs 4.25 m) and its mat sits at 1.2 m */
+const FN_SCALE = .902, FN_MAT = 1.2;
 const X_SCALE = .82;       // engine metres -> arena metres along the fight line
 const FPS = 30;
 
@@ -100,17 +102,19 @@ function loadGlb(url: string, onProgress: (p: number) => void) {
 /** a look's extras: tattoo masks and (if any gear is worn) the gear meshes fitted to that body */
 export async function loadDress(look: Look | undefined): Promise<LookAssets | undefined> {
   if (!look) return undefined;
-  const [la, gear] = await Promise.all([loadLookAssets(look), look.gear.length ? loadGlb(`/cosmetics/gear-${look.model}.glb`, () => {}).catch(() => null) : Promise.resolve(null)]);
+  const [la, gear] = await Promise.all([loadLookAssets(look), look.gear.length && look.model !== 'dario' ? loadGlb(`/cosmetics/gear-${look.model}.glb`, () => {}).catch(() => null) : Promise.resolve(null)]);
   return {...la, gear: gear as any};
 }
-export function loadFightAssets(red: FighterModel, blue: FighterModel, onProgress?: (p: number) => void, looks?: [Look | undefined, Look | undefined], title = false): Promise<Assets> {
-  const pool = (['delacroix', 'takeda', 'volkov', 'okafor', 'bianchi', 'mwangi', 'ashford', 'kalani'] as FighterModel[]).filter(m => m !== red && m !== blue);
+/** venue 3: UNSEEN Interactive's Fight Night arena (crowd and seating built in) */
+export const FIGHT_NIGHT = 3;
+export function loadFightAssets(red: FighterModel, blue: FighterModel, onProgress?: (p: number) => void, looks?: [Look | undefined, Look | undefined], title = false, venue = 2): Promise<Assets> {
+  const pool = (['delacroix', 'takeda', 'volkov', 'okafor', 'bianchi', 'mwangi', 'ashford', 'kalani'] as FighterModel[]).filter(m => m !== red && m !== blue);   // NPC bodies only (never Dario)
   const refModel = pool[0], crewModel = pool[1];
   const refLook = REFEREE_LOOK(refModel);
-  const urls = ['/models/arena.glb', `/models/fighter-${red}.glb`, `/models/fighter-${blue}.glb`, `/models/fighter-${refModel}.glb`, `/models/fighter-${crewModel}.glb`];
+  const urls = [venue === FIGHT_NIGHT ? '/models/arena-fightnight.glb' : '/models/arena.glb', `/models/fighter-${red}.glb`, `/models/fighter-${blue}.glb`, `/models/fighter-${refModel}.glb`, `/models/fighter-${crewModel}.glb`];
   const done = [0, 0, 0, 0, 0];
   const report = () => onProgress?.(done.reduce((a, b) => a + b, 0) / 5);
-  const crowd = fetch('/models/arena-crowd.json').then(r => r.ok ? r.json() as Promise<{seats?: number[]}> : null).then(j => j?.seats ?? null).catch(() => null);
+  const crowd = venue === FIGHT_NIGHT ? Promise.resolve(null) : fetch('/models/arena-crowd.json').then(r => r.ok ? r.json() as Promise<{seats?: number[]}> : null).then(j => j?.seats ?? null).catch(() => null);
   const dress = Promise.all([loadDress(looks?.[0]), loadDress(looks?.[1]), loadDress(refLook)]);
   const belts = title ? Promise.all([red, blue].map(m => loadGlb(`/models/belt-${m}.glb`, () => {}).then(g => g.scene).catch(() => null))) : Promise.resolve([null, null]);
   return Promise.all([...urls.map((u, i) => loadGlb(u, p => { done[i] = p; report(); }).catch(e => { if (i >= 3) return null; throw e; })), crowd, dress, belts])
@@ -434,7 +438,7 @@ export class FightView {
   renderer: THREE.WebGLRenderer; scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(40, 1, .05, 200);
   composer: EffectComposer; bloom: UnrealBloomPass;
   rigs: [FighterRig, FighterRig]; sparks: {mesh: THREE.Mesh; life: number; v: THREE.Vector3}[] = [];
-  shake = 0; shakeMul = 1; time = 0; camX = 0; camZ = 0; camDist = 3.6; camDir = new THREE.Vector2(0, 1); private disposed = false;
+  shake = 0; shakeMul = 1; time = 0; venue = 2; camX = 0; camZ = 0; camDist = 3.6; camDir = new THREE.Vector2(0, 1); private disposed = false;
   /** the player's screen axes on the floor (world xz): WASD moves along these */
   axes = {rx: 1, rz: 0, fx: 0, fz: -1};
   cage: {mesh: THREE.Mesh; x: number; z: number; o: number; fence: boolean}[] = [];
@@ -470,17 +474,30 @@ export class FightView {
     if (venue === 0) this.scene.background = new THREE.Color('#050403');
 
     const arena = assets.arena.clone(true);
+    this.venue = venue;
+    if (venue === FIGHT_NIGHT) {
+      const turn = new THREE.Matrix4().makeRotationY(Math.PI / 8);
+      const octagon = /^(Arena_(Fence|Door|Octagon|Mat|Cage|Corner|Post|Pad|Rail|Canvas|Step|Logo|Turnbuckle)|Apron_Sponsor)/i;
+      for (const n of [...arena.children]) {
+        if (!octagon.test(n.name)) continue;
+        const b = new THREE.Box3().setFromObject(n), c = b.getCenter(new THREE.Vector3());
+        if (Math.hypot(c.x, c.z) < 6.8) n.applyMatrix4(turn);
+      }
+      const lights: THREE.Object3D[] = []; arena.traverse(o => { if ((o as THREE.Light).isLight) lights.push(o); });
+      for (const l of lights) l.removeFromParent();   // the game's own rig lights the cage; 35 extra lights is too much for a browser
+      arena.rotation.y = Math.PI; arena.scale.setScalar(FN_SCALE); arena.position.y = PLAT - FN_MAT * FN_SCALE;
+    }
     arena.updateMatrixWorld(true);
     arena.traverse(o => {
       const m = o as THREE.Mesh; if (!m.isMesh) return;
       m.receiveShadow = true;
       const name = `${m.name} ${m.parent?.name ?? ''}`.toLowerCase();
-      if (/post|rail|skirt|fence|txt/.test(name)) {
+      if (/post|rail|skirt|fence|txt|door/.test(name)) {
         m.geometry.computeBoundingBox(); const c = new THREE.Vector3(); m.geometry.boundingBox!.getCenter(c); m.localToWorld(c);
-        if (c.y > PLAT - .2 && Math.hypot(c.x, c.z) > 2.5) { m.material = (m.material as THREE.Material).clone(); this.cage.push({mesh: m, x: c.x, z: c.z, o: 1, fence: /fence/.test((m.material as THREE.Material).name)}); }   // see-through on the camera's side (fadeCage)
+        if (c.y > PLAT - .2 && Math.hypot(c.x, c.z) > 2.5) { m.material = (m.material as THREE.Material).clone(); this.cage.push({mesh: m, x: c.x, z: c.z, o: 1, fence: /fence/i.test((m.material as THREE.Material).name)}); }   // see-through on the camera's side (fadeCage)
       }
       const mat = m.material as THREE.MeshStandardMaterial;
-      if (mat && /fence/.test(mat.name)) { mat.alphaTest = .5; mat.transparent = false; mat.side = THREE.DoubleSide; }
+      if (mat && /fence/i.test(mat.name)) { mat.alphaTest = .5; mat.transparent = false; mat.side = THREE.DoubleSide; }
       if (mat && /crowd/.test(mat.name)) { mat.color.multiplyScalar(.16); mat.roughness = 1; }
       if (mat && /canvas/.test(mat.name)) mat.color.multiplyScalar(.86);
       if (mat && /seat|floor|apron/.test(mat.name)) mat.color.multiplyScalar(.6);

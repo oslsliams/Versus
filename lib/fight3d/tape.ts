@@ -62,21 +62,25 @@ export function tape(f: {name: string; nickname?: string; style: Style; stats: S
 }
 
 // original MakeHuman fighter bodies built by scripts/art/build_fighter_mh.py (portraits: public/fighters/<model>.webp)
-export const FIGHTER_MODELS = ['okafor', 'volkov', 'takeda', 'ashford', 'kalani', 'bianchi', 'mwangi', 'delacroix'] as const;
+export const NPC_MODELS = ['okafor', 'volkov', 'takeda', 'ashford', 'kalani', 'bianchi', 'mwangi', 'delacroix'] as const;
+/** every body, including UNSEEN's customizable Dario Vale (scripts/art/build_dario.py). NPCs only draw from NPC_MODELS:
+ *  Dario's file carries all his hairstyles, tattoos and shorts, so he loads only when someone picks him. */
+export const FIGHTER_MODELS = [...NPC_MODELS, 'dario'] as const;
 export type FighterModel = typeof FIGHTER_MODELS[number];
 /** Pick a body for any fighter name: roster fighters get their own, everyone else a stable pick. */
 export function modelFor(name: string): FighterModel {
   const last = name.trim().split(/\s+/).pop()!.toLowerCase();
   const hit = FIGHTER_MODELS.find(m => m === last);
   if (hit) return hit;
+  if (/^dario vale$/i.test(name.trim())) return 'dario';
   let h = 7; for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return FIGHTER_MODELS[h % FIGHTER_MODELS.length];
+  return NPC_MODELS[h % NPC_MODELS.length];
 }
 /** bodies for both corners, never the same one twice */
 export function pairModels(red: string, blue: string): [FighterModel, FighterModel] {
   const a = modelFor(red); let b = modelFor(blue);
   if (b === a) b = modelFor(blue + ' blue');
-  if (b === a) b = FIGHTER_MODELS[(FIGHTER_MODELS.indexOf(a) + 1) % FIGHTER_MODELS.length];
+  if (b === a) b = NPC_MODELS[(NPC_MODELS.indexOf(a as typeof NPC_MODELS[number]) + 1) % NPC_MODELS.length];
   return [a, b];
 }
 /** give both corners a body/portrait (never the same one) unless the card already names them */

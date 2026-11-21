@@ -99,13 +99,16 @@ export function LiveFightGame({you, opp, rounds, difficulty, onEnd, onSim, onQui
     const told = {kdFor: 0, kdAgainst: 0, rockedFor: 0, rockedAgainst: 0, tired: 0};
     const goal = fcRef.current.story?.goal;
     const resize = () => { if (view && shell.current) view.resize(shell.current.clientWidth, shell.current.clientHeight); };
+    // the big show is UNSEEN's Fight Night arena on capable devices (phones and small laptops keep the lighter classic arena; ?arena=classic forces it)
+    const weak = (navigator.hardwareConcurrency ?? 8) <= 4 || /Mobi|Android/i.test(navigator.userAgent);
+    const arenaVenue = venue === 2 && !weak && !new URLSearchParams(location.search).has('arena') ? 3 : venue;
     import('./fight-view').then(async ({FightView, loadFightAssets}) => {
       const [red, blue] = cornerModels(you, opp);
       const plain = new URLSearchParams(location.search).has('nolook');   // debug: fight without tattoos/gear
-      const assets = await loadFightAssets(red, blue, p => alive && setLoading(p), plain ? undefined : [you.look ? {...you.look, model: red} : undefined, opp.look ? {...opp.look, model: blue} : undefined], !!fcRef.current.title);
+      const assets = await loadFightAssets(red, blue, p => alive && setLoading(p), plain ? undefined : [you.look ? {...you.look, model: red} : undefined, opp.look ? {...opp.look, model: blue} : undefined], !!fcRef.current.title, arenaVenue);
       if (!alive || !canvas.current) return;
       try { const beltsOf = (t: Tape) => t.rank === 'C' ? Math.max(1, t.belts ?? 1) : 0;
-        view = new FightView(canvas.current, g, assets, venue, {title: !!fcRef.current.title, held: [beltsOf(fcRef.current.you), beltsOf(fcRef.current.opp)]}); viewRef.current = view;
+        view = new FightView(canvas.current, g, assets, arenaVenue, {title: !!fcRef.current.title, held: [beltsOf(fcRef.current.you), beltsOf(fcRef.current.opp)]}); viewRef.current = view;
         view.shakeMul = fsRef.current.shake ? 1 : 0; view.setBlood(fsRef.current.blood); } catch { setError('Your browser could not start 3D graphics (WebGL). Try another browser or simulate the fight.'); return; }
       if (new URLSearchParams(location.search).has('debugview')) Object.assign(window, {__view: view, __fight: g});   // test hook
       resize(); setReady(true); last = performance.now();

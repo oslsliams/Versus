@@ -21,6 +21,12 @@ for name in names:
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.gltf(filepath=os.path.join(MODELS, f'fighter-{name}.glb'))
     for o in [o for o in bpy.data.objects if o.name.startswith('Icosphere')]: bpy.data.objects.remove(o, do_unlink=True)
+    # customizable bodies (Dario) ship every hairstyle, tattoo and pair of shorts: keep only the default outfit
+    DEFAULT_PARTS = {'var_hair_01', 'var_shorts_twin_serpent'}
+    def part_root(o):
+        while o.parent and o.parent.type != 'ARMATURE': o = o.parent
+        return o.name.split('.')[0]
+    for o in [o for o in bpy.data.objects if part_root(o).startswith('var_') and part_root(o) not in DEFAULT_PARTS]: bpy.data.objects.remove(o, do_unlink=True)
     rig = next(o for o in bpy.data.objects if o.type == 'ARMATURE')
     # a few body triangles inside the shorts kept the skin material (a dark patch at the crotch): give them the shorts' cloth
     for o in [o for o in bpy.data.objects if o.type == 'MESH']:

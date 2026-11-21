@@ -92,8 +92,18 @@ export function patchShorts(body: THREE.Object3D) {
   const sk = skin as THREE.Mesh, sh = shorts as THREE.Mesh;
   fillShortsGap(sk.material as THREE.MeshStandardMaterial, shortsGap(sk, sh), (sh.material as THREE.MeshStandardMaterial).color);
 }
+/** customizable bodies ship every part: show only the chosen hairstyle, tattoos and shorts (defaults when none chosen) */
+export function applyParts(body: THREE.Object3D, parts: Look['parts']) {
+  const hair = parts?.hair ?? '01', shorts = parts?.shorts ?? 'twin_serpent', ink = new Set(parts?.ink ?? []);
+  body.traverse(o => {
+    const m = /^var_(hair|ink|shorts)_(.+)$/.exec(o.name); if (!m) return;
+    const [, kind, id] = m;
+    o.visible = kind === 'hair' ? id === hair : kind === 'shorts' ? id === shorts : ink.has(id);
+  });
+}
 /** apply a look to a cloned fighter body; returns the walkout-only gear meshes (hidden once the fight starts) */
 export function applyLook(body: THREE.Object3D, look: Look | undefined, a: LookAssets | undefined): THREE.Object3D[] {
+  applyParts(body, look?.parts);
   if (!look) return [];
   const bones = new Map<string, THREE.Bone>();
   let skinParent: THREE.Object3D | null = null, skinMesh: THREE.SkinnedMesh | null = null;
@@ -108,7 +118,7 @@ export function applyLook(body: THREE.Object3D, look: Look | undefined, a: LookA
     }
   });
   const walkout: THREE.Object3D[] = [];
-  if (!a?.gear || !skinParent || !look.gear.length) return walkout;
+  if (!a?.gear || !skinParent || !look.gear.length || look.model === 'dario') return walkout;
   const parent = skinParent as THREE.Object3D, ref = skinMesh as THREE.SkinnedMesh | null;
   a.gear.scene.traverse(o => {
     const sm = o as THREE.SkinnedMesh; if (!sm.isSkinnedMesh) return;

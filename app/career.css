@@ -261,6 +261,9 @@ button.cg-action:active:not(:disabled){transform:scale(.96,.92)}
 .le-body small{color:var(--muted);font-size:12px}
 .le-body.on,.le-item.on>button{border-color:var(--lime);box-shadow:0 0 0 3px color-mix(in srgb,var(--lime) 18%,transparent)}
 .le-item{display:grid;gap:6px}
+.le-grid.parts{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.le-part{position:relative;min-height:48px;padding:10px 12px;border-radius:12px;border:1px solid #ffffff1f;background:#ffffff08;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.le-part strong{font-size:14px}.le-part.on{border-color:var(--lime);box-shadow:0 0 0 3px color-mix(in srgb,var(--lime) 18%,transparent)}
 .le-item>button{position:relative;display:grid;gap:3px;text-align:left;padding:10px;border-radius:var(--r-md);border:1px solid var(--glass-line);background:#00000035;color:var(--ink);font:inherit;cursor:pointer;min-height:100%}
 .le-item>button:disabled{cursor:not-allowed}
 .le-item.locked>button{opacity:.55}

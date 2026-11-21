@@ -19,6 +19,7 @@ export const ROSTER: (Corner & {nickname: string; blurb: string; rank: string})[
   {name: 'Enzo Bianchi', nickname: 'Paper Cut', style: 'Striker', color: '#e9c873', stats: S(88, 62, 88, 52, 50, 78, 58, 80), rank: '#4', blurb: 'Kicks from everywhere, gone before you swing.'},
   {name: 'Kofi Mwangi', nickname: 'Gravity', style: 'Wrestler', color: '#bfe36b', stats: S(62, 78, 64, 84, 72, 72, 82, 66), rank: '#6', blurb: 'Takes you down and keeps you there.'},
   {name: 'Hugo Delacroix', nickname: 'Slow Burn', style: 'All-rounder', color: '#d9a7ff', stats: S(70, 66, 68, 68, 74, 90, 72, 86), rank: '#1', blurb: 'Wins the fourth and fifth round every time.'},
+  {name: 'Dario Vale', nickname: 'Twin Serpent', style: 'Striker', color: '#c43a3a', stats: S(80, 76, 78, 58, 54, 74, 72, 76), rank: '#8', blurb: 'UNSEEN\'s own. Fast hands, wears the Twin Serpent shorts.'},
 ];
 const LEVELS = [{label: 'Easy', v: .12}, {label: 'Normal', v: .5}, {label: 'Hard', v: .74}] as const;
 // every roster fighter has his own ink and tape (kit colours stay the body's own)

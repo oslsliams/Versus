@@ -34,7 +34,12 @@ type Walker = {side: 0 | 1; corner: 'red' | 'blue'; cx: number; me: Person; crew
   mat?: THREE.MeshStandardMaterial; fightTex?: THREE.Texture | null; shirtTex?: THREE.Texture};
 
 const pseudo = (): Fighter => ({state: 'idle', move: null, t: 0, x: 0, z: 0, hx: 0, hz: -1, cap: 100, rocked: 0, combo: 0, target: 'head'} as unknown as Fighter);
-const DOOR_Z = 17, TUNNEL_Z = 12.9, STEPS_Z = 5.3, APRON_Z = 4.15, GATE_Z = 3.3;
+// the walkout set, by arena: the classic arena's tunnel arch, or Fight Night's entrance portal (its floor sits 18 cm lower)
+let DOOR_Z = 17, TUNNEL_Z = 12.9, STEPS_Z = 5.3, APRON_Z = 4.15, GATE_Z = 3.3, GROUND = 0, CZ0 = 12.4, OWN_BARRIERS = true;
+function setVenue(v: number) {
+  if (v === 3) { DOOR_Z = 20.6; TUNNEL_Z = 16.4; STEPS_Z = 6.35; APRON_Z = 5.3; GATE_Z = 3.6; GROUND = -.18; CZ0 = 16.6; OWN_BARRIERS = false; }
+  else { DOOR_Z = 17; TUNNEL_Z = 12.9; STEPS_Z = 5.3; APRON_Z = 4.15; GATE_Z = 3.3; GROUND = 0; CZ0 = 12.4; OWN_BARRIERS = true; }
+}
 const WALK = 1.6, CLIMB = .8, PAUSE = 2.4;   // m/s on the flat, m/s up the steps, seconds at the cage-side checks
 
 export class WalkoutDirector {
@@ -44,6 +49,7 @@ export class WalkoutDirector {
   private shot = ''; private houseLights: {l: THREE.Light; i: number}[] = [];
 
   constructor(private view: FightView, order: (0 | 1)[]) {
+    setVenue(view.venue);
     this.buildSet();
     const S = view.scene;
     this.spot = new THREE.SpotLight('#fff1dd', 150, 45, .17, .55, 2); this.spot.position.set(0, 13, 9); this.spot.target = this.spotTarget;
@@ -54,7 +60,7 @@ export class WalkoutDirector {
     const a = view.assets;
     for (const side of order) {
       const corner = side === 0 ? 'red' : 'blue', cx = (side === 0 ? -1.6 : 1.6) * X_SCALE;
-      const pts = [new THREE.Vector3(0, 0, 18.6), new THREE.Vector3(0, 0, DOOR_Z - .2), new THREE.Vector3(0, 0, TUNNEL_Z), new THREE.Vector3(0, 0, STEPS_Z),
+      const pts = [new THREE.Vector3(0, GROUND, DOOR_Z + 1.6), new THREE.Vector3(0, GROUND, DOOR_Z - .2), new THREE.Vector3(0, GROUND, TUNNEL_Z), new THREE.Vector3(0, GROUND, STEPS_Z),
         new THREE.Vector3(0, PLAT, APRON_Z), new THREE.Vector3(0, PLAT, GATE_Z), new THREE.Vector3(cx * .55, PLAT, 1.5), new THREE.Vector3(cx, PLAT, .05)];
       const path = makePath(pts);
       // timeline: walk to the steps, stop for the checks, climb, walk to the corner, settle
@@ -76,7 +82,7 @@ export class WalkoutDirector {
       rig.root.visible = false;
       this.walkers.push(w);
     }
-    this.camPos.set(0, 1.6, 15.2); this.camLook.set(0, 1.3, 18);
+    this.camPos.set(0, GROUND + 1.6, DOOR_Z - 1.8); this.camLook.set(0, GROUND + 1.3, DOOR_Z + 1);
   }
 
   /** the walkout shirt: a team-coloured tee painted over the skin (comes off at the cage) */
@@ -107,12 +113,13 @@ export class WalkoutDirector {
     const at = (l: THREE.PointLight, x: number, y: number, z: number) => { l.position.set(x, y, z); return l; };
     const wall = mat('#33353d'), floor = mat('#121317', .6), ceil = mat('#1b1c21'), lockerM = mat('#283247', .5), trim = mat('#0c0d10');
     // corridor from the tunnel arch to the locker room door
-    const CZ0 = 12.4, CZ1 = DOOR_Z, CW = 1.65, CH = 3.0, mid = (CZ0 + CZ1) / 2, len = CZ1 - CZ0;
+    G.position.y = GROUND;
+    const CZ1 = DOOR_Z, CW = 1.65, CH = 3.0, mid = (CZ0 + CZ1) / 2, len = CZ1 - CZ0;
     box(.12, CH, len, -CW, CH / 2, mid, wall); box(.12, CH, len, CW, CH / 2, mid, wall); box(CW * 2, .1, len, 0, CH, mid, ceil); box(CW * 2, .02, len, 0, .01, mid, floor);
     for (let z = CZ0 + .7; z < CZ1; z += 1.35) box(.5, .03, .9, 0, CH - .06, z, mat('#ffffff', .4, '#fff6e6', 2.2));
     for (const x of [-CW + .08, CW - .08]) { const m = mat('#000', .4, LED.blue, 3); this.ledMats.push(m); box(.04, .04, len, x, .06, mid, m); }
-    G.add(at(new THREE.PointLight('#fff2e0', 2.5, 7, 2), 0, 2.6, 14.2));
-    G.add(at(new THREE.PointLight('#fff2e0', 2.5, 7, 2), 0, 2.6, 16.2));
+    G.add(at(new THREE.PointLight('#fff2e0', 2.5, 7, 2), 0, 2.6, CZ0 + 1.8));
+    G.add(at(new THREE.PointLight('#fff2e0', 2.5, 7, 2), 0, 2.6, CZ0 + 3.8));
     // signage
     const sign = (text: string, sub: string, w: number, h: number, x: number, y: number, z: number, ry: number) => {
       const cv = document.createElement('canvas'); cv.width = 1024; cv.height = Math.round(1024 * h / w); const c = cv.getContext('2d')!;
@@ -123,8 +130,8 @@ export class WalkoutDirector {
       const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({map: tex, emissive: '#ffffff', emissiveMap: tex, emissiveIntensity: .7, roughness: .6}));
       m.position.set(x, y, z); m.rotation.y = ry; G.add(m);
     };
-    sign('VERSUS', 'FIGHT NIGHT', 2.6, .9, -CW + .07, 1.9, 14.6, Math.PI / 2);
-    sign('WALKOUT', 'STAY BEHIND THE LINE', 2.2, .75, CW - .07, 1.9, 15.4, -Math.PI / 2);
+    sign('VERSUS', 'FIGHT NIGHT', 2.6, .9, -CW + .07, 1.9, CZ0 + 2.2, Math.PI / 2);
+    sign('WALKOUT', 'STAY BEHIND THE LINE', 2.2, .75, CW - .07, 1.9, CZ0 + 3.0, -Math.PI / 2);
     sign('LOCKER ROOM', 'FIGHTERS & TEAMS ONLY', 1.7, .5, 0, 2.62, DOOR_Z - .07, Math.PI);
     // locker room: wall with a doorway, lockers, a bench, bright overhead light
     const RZ1 = DOOR_Z + 5, RW = 2.8, rmid = (DOOR_Z + RZ1) / 2;
@@ -138,9 +145,10 @@ export class WalkoutDirector {
     G.add(at(new THREE.PointLight('#fff4e4', 3.5, 9, 2), 0, 2.6, rmid));
     // walkway barriers (black, LED-lit tops) and the steps up to the cage
     const bz0 = 5.8, bz1 = TUNNEL_Z - .3;
-    for (const x of [-1.35, 1.35]) { box(.08, 1.0, bz1 - bz0, x, .5, (bz0 + bz1) / 2, mat('#0e0f13', .7)); const m = mat('#000', .4, LED.blue, 2.5); this.ledMats.push(m); box(.1, .05, bz1 - bz0, x, 1.02, (bz0 + bz1) / 2, m); }
+    if (OWN_BARRIERS) for (const x of [-1.35, 1.35]) { box(.08, 1.0, bz1 - bz0, x, .5, (bz0 + bz1) / 2, mat('#0e0f13', .7)); const m = mat('#000', .4, LED.blue, 2.5); this.ledMats.push(m); box(.1, .05, bz1 - bz0, x, 1.02, (bz0 + bz1) / 2, m); }
     const stepM = mat('#1b1c22', .6);
-    for (let k = 0; k < 3; k++) box(1.3, (k + 1) * PLAT / 3, .36, 0, (k + 1) * PLAT / 6, STEPS_Z - .25 - k * .34, stepM);
+    const rise = PLAT - GROUND;   // the steps climb from the arena floor to the mat
+    for (let k = 0; k < 3; k++) box(1.3, (k + 1) * rise / 3, .36, 0, (k + 1) * rise / 6, STEPS_Z - .25 - k * .34, stepM);
     G.traverse(o => { const m = o as THREE.Mesh; if (m.isMesh) m.castShadow = false; });
   }
 
